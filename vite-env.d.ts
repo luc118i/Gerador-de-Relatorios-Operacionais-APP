@@ -1,0 +1,11 @@
+declare module "*?raw" {
+  const content: string;
+  export default content;
+}
+
+declare module "*.csv" {
+  const content: string;
+  export default content;
+}
+
+/// <reference types="vite/client" />

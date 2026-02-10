@@ -1,11 +1,16 @@
 import { useMemo, useState } from "react";
-import { ArrowLeft, FileDown, RefreshCw, PencilLine } from "lucide-react";
+import { ArrowLeft, RefreshCw, PencilLine } from "lucide-react";
 import type { Ocorrencia } from "../../../types";
 import {
   gerarTextoRelatorioIndividual,
   gerarTextoWhatsApp,
 } from "../../../utils/relatorio";
 import { useGetOccurrencePdf } from "../../../../features/reportsPdf/queries/reportsPdf.queries";
+
+import { toast } from "sonner";
+import { getApiErrorMessage } from "../../../../api/http";
+
+import { DriverPdfCard } from "./components/DriverPdfCard";
 
 export function OccurrencePreviewPage(props: {
   occurrenceId: string;
@@ -29,22 +34,129 @@ export function OccurrencePreviewPage(props: {
     [occurrence],
   );
 
+  function getViagemLinha(v: Ocorrencia["viagem"]): string {
+    return "linha" in v ? String(v.linha ?? "") : "";
+  }
+
+  function getViagemPrefixo(v: Ocorrencia["viagem"]): string {
+    return "prefixo" in v ? String(v.prefixo ?? "") : "";
+  }
+
+  function getViagemOrigem(v: Ocorrencia["viagem"]): string {
+    return "origem" in v ? String(v.origem ?? "") : "";
+  }
+
+  function getViagemDestino(v: Ocorrencia["viagem"]): string {
+    return "destino" in v ? String(v.destino ?? "") : "";
+  }
+
+  function getOccurrenceTitle(o: Ocorrencia): string {
+    const v = o.viagem;
+    const linha = getViagemLinha(v);
+    const origem = getViagemOrigem(v);
+    const destino = getViagemDestino(v);
+
+    const od = origem && destino ? `${origem} x ${destino}` : "";
+    return ["OCORRÊNCIA", linha, od].filter(Boolean).join(" - ");
+  }
+
+  type DriverSnapshot = {
+    position: 1 | 2;
+    registry: string;
+    name: string;
+    base?: string | null;
+  };
+
+  const drivers = useMemo(() => {
+    const map = (
+      raw:
+        | Ocorrencia["motorista1"]
+        | Ocorrencia["motorista2"]
+        | null
+        | undefined,
+      position: 1 | 2,
+    ): DriverSnapshot | null => {
+      if (!raw) return null;
+
+      // Ajuste os nomes abaixo para o shape real do motorista no seu type:
+      // Aqui estou assumindo o padrão mais comum: { matricula, nome, base }
+      const registry = String(
+        (raw as any).registry ??
+          (raw as any).matricula ??
+          (raw as any).codigo ??
+          "",
+      );
+      const name = String((raw as any).name ?? (raw as any).nome ?? "");
+      const base =
+        (raw as any).base ??
+        (raw as any).baseCode ??
+        (raw as any).baseSigla ??
+        null;
+
+      return {
+        position,
+        registry,
+        name,
+        base,
+      };
+    };
+
+    return {
+      d1: map(occurrence.motorista1, 1),
+      d2: map(occurrence.motorista2, 2),
+    };
+  }, [occurrence.motorista1, occurrence.motorista2]);
+
   async function handleGenerate(force?: boolean) {
+    try {
+      const res = await getPdf.mutateAsync({
+        occurrenceId,
+        ttlSeconds: 3600,
+        force: !!force,
+      });
+
+      const pdf = res.data.pdf;
+      setSignedUrl(pdf.signedUrl);
+      setTtl(pdf.ttlSeconds);
+      setCached(pdf.cached);
+    } catch (e) {
+      setSignedUrl(null);
+      setTtl(null);
+      setCached(null);
+      toast.error(getApiErrorMessage(e, "Falha ao gerar PDF"));
+    }
+  }
+
+  function handleDownload() {
+    if (!signedUrl) return;
+    window.open(signedUrl, "_blank", "noopener,noreferrer");
+  }
+
+  async function getOrCreateSignedUrl(args: {
+    force?: boolean;
+    reason: "driver-download";
+  }) {
+    // Se já tem signedUrl e não for force, reaproveita sem bater no backend
+    if (signedUrl && !args.force) {
+      return { signedUrl, cached, ttlSeconds: ttl };
+    }
+
     const res = await getPdf.mutateAsync({
       occurrenceId,
       ttlSeconds: 3600,
-      force: !!force,
+      force: !!args.force,
     });
 
     const pdf = res.data.pdf;
     setSignedUrl(pdf.signedUrl);
     setTtl(pdf.ttlSeconds);
     setCached(pdf.cached);
-  }
 
-  function handleDownload() {
-    if (!signedUrl) return;
-    window.open(signedUrl, "_blank", "noopener,noreferrer");
+    return {
+      signedUrl: pdf.signedUrl,
+      cached: pdf.cached,
+      ttlSeconds: pdf.ttlSeconds,
+    };
   }
 
   return (
@@ -83,15 +195,6 @@ export function OccurrencePreviewPage(props: {
               <RefreshCw className="w-4 h-4" />
               {getPdf.isPending ? "Gerando..." : "Gerar PDF"}
             </button>
-
-            <button
-              onClick={handleDownload}
-              disabled={!signedUrl}
-              className="h-10 px-4 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
-            >
-              <FileDown className="w-4 h-4" />
-              Baixar PDF
-            </button>
           </div>
         </div>
       </header>
@@ -114,16 +217,39 @@ export function OccurrencePreviewPage(props: {
               "Gere o PDF para habilitar o download."
             )}
           </div>
+        </div>
+        {/* PDF por motorista */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-900">
+              PDF por motorista
+            </h2>
+            <p className="text-sm text-gray-600">
+              Baixe com nome padronizado e status por motorista.
+            </p>
+          </div>
 
-          <button
-            onClick={() => handleGenerate(true)}
-            disabled={getPdf.isPending}
-            className="h-9 px-3 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50 flex items-center gap-2 text-sm"
-            title="Forçar regeneração"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Regenerar (force)
-          </button>
+          <div className="flex flex-col gap-4">
+            {drivers.d1 ? (
+              <DriverPdfCard
+                occurrenceId={occurrenceId}
+                occurrenceTitle={getOccurrenceTitle(occurrence)}
+                eventDate={occurrence.dataEvento}
+                driver={drivers.d1}
+                getOrCreateSignedUrl={getOrCreateSignedUrl}
+              />
+            ) : null}
+
+            {drivers.d2 ? (
+              <DriverPdfCard
+                occurrenceId={occurrenceId}
+                occurrenceTitle={getOccurrenceTitle(occurrence)}
+                eventDate={occurrence.dataEvento}
+                driver={drivers.d2}
+                getOrCreateSignedUrl={getOrCreateSignedUrl}
+              />
+            ) : null}
+          </div>
         </div>
 
         {/* Resumo (simples por enquanto) */}
@@ -133,19 +259,20 @@ export function OccurrencePreviewPage(props: {
             <div>
               <div className="text-gray-500">Linha</div>
               <div className="font-medium text-gray-900">
-                {occurrence.viagem.linha}
+                {getViagemLinha(occurrence.viagem)}
               </div>
             </div>
             <div>
               <div className="text-gray-500">Prefixo</div>
               <div className="font-medium text-gray-900">
-                {occurrence.viagem.prefixo}
+                {getViagemPrefixo(occurrence.viagem)}
               </div>
             </div>
             <div className="col-span-2">
               <div className="text-gray-500">Origem x Destino</div>
               <div className="font-medium text-gray-900">
-                {occurrence.viagem.origem} x {occurrence.viagem.destino}
+                {getViagemOrigem(occurrence.viagem)} x{" "}
+                {getViagemDestino(occurrence.viagem)}
               </div>
             </div>
             <div>

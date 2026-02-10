@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ArrowLeft,
   Save,
@@ -8,7 +8,13 @@ import {
   X,
   AlertCircle,
 } from "lucide-react";
-import { Viagem, Motorista, Evidencia, Ocorrencia } from "../types";
+import {
+  Viagem,
+  Motorista,
+  Evidencia,
+  Ocorrencia,
+  ViagemCatalog,
+} from "../types";
 import { AutocompleteViagem } from "../components/autocomplete-viagem";
 import { EvidenciasGrid } from "../components/evidencias-grid";
 import { BaseChip } from "../components/base-chip";
@@ -20,25 +26,24 @@ import type { Driver } from "../../domain/drivers";
 import { useCreateOccurrence } from "../../features/occurrences/queries/occurrences.queries";
 import { buildOccurrencePayload } from "../../features/occurrences/buildOccurrencePayload";
 
+import { getApiErrorMessage } from "../../api/http";
+import { toast } from "sonner";
+
+import { viagensCatalog } from "../../catalogs/viagens.catalog";
+
 import {
   gerarTextoRelatorioIndividual,
   gerarTextoWhatsApp,
 } from "../utils/relatorio";
 
+import { occurrencesApi } from "../../api/occurrences.api";
+
 interface NovaOcorrenciaProps {
-  viagens: Viagem[];
   onVoltar: () => void;
   onSaved: (args: { id: string; view: Ocorrencia }) => void;
 }
 
-export function NovaOcorrencia({
-  viagens,
-  onVoltar,
-  onSaved,
-}: NovaOcorrenciaProps) {
-  const [viagemSelecionada, setViagemSelecionada] = useState<Viagem | null>(
-    null,
-  );
+export function NovaOcorrencia({ onVoltar, onSaved }: NovaOcorrenciaProps) {
   const [motorista2Ativo, setMotorista2Ativo] = useState(false);
   const [dataEvento, setDataEvento] = useState(
     new Date().toISOString().split("T")[0],
@@ -59,6 +64,10 @@ export function NovaOcorrencia({
   const [isDriverModalOpen, setIsDriverModalOpen] = useState(false);
   const [createTarget, setCreateTarget] = useState<1 | 2 | null>(null);
 
+  const [dataViagem, setDataViagem] = useState(
+    new Date().toISOString().split("T")[0],
+  );
+
   const isHorarioValido = () => {
     if (!horarioInicial || !horarioFinal) return true;
     const [hI, mI] = horarioInicial.split(":").map(Number);
@@ -68,41 +77,103 @@ export function NovaOcorrencia({
     return totalFinal > totalInicial;
   };
 
+  const [viagemSelecionada, setViagemSelecionada] =
+    useState<ViagemCatalog | null>(null);
+
   const isFormValido = () => {
     const driversOk = !!driver1 && (!driver2Id || driver2Id !== driver1Id);
 
     return (
       viagemSelecionada &&
       dataEvento &&
+      dataViagem &&
       horarioInicial &&
       horarioFinal &&
       localParada.trim() &&
+      vehicleNumber.trim() &&
       isHorarioValido() &&
       driversOk
     );
   };
 
+  const [vehicleNumber, setVehicleNumber] = useState("");
+
+  useEffect(() => {
+    const onPaste = (ev: ClipboardEvent) => {
+      const items = ev.clipboardData?.items;
+      if (!items) return;
+
+      const images: File[] = [];
+      for (const item of items) {
+        if (item.type.startsWith("image/")) {
+          const file = item.getAsFile();
+          if (file) images.push(file);
+        }
+      }
+
+      if (!images.length) return;
+
+      ev.preventDefault();
+
+      setEvidencias((prev) => {
+        const next = [...prev];
+        for (const f of images) {
+          next.push({
+            id: crypto.randomUUID(),
+            url: URL.createObjectURL(f),
+            file: f,
+            legenda: "",
+          });
+        }
+        return next;
+      });
+
+      toast.success(`${images.length} print(s) colado(s) em Evidências`);
+    };
+
+    window.addEventListener("paste", onPaste);
+    return () => window.removeEventListener("paste", onPaste);
+  }, []);
+
   const handleSalvar = async () => {
     if (!isFormValido() || !viagemSelecionada) return;
+    const lineLabel = `${viagemSelecionada.codigoLinha} - ${viagemSelecionada.nomeLinha}`;
 
     try {
+      console.log("dataEvento =>", dataEvento);
       const payload = buildOccurrencePayload({
         driver1Id,
         driver2Id,
         motorista2Ativo,
-        date: dataEvento,
+        eventDate: dataEvento,
+        tripDate: dataViagem,
         startTime: horarioInicial,
         endTime: horarioFinal,
-        location: localParada,
+        place: localParada,
+        vehicleNumber,
         tripId: viagemSelecionada.id,
+        lineLabel,
+        typeCode: "DESCUMP_OP_PARADA_FORA",
       });
+      console.log("payload =>", payload);
+      console.log("payload.eventDate =>", (payload as any).eventDate);
+      console.log("payload.tripDate  =>", (payload as any).tripDate);
+      console.log("payload.place     =>", (payload as any).place);
+      console.log("payload.vehicleNumber =>", (payload as any).vehicleNumber);
+      console.log("payload.typeCode =>", (payload as any).typeCode);
 
       // 👇 AQUI ESTÁ A VIRADA DE CHAVE
       const created = await createOccurrence.mutateAsync(payload);
 
+      const files = evidencias.map((e) => e.file).filter(Boolean) as File[];
+      if (files.length) {
+        await occurrencesApi.uploadEvidences(created.id, files);
+      }
+
       const novaOcorrenciaView: Ocorrencia = {
         id: created.id,
-        viagem: viagemSelecionada,
+        viagem: toViagemView(viagemSelecionada),
+
         motorista1: toMotoristaView(driver1)!,
         motorista2: motorista2Ativo ? toMotoristaView(driver2) : undefined,
         dataEvento,
@@ -114,7 +185,9 @@ export function NovaOcorrencia({
       };
 
       onSaved({ id: created.id, view: novaOcorrenciaView });
-    } catch (e) {}
+    } catch (e) {
+      toast.error(getApiErrorMessage(e));
+    }
   };
 
   const handleGerarRelatorio = () => {
@@ -126,7 +199,8 @@ export function NovaOcorrencia({
 
     const ocorrenciaTemp: Ocorrencia = {
       id: "temp",
-      viagem: viagemSelecionada,
+      viagem: toViagemView(viagemSelecionada),
+
       motorista1: m1,
       motorista2: m2,
       dataEvento,
@@ -151,7 +225,8 @@ export function NovaOcorrencia({
 
     const ocorrenciaTemp: Ocorrencia = {
       id: "temp",
-      viagem: viagemSelecionada,
+      viagem: toViagemView(viagemSelecionada),
+
       motorista1: m1,
       motorista2: m2,
       dataEvento,
@@ -164,10 +239,25 @@ export function NovaOcorrencia({
 
     const texto = gerarTextoWhatsApp(ocorrenciaTemp);
     navigator.clipboard.writeText(texto);
-    alert("Texto copiado para WhatsApp!");
+    toast.success("Texto copiado para o WhatsApp!");
   };
 
   const createOccurrence = useCreateOccurrence();
+
+  function toViagemView(v: ViagemCatalog): Viagem {
+    const parts = (v.nomeLinha ?? "").split(" - ").map((s) => s.trim());
+    const origem = parts[0] ?? "—";
+    const destino = parts[1] ?? "—";
+
+    return {
+      id: v.id,
+      linha: `${v.codigoLinha} - ${v.nomeLinha}`,
+      prefixo: vehicleNumber,
+      horario: v.horaPartida,
+      origem,
+      destino,
+    };
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -203,7 +293,7 @@ export function NovaOcorrencia({
             </h2>
             <div className="space-y-4">
               <AutocompleteViagem
-                viagens={viagens}
+                viagens={viagensCatalog.rows}
                 value={viagemSelecionada}
                 onChange={(v) => {
                   setViagemSelecionada(v);
@@ -213,6 +303,7 @@ export function NovaOcorrencia({
                   setDriver2Id(null);
                   setDriver1(null);
                   setDriver2(null);
+                  setShowPreview(false);
                 }}
               />
 
@@ -221,23 +312,24 @@ export function NovaOcorrencia({
                   <div>
                     <label className="text-xs text-gray-600">Linha</label>
                     <p className="font-medium text-gray-900">
-                      {viagemSelecionada.linha}
+                      {viagemSelecionada.codigoLinha} -{" "}
+                      {viagemSelecionada.nomeLinha}
                     </p>
                   </div>
+
                   <div>
                     <label className="text-xs text-gray-600">
                       Horário da Viagem
                     </label>
                     <p className="font-medium text-gray-900">
-                      {viagemSelecionada.horario}
+                      {viagemSelecionada.horaPartida}
                     </p>
                   </div>
+
                   <div className="col-span-2">
-                    <label className="text-xs text-gray-600">
-                      Origem x Destino
-                    </label>
+                    <label className="text-xs text-gray-600">Sentido</label>
                     <p className="font-medium text-gray-900">
-                      {viagemSelecionada.origem} x {viagemSelecionada.destino}
+                      {viagemSelecionada.sentido}
                     </p>
                   </div>
                 </div>
@@ -371,7 +463,7 @@ export function NovaOcorrencia({
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-4 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Data do Evento *
@@ -380,6 +472,18 @@ export function NovaOcorrencia({
                     type="date"
                     value={dataEvento}
                     onChange={(e) => setDataEvento(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Data da Viagem *
+                  </label>
+                  <input
+                    type="date"
+                    value={dataViagem}
+                    onChange={(e) => setDataViagem(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -422,6 +526,20 @@ export function NovaOcorrencia({
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Prefixo do Veículo *
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={vehicleNumber}
+                  onChange={(e) => setVehicleNumber(e.target.value)}
+                  placeholder="Ex: 24615"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Local da Parada *
                 </label>
                 <input
@@ -448,15 +566,17 @@ export function NovaOcorrencia({
             <div className="flex gap-3">
               <button
                 onClick={handleSalvar}
-                disabled={!isFormValido()}
+                disabled={!isFormValido() || createOccurrence.isPending}
                 className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium flex-1"
               >
                 <Save className="w-5 h-5" />
-                Salvar Ocorrência
+                {createOccurrence.isPending
+                  ? "Salvando..."
+                  : "Salvar Ocorrência"}
               </button>
               <button
                 onClick={handleGerarRelatorio}
-                disabled={!isFormValido()}
+                disabled={!isFormValido() || createOccurrence.isPending}
                 className="flex items-center gap-2 px-6 py-3 bg-gray-700 text-white rounded-lg hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium flex-1"
               >
                 <FileText className="w-5 h-5" />
@@ -464,7 +584,7 @@ export function NovaOcorrencia({
               </button>
               <button
                 onClick={handleCopiarWhatsApp}
-                disabled={!isFormValido()}
+                disabled={!isFormValido() || createOccurrence.isPending}
                 className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium flex-1"
               >
                 <MessageCircle className="w-5 h-5" />
@@ -494,7 +614,8 @@ export function NovaOcorrencia({
               <pre className="text-sm whitespace-pre-wrap font-mono text-gray-800">
                 {gerarTextoRelatorioIndividual({
                   id: "temp",
-                  viagem: viagemSelecionada,
+                  viagem: toViagemView(viagemSelecionada),
+
                   motorista1: toMotoristaView(driver1)!,
                   motorista2: motorista2Ativo
                     ? toMotoristaView(driver2)

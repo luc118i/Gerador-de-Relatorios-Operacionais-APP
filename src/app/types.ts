@@ -11,8 +11,6 @@ export interface Viagem {
   horario: string;
   origem: string;
   destino: string;
-  motorista1: Motorista;
-  motorista2?: Motorista;
 }
 
 export interface Evidencia {
@@ -24,7 +22,7 @@ export interface Evidencia {
 
 export interface Ocorrencia {
   id: string;
-  viagem: Viagem;
+  viagem: Viagem | ViagemCatalog;
   motorista1: Motorista;
   motorista2?: Motorista;
   dataEvento: string;
@@ -34,3 +32,23 @@ export interface Ocorrencia {
   evidencias: Evidencia[];
   createdAt: string;
 }
+
+export type ApiError = {
+  error: {
+    code: string;
+    message: string;
+    issues?: Array<{
+      code: string;
+      message: string;
+      path: Array<string | number>;
+    }>;
+  };
+};
+
+export type ViagemCatalog = {
+  id: string; // chave composta dedup
+  codigoLinha: string;
+  nomeLinha: string;
+  horaPartida: string;
+  sentido: string;
+};

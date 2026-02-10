@@ -25,9 +25,6 @@ export default function App() {
     useState<Ocorrencia | null>(null);
 
   const handleSavedToPreview = (args: { id: string; view: Ocorrencia }) => {
-    // (híbrido temporário) mantém Home funcionando com mocks
-    setOcorrencias((prev) => [...prev, args.view]);
-
     toast.success("Ocorrência salva! Abrindo preview...");
     setPreviewOccurrenceId(args.id);
     setPreviewOccurrenceView(args.view);
