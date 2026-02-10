@@ -1,14 +1,10 @@
 import { request } from "./http";
 import type { CreateOccurrenceInput } from "../domain/occurrences";
+import type { OccurrenceDTO } from "../domain/occurrences";
 
 const BASE_URL = "http://localhost:3333";
 
 export type ApiData<T> = { data: T };
-
-export type OccurrenceDTO = {
-  id: string;
-  createdAt?: string;
-};
 
 export type CreateOccurrenceResponse = { id: string };
 
@@ -48,3 +44,15 @@ export const occurrencesApi = {
     return res.json();
   },
 };
+
+export async function getOccurrencesByDay(
+  date: string,
+): Promise<OccurrenceDTO[]> {
+  const res = await fetch(`${BASE_URL}/occurrences?date=${date}`);
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body?.error ?? `HTTP ${res.status}`);
+  }
+  const json = (await res.json()) as { data: OccurrenceDTO[] };
+  return json.data ?? [];
+}
