@@ -1,8 +1,11 @@
 import { request } from "./http";
-import type { CreateOccurrenceInput } from "../domain/occurrences";
+import type {
+  CreateOccurrenceInput,
+  OccurrenceDetailDTO,
+} from "../domain/occurrences";
 import type { OccurrenceDTO } from "../domain/occurrences";
 
-const BASE_URL = "http://localhost:3333";
+const BASE_URL = import.meta.env.VITE_API_URL as string;
 
 export type ApiData<T> = { data: T };
 
@@ -25,6 +28,14 @@ export const occurrencesApi = {
     });
   },
 
+  async getOccurrenceById(id: string): Promise<OccurrenceDTO> {
+    const json = await request<ApiData<OccurrenceDTO>>({
+      method: "GET",
+      path: `/occurrences/${id}`,
+    });
+    return json.data;
+  },
+
   async uploadEvidences(occurrenceId: string, files: File[]) {
     const form = new FormData();
     for (const f of files) form.append("files", f);
@@ -37,10 +48,7 @@ export const occurrencesApi = {
       },
     );
 
-    if (!res.ok) {
-      throw new Error(await res.text());
-    }
-
+    if (!res.ok) throw new Error(await res.text());
     return res.json();
   },
 };

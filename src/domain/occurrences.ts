@@ -6,6 +6,10 @@ export type OccurrenceDriverDTO = {
   baseCode: string;
 };
 
+export type OccurrenceDetailDTO = OccurrenceDTO & {
+  reportText: string; // texto do relato completo
+};
+
 export type OccurrenceDriverInput = {
   position: 1 | 2;
   driverId: string;

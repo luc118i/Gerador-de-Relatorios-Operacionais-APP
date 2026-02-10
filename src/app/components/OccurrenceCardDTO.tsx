@@ -1,16 +1,24 @@
 import { Camera, Clock } from "lucide-react";
-import { BaseChip } from "./base-chip";
 import type { OccurrenceDTO } from "../../domain/occurrences";
+import { BaseChip } from "./base-chip";
 
-interface OccurrenceCardDTOProps {
+interface OccurrenceCardProps {
   occurrence: OccurrenceDTO;
-  onClick?: () => void;
+  onOpen?: () => void;
 }
 
-export function OccurrenceCardDTO({
-  occurrence,
-  onClick,
-}: OccurrenceCardDTOProps) {
+export type OccurrenceDetailDTO = OccurrenceDTO & {
+  reportText: string;
+  drivers: Array<{ name: string; registry?: string | null }>;
+  // se tiver evidências:
+  evidences?: Array<{
+    id: string;
+    publicUrl?: string | null;
+    caption?: string | null;
+  }>;
+};
+
+export function OccurrenceCard({ occurrence, onOpen }: OccurrenceCardProps) {
   const tempoParada = calcularTempoParada(
     occurrence.startTime,
     occurrence.endTime,
@@ -22,7 +30,7 @@ export function OccurrenceCardDTO({
   return (
     <div
       className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
-      onClick={onClick}
+      onClick={onOpen}
     >
       <div className="flex items-start justify-between mb-3">
         <div>
@@ -30,15 +38,11 @@ export function OccurrenceCardDTO({
             <span className="font-semibold text-lg text-gray-900">
               {occurrence.vehicleNumber}
             </span>
-
-            {/* Chip de base (código). Se quiser nome, troco pra driver1?.baseCode */}
             <BaseChip base={driver1?.baseCode ?? occurrence.baseCode} />
           </div>
 
           <p className="text-sm text-gray-600">
-            {occurrence.lineLabel
-              ? `Linha ${occurrence.lineLabel}`
-              : occurrence.typeTitle}
+            {occurrence.lineLabel ? occurrence.lineLabel : occurrence.typeTitle}
           </p>
         </div>
 
@@ -78,7 +82,9 @@ function calcularTempoParada(inicio: string, fim: string): string {
 
   const totalMinutosInicio = hI * 60 + mI;
   const totalMinutosFim = hF * 60 + mF;
-  const diff = totalMinutosFim - totalMinutosInicio;
+
+  let diff = totalMinutosFim - totalMinutosInicio;
+  if (diff < 0) diff += 24 * 60; // atravessou meia-noite
 
   const horas = Math.floor(diff / 60);
   const minutos = diff % 60;

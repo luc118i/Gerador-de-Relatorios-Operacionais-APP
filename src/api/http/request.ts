@@ -1,6 +1,6 @@
 import { ApiError, type ApiErrorPayload } from "./errors";
 
-const BASE_URL = "http://localhost:3333";
+const BASE_URL = import.meta.env.VITE_API_URL as string;
 
 type RequestOptions = {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";

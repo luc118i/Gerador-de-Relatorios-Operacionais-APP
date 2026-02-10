@@ -9,12 +9,14 @@ export function useCreateOccurrence() {
   return useMutation({
     mutationFn: (input: CreateOccurrenceInput) =>
       occurrencesApi.createOccurrence(input),
+
     onSuccess: (_created, variables) => {
-      // Se você enviar date, dá pra invalidar por dia também
       qc.invalidateQueries({ queryKey: occurrencesKeys.all });
-      if (variables.date) {
+
+      // invalidar o dia do evento (eventDate)
+      if (variables.eventDate) {
         qc.invalidateQueries({
-          queryKey: occurrencesKeys.byDate(variables.date),
+          queryKey: occurrencesKeys.byDate(variables.eventDate),
         });
       }
     },

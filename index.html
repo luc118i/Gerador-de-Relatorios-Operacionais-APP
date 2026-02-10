@@ -1,15 +1,39 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
 
-  <!DOCTYPE html>
-  <html lang="en">
-    <head>
-      <meta charset="UTF-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>Gerador de Relatórios Operacionais</title>
-    </head>
+    <!-- Responsividade -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <body>
-      <div id="root"></div>
-      <script type="module" src="/src/main.tsx"></script>
-    </body>
-  </html>
-  
+    <!-- Título -->
+    <title>Gerador de Relatórios Operacionais</title>
+
+    <!-- SEO básico -->
+    <meta
+      name="description"
+      content="Sistema interno para registro, visualização e consolidação de ocorrências operacionais de viagens."
+    />
+    <meta name="author" content="Lucas Luiz Inacio da Silva" />
+
+    <!-- Cor da barra do navegador (mobile) -->
+    <meta name="theme-color" content="#0f172a" />
+
+    <!-- Favicon (adicione depois em /public) -->
+    <link rel="icon" type="image/png" href="/favicon.png" />
+
+    <!-- Preconnect para performance (se usar fontes externas depois) -->
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  </head>
+
+  <body class="bg-gray-50">
+    <noscript>
+      Você precisa habilitar o JavaScript para usar este sistema.
+    </noscript>
+
+    <div id="root"></div>
+
+    <!-- Vite injeta o bundle aqui no build -->
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

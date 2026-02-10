@@ -3,7 +3,7 @@ import { Home } from "./pages/home";
 import { NovaOcorrencia } from "./pages/nova-ocorrencia";
 import { RelatorioDiario } from "./pages/relatorio-diario";
 import { Ocorrencia } from "./types";
-import { VIAGENS_MOCK, OCORRENCIAS_MOCK } from "./mock-data";
+
 import { toast, Toaster } from "sonner";
 import { OccurrencePreviewPage } from "./pages/occurrences/preview/OccurrencePreviewPage";
 
@@ -15,8 +15,6 @@ type Page =
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>("home");
-  const [ocorrencias, setOcorrencias] =
-    useState<Ocorrencia[]>(OCORRENCIAS_MOCK);
 
   const [previewOccurrenceId, setPreviewOccurrenceId] = useState<string | null>(
     null,
@@ -37,7 +35,6 @@ export default function App() {
 
       {currentPage === "home" && (
         <Home
-          ocorrencias={ocorrencias}
           onNovaOcorrencia={() => setCurrentPage("nova-ocorrencia")}
           onGerarRelatorio={() => setCurrentPage("relatorio-diario")}
         />
@@ -45,17 +42,13 @@ export default function App() {
 
       {currentPage === "nova-ocorrencia" && (
         <NovaOcorrencia
-          viagens={VIAGENS_MOCK}
           onVoltar={() => setCurrentPage("home")}
           onSaved={handleSavedToPreview}
         />
       )}
 
       {currentPage === "relatorio-diario" && (
-        <RelatorioDiario
-          ocorrencias={ocorrencias}
-          onVoltar={() => setCurrentPage("home")}
-        />
+        <RelatorioDiario onVoltar={() => setCurrentPage("home")} />
       )}
 
       {currentPage === "preview-ocorrencia" &&
