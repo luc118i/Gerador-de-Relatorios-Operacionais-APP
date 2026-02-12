@@ -1,16 +1,199 @@
-Codigo Linha,Nome da Linha ,Hora Partida,Classe Conforto,Sentido
-DFSP0053016,BRASILIA (DF) - SAO PAULO (SP),14:00,Leito - Executiva,Ida
-Codigo Linha,Nome da Linha ,Hora Partida,Classe Conforto,Sentido
-DFSP0053016,SAO PAULO (SP) - BRASILIA (DF),15:00,Leito - Executiva,Volta
-Codigo Linha,Nome da Linha ,Hora Partida,Classe Conforto,Sentido
-DFSP0053016,BRASILIA (DF) - SAO PAULO (SP),18:45,Leito - Executiva,Ida
-Codigo Linha,Nome da Linha ,Hora Partida,Classe Conforto,Sentido
-DFSP0053016,BRASILIA (DF) - SAO PAULO (SP),22:00,Leito - Executiva,Ida
-Codigo Linha,Nome da Linha ,Hora Partida,Classe Conforto,Sentido
-DFSP0053016,SAO PAULO (SP) - BRASILIA (DF),22:30,Leito - Executiva,Volta
-Codigo Linha,Nome da Linha ,Hora Partida,Classe Conforto,Sentido
-DFSP0053016,SAO PAULO (SP) - BRASILIA (DF),18:45,Leito - Executiva,Volta
-Codigo Linha,Nome da Linha ,Hora Partida,Classe Conforto,Sentido
-DFSP0053055,BRASILIA (DF) - SAO PAULO (SP),08:00,Leito - Executiva,Ida
-Codigo Linha,Nome da Linha ,Hora Partida,Classe Conforto,Sentido
-DFSP0053055,SAO PAULO (SP) - BRASILIA (DF),12:30,Leito - Executiva,volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+DFSP0053016,BRASILIA (DF) - SAO PAULO (SP),14:00,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+DFSP0053016,SAO PAULO (SP) - BRASILIA (DF),15:00,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+DFSP0053016,BRASILIA (DF) - SAO PAULO (SP),18:45,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+DFSP0053016,BRASILIA (DF) - SAO PAULO (SP),22:00,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+DFSP0053016,SAO PAULO (SP) - BRASILIA (DF),22:30,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+DFSP0053016,SAO PAULO (SP) - BRASILIA (DF),18:45,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+DFSP0053055,BRASILIA (DF) - SAO PAULO (SP),08:00,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+DFSP0053055,SAO PAULO (SP) - BRASILIA (DF),12:30,volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+MGDF0215001,ITACARAMBI (MG) - BRASÍLIA (DF),15:00,ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+MGDF0215001,ITACARAMBI (MG) - BRASÍLIA (DF),15:00,ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+MGDF0215001,BRASÍLIA (DF) - ITACARAMBI (MG),17:40,volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+MGDF0215001,BRASÍLIA (DF) - ITACARAMBI (MG),17:40,volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+GORN0053034,GOIANIA (GO) - NATAL (RN),15:30,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+GORN0053034,GOIANIA (GO) - NATAL (RN),10:00,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+GORN0053034,GOIANIA (GO) - NATAL (RN),18:20,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+GORN0053033,GOIANIA (GO) - NATAL (RN),04:00,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+GORN0053033,GOIANIA (GO) - NATAL (RN),10:00,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+RNSP0053046,NATAL (RN) - SAO PAULO (SP),01:00,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+RNSP0053046,NATAL (RN) - SAO PAULO (SP),14:00,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+RNSP0053039,NATAL (RN) - SAO PAULO (SP),08:00,Ida
+RNSP0053039,NATAL (RN) - SAO PAULO (SP),08:00,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+RNSP0053039,NATAL (RN) - SAO PAULO (SP),08:00,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+RNSP0053041,NATAL (RN) - SAO PAULO (SP),10:30,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+RNSP0053041,NATAL (RN) - SAO PAULO (SP),17:00,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+DFGO0053049,Brasília (DF) - Goiânia (GO),07:00,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+DFGO0053049,Goiânia (GO) - Brasília (DF),07:00,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+DFGO0053049,Brasília (DF) - Goiânia (GO),09:00,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+DFGO0053049,Goiânia (GO) - Brasília (DF),09:00,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+DFGO0053049,Brasília (DF) - Goiânia (GO),11:00,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+DFGO0053049,Goiânia (GO) - Brasília (DF),11:00,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+DFGO0053049,Brasília (DF) - Goiânia (GO),13:00,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+DFGO0053049,Goiânia (GO) - Brasília (DF),13:00,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+DFGO0053049,Goiânia (GO) - Brasília (DF),14:30,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+DFGO0053049,Goiânia (GO) - Brasília (DF),14:30,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+DFGO0053049,Brasília (DF) - Goiânia (GO),15:00,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+DFGO0053049,Brasília (DF) - Goiânia (GO),15:00,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+DFGO0053049,Goiânia (GO) - Brasília (DF),16:00,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+DFGO0053049,Brasília (DF) - Goiânia (GO),17:00,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+DFGO0053049,Goiânia (GO) - Brasília (DF),18:00,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+DFGO0053049,Brasília (DF) - Goiânia (GO),18:30,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+GOTO0053017,GOIANIA (GO) - PALMAS (TO),18:45,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+GOTO0053017,GOIANIA (GO) - PALMAS (TO),18:45,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+GOTO0053017,PALMAS (TO) - GOIANIA (GO) ,18:45,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+GOTO0053017,PALMAS (TO) - GOIANIA (GO) ,18:45,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+GOTO0053044,GOIANIA (GO) - PALMAS (TO),19:15,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+GOTO0053044,GOIANIA (GO) - PALMAS (TO),19:15,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+GOTO0053044,PALMAS (TO) - GOIANIA (GO) ,19:15,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+GOTO0053044,PALMAS (TO) - GOIANIA (GO) ,19:15,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+BADF0053048,Barreiras (BA)  - Brasília (DF) ,21:00,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+BADF0053048,Barreiras (BA)  - Brasília (DF) ,21:00,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+BADF0053048,Brasília (DF) - Barreiras (BA)  ,20:30,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+BADF0053048,Brasília (DF) - Barreiras (BA)  ,20:30,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+BAGO0053051,BARREIRAS(BA) - GOIANIA(GO)            ,19:00,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+BAGO0053051,BARREIRAS(BA) - GOIANIA(GO)            ,19:00,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+BAGO0053051,GOIANIA(GO) - BARREIRAS(BA) ,19:00,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+BAGO0053051,GOIANIA(GO) - BARREIRAS(BA) ,19:00,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+GOBA0053025,TRINDADE(GO) - TABOCAS DO BREJO VELHO(BA),16:00,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+GOBA0053025,TRINDADE(GO) - TABOCAS DO BREJO VELHO(BA),16:00,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+GOBA0053025,TABOCAS DO BREJO VELHO(BA) - TRINDADE(GO),16:30,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+GOBA0053025,TABOCAS DO BREJO VELHO(BA) - TRINDADE(GO),16:30,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+GOPI0053027,TRINDADE(GO) - CORRENTE(PI)                                                                        ,17:00,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+GOPI0053027,CORRENTE(PI) - TRINDADE(GO),17:00,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+GORN0053035,APODI (RN) - TRINDADE(GO) ,06:30,volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+MGDF0115001,BRASILIA (DF) - BELO HORIZONTE (MG),18:30,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+MGDF0115001,BRASILIA (DF) - BELO HORIZONTE (MG),18:30,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+MGDF0115001,BELO HORIZONTE (MG) - BRASILIA (DF),19:30,ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+MGDF0115001,BELO HORIZONTE (MG) - BRASILIA (DF),19:30,ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+GOSP0053028,GOIÂNIA (GO) - SAO PAULO(SP),06:00,ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+GOSP0053028,SAO PAULO(SP) - GOIÂNIA (GO) -,14:00,volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+BAGO0053052,COCOS (BA) - GOIANIA (GO),17:45,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+BAGO0053052,COCOS (BA) - GOIANIA (GO),18:30,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+DFPI0053015,BRASILIA (DF) - TERESINA (PI),12:00,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+DFPI0053015,BRASILIA (DF) - TERESINA (PI),13:00,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+RNBA0053054,NATAL (RN) - SALVADOR (BA),07:55,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+RNBA0053054,NATAL (RN) - SALVADOR (BA),09:45,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+CERN0053047,NATAL (RN) - FORTALEZA (CE),21:00,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+CERN0053047,NATAL (RN) - FORTALEZA (CE),23:00,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+CEPE0053050,FORTALEZA (CE) - RECIFE(PE),16:20,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+CEPE0053050,FORTALEZA (CE) - RECIFE(PE),18:45,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+CEPE0053050,FORTALEZA (CE) - RECIFE(PE),19:30,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+CEPE0053050,FORTALEZA (CE) - RECIFE(PE),16:10,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+CEPE0053050,FORTALEZA (CE) - RECIFE(PE),18:30,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+CEPE0053050,FORTALEZA (CE) - RECIFE(PE),21:00,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+CEPE0053050,FORTALEZA (CE) - RECIFE(PE),19:30,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+BAPE0023009,SALVADOR (BA) X RECIFE (PE),16:00,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+BAPE0023009,SALVADOR (BA) X RECIFE (PE),21:10,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+BAPE0023009,SALVADOR (BA) X RECIFE (PE),18:10,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+BAPE0023009,SALVADOR (BA) X RECIFE (PE),18:10,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+BAPE0023009,SALVADOR (BA) X RECIFE (PE),18:10,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+BAPE0023009,SALVADOR (BA) X RECIFE (PE),18:30,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+BAPE0023009,SALVADOR (BA) X RECIFE (PE),18:30,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+BAPE0023009,SALVADOR (BA) X RECIFE (PE),18:30,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+BAPE0023009,SALVADOR (BA) X RECIFE (PE),21:00,ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+BASP0053030,SALVADOR (BA) - SAO PAULO (SP),21:00,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+BASP0053030,SALVADOR (BA) - SAO PAULO (SP),21:00,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+PESP0053021,RECIFE (PE) - SAO PAULO (SP),06:30,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+PESP0053021,RECIFE (PE) - SAO PAULO (SP),20:00,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+ALSP0053032,MACEIO (AL) - SAO PAULO (SP),08:00,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+MGPI0053023,UBERLANDIA (MG) - TERESINA (PI),02:30,Ida
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+MGPI0053023,UBERLANDIA (MG) - TERESINA (PI),13:00,Volta

@@ -267,7 +267,7 @@ export function NovaOcorrencia({ onVoltar, onSaved }: NovaOcorrenciaProps) {
           <div className="flex items-center gap-4">
             <button
               onClick={onVoltar}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="cursor-pointer p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5 text-gray-600" />
             </button>
@@ -394,7 +394,7 @@ export function NovaOcorrencia({ onVoltar, onSaved }: NovaOcorrenciaProps) {
                         setDriver2Id(null);
                         setDriver2(null);
                       }}
-                      className="absolute top-2 right-2 p-1 text-red-500 hover:bg-red-50 rounded transition-colors"
+                      className="cursor-pointer absolute top-2 right-2 p-1 text-red-500 hover:bg-red-50 rounded transition-colors"
                       title="Remover Motorista 02"
                     >
                       <X className="w-4 h-4" />
@@ -403,7 +403,7 @@ export function NovaOcorrencia({ onVoltar, onSaved }: NovaOcorrenciaProps) {
                 ) : (
                   <button
                     onClick={() => setMotorista2Ativo(true)}
-                    className="flex items-center gap-2 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    className="cursor-pointer flex items-center gap-2 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                   >
                     <Plus className="w-4 h-4" />
                     Adicionar Motorista 02
@@ -567,7 +567,7 @@ export function NovaOcorrencia({ onVoltar, onSaved }: NovaOcorrenciaProps) {
               <button
                 onClick={handleSalvar}
                 disabled={!isFormValido() || createOccurrence.isPending}
-                className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium flex-1"
+                className="cursor-pointer flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium flex-1"
               >
                 <Save className="w-5 h-5" />
                 {createOccurrence.isPending
@@ -577,7 +577,7 @@ export function NovaOcorrencia({ onVoltar, onSaved }: NovaOcorrenciaProps) {
               <button
                 onClick={handleGerarRelatorio}
                 disabled={!isFormValido() || createOccurrence.isPending}
-                className="flex items-center gap-2 px-6 py-3 bg-gray-700 text-white rounded-lg hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium flex-1"
+                className="cursor-pointer flex items-center gap-2 px-6 py-3 bg-gray-700 text-white rounded-lg hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium flex-1"
               >
                 <FileText className="w-5 h-5" />
                 Gerar Relatório Individual
@@ -585,7 +585,7 @@ export function NovaOcorrencia({ onVoltar, onSaved }: NovaOcorrenciaProps) {
               <button
                 onClick={handleCopiarWhatsApp}
                 disabled={!isFormValido() || createOccurrence.isPending}
-                className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium flex-1"
+                className="cursor-pointer flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium flex-1"
               >
                 <MessageCircle className="w-5 h-5" />
                 Copiar Texto WhatsApp
@@ -605,7 +605,7 @@ export function NovaOcorrencia({ onVoltar, onSaved }: NovaOcorrenciaProps) {
               </h3>
               <button
                 onClick={() => setShowPreview(false)}
-                className="p-1 hover:bg-gray-100 rounded transition-colors"
+                className="cursor-pointerp-1 hover:bg-gray-100 rounded transition-colors"
               >
                 <X className="w-5 h-5 text-gray-600" />
               </button>

@@ -8,6 +8,30 @@ type AutocompleteViagemProps = {
   onChange: (v: ViagemCatalog) => void;
 };
 
+function normalize(s: string) {
+  return (s ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // remove acentos
+    .trim();
+}
+
+function buildHaystack(v: ViagemCatalog) {
+  // tudo pesquisável no mesmo input
+  return normalize(
+    [
+      v.codigoLinha,
+      v.nomeLinha,
+      v.horaPartida,
+      v.sentido,
+      // opcional: também permitir achar por "codigo - nome"
+      `${v.codigoLinha} ${v.nomeLinha}`,
+    ]
+      .filter(Boolean)
+      .join(" "),
+  );
+}
+
 export function AutocompleteViagem({
   viagens,
   value,
@@ -30,19 +54,21 @@ export function AutocompleteViagem({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Pré-indexa para filtrar mais rápido
+  const indexed = useMemo(() => {
+    return viagens.map((v) => ({ v, hay: buildHaystack(v) }));
+  }, [viagens]);
+
   const filteredViagens = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = normalize(search);
     if (!q) return viagens;
 
-    return viagens.filter((v) => {
-      return (
-        v.codigoLinha.toLowerCase().includes(q) ||
-        v.nomeLinha.toLowerCase().includes(q) ||
-        v.horaPartida.toLowerCase().includes(q) ||
-        v.sentido.toLowerCase().includes(q)
-      );
-    });
-  }, [viagens, search]);
+    const tokens = q.split(/\s+/).filter(Boolean);
+
+    return indexed
+      .filter(({ hay }) => tokens.every((t) => hay.includes(t)))
+      .map(({ v }) => v);
+  }, [indexed, viagens, search]);
 
   const displayText = value
     ? `${value.codigoLinha} - ${value.nomeLinha} - ${value.horaPartida} (${value.sentido})`
@@ -57,13 +83,15 @@ export function AutocompleteViagem({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-left flex items-center justify-between hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="cursor-pointer w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-left flex items-center justify-between hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
       >
         <span className={value ? "text-gray-900" : "text-gray-400"}>
           {displayText}
         </span>
         <ChevronDown
-          className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          className={`w-4 h-4 text-gray-400 transition-transform ${
+            isOpen ? "rotate-180" : ""
+          }`}
         />
       </button>
 
@@ -72,7 +100,7 @@ export function AutocompleteViagem({
           <div className="p-2 border-b border-gray-200">
             <input
               type="text"
-              placeholder="Buscar por código, nome, horário ou sentido..."
+              placeholder="Buscar por código, nome, horário ou sentido... Ex: 330 brasilia 21:00 ida"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -95,7 +123,7 @@ export function AutocompleteViagem({
                     setIsOpen(false);
                     setSearch("");
                   }}
-                  className="w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-colors"
+                  className="cursor-pointer w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-colors"
                 >
                   <div className="flex items-start gap-2">
                     <Bus className="w-4 h-4 text-gray-400 mt-1" />

@@ -184,7 +184,7 @@ export function DriverPdfCard(props: {
             type="button"
             onClick={handleDownload}
             disabled={status === "generating"}
-            className="h-10 px-4 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2 text-sm"
+            className="cursor-pointer h-10 px-4 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2 text-sm"
           >
             <FileDown className="w-4 h-4" />
             {status === "generating" ? "Baixando..." : "Baixar PDF"}

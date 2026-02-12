@@ -110,7 +110,7 @@ export function OccurrencePreviewModal({ occurrenceId, open, onClose }: Props) {
               <button
                 onClick={handleDownloadPdf}
                 disabled={!occurrenceId || !occ || getPdf.isPending}
-                className="h-8 px-3 rounded-lg bg-gray-700 text-white text-sm hover:bg-gray-800 disabled:opacity-60 flex items-center gap-2"
+                className="cursor-pointer h-8 px-3 rounded-lg bg-gray-700 text-white text-sm hover:bg-gray-800 disabled:opacity-60 flex items-center gap-2"
               >
                 <FileText className="w-4 h-4" />
                 {getPdf.isPending ? "Baixando…" : "Baixar PDF"}
@@ -184,7 +184,7 @@ export function OccurrencePreviewModal({ occurrenceId, open, onClose }: Props) {
           <div className="px-6 py-4 border-t border-black/10 flex justify-end gap-2">
             <button
               onClick={onClose}
-              className="h-9 px-4 rounded-lg bg-white border border-black/10 hover:bg-gray-50 text-sm"
+              className="cursor-pointer h-9 px-4 rounded-lg bg-white border border-black/10 hover:bg-gray-50 text-sm"
             >
               Fechar
             </button>

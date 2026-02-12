@@ -10,6 +10,11 @@ function driverLabel(d: Driver) {
   return `${d.code} — ${d.name}${base}`;
 }
 
+export const inputAceso =
+  "bg-blue-50/50 border-blue-200 hover:border-blue-300 " +
+  "focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 " +
+  "transition";
+
 export function DriverPicker({
   label,
   value,
@@ -55,10 +60,24 @@ export function DriverPicker({
     return data.find((d) => d.id === value);
   }, [data, value]);
 
-  const displayText = selected
-    ? driverLabel(selected)
+  useEffect(() => {
+    if (!value) {
+      setSelectedDriver(null);
+      return;
+    }
+
+    // quando a lista carregou e contém o driver selecionado
+    if (selected) {
+      setSelectedDriver(selected);
+    }
+  }, [value, selected]);
+
+  const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
+
+  const displayText = selectedDriver
+    ? driverLabel(selectedDriver)
     : value
-      ? "Motorista selecionado"
+      ? "Carregando motorista..."
       : "Selecione um motorista";
 
   return (
@@ -72,10 +91,11 @@ export function DriverPicker({
         disabled={disabled}
         onClick={() => setIsOpen((v) => !v)}
         className={[
-          "w-full px-3 py-2 rounded-lg text-left flex items-center justify-between",
-          "border bg-white/70 border-white/40",
+          "cursor-pointer w-full px-3 py-2 rounded-lg text-left flex items-center justify-between",
+
           "hover:border-white/60",
           "focus:outline-none focus:ring-2 focus:ring-slate-900/15",
+          inputAceso,
           "disabled:opacity-60 disabled:cursor-not-allowed",
         ].join(" ")}
       >
@@ -101,9 +121,8 @@ export function DriverPicker({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className={[
-                "w-full h-10 px-3 rounded-lg border bg-white/70",
-                "border-white/40",
-                "focus:outline-none focus:ring-2 focus:ring-slate-900/15",
+                "w-full h-10 px-3 rounded-lg border",
+                inputAceso,
               ].join(" ")}
               autoFocus
             />
@@ -116,7 +135,7 @@ export function DriverPicker({
                   onCreateRequested();
                 }}
                 className={[
-                  "w-full h-10 px-3 rounded-lg",
+                  "cursor-pointer w-full h-10 px-3 rounded-lg",
                   "flex items-center justify-center gap-2",
                   "bg-white/60 border border-white/30",
                   "hover:bg-white/70",
@@ -148,12 +167,13 @@ export function DriverPicker({
                   key={d.id}
                   type="button"
                   onClick={() => {
+                    setSelectedDriver(d);
                     onChange(d.id, d);
                     setIsOpen(false);
                     setSearch("");
                   }}
                   className={[
-                    "w-full px-4 py-3 text-left",
+                    "cursor-pointer w-full px-4 py-3 text-left",
                     "hover:bg-white/60 border-b border-white/10 last:border-b-0",
                     "transition-colors",
                   ].join(" ")}

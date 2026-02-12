@@ -1,8 +1,8 @@
-import { useState, useRef } from 'react';
-import { Upload, X, GripVertical, Image as ImageIcon } from 'lucide-react';
-import { Evidencia } from '../types';
-import { DndProvider, useDrag, useDrop } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
+import { useState, useRef } from "react";
+import { Upload, X, GripVertical, Image as ImageIcon } from "lucide-react";
+import { Evidencia } from "../types";
+import { DndProvider, useDrag, useDrop } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
 
 interface EvidenciasGridProps {
   evidencias: Evidencia[];
@@ -20,7 +20,7 @@ export function EvidenciasGrid({ evidencias, onChange }: EvidenciasGridProps) {
       id: `${Date.now()}-${Math.random()}`,
       url: URL.createObjectURL(file),
       file,
-      legenda: ''
+      legenda: "",
     }));
 
     onChange([...evidencias, ...newEvidencias]);
@@ -42,11 +42,11 @@ export function EvidenciasGrid({ evidencias, onChange }: EvidenciasGridProps) {
   };
 
   const removeEvidencia = (id: string) => {
-    onChange(evidencias.filter(e => e.id !== id));
+    onChange(evidencias.filter((e) => e.id !== id));
   };
 
   const updateLegenda = (id: string, legenda: string) => {
-    onChange(evidencias.map(e => e.id === id ? { ...e, legenda } : e));
+    onChange(evidencias.map((e) => (e.id === id ? { ...e, legenda } : e)));
   };
 
   const moveEvidencia = (dragIndex: number, hoverIndex: number) => {
@@ -65,7 +65,7 @@ export function EvidenciasGrid({ evidencias, onChange }: EvidenciasGridProps) {
           </label>
           {evidencias.length > 0 && (
             <span className="text-sm text-gray-500">
-              {evidencias.length} foto{evidencias.length !== 1 ? 's' : ''}
+              {evidencias.length} foto{evidencias.length !== 1 ? "s" : ""}
             </span>
           )}
         </div>
@@ -78,8 +78,8 @@ export function EvidenciasGrid({ evidencias, onChange }: EvidenciasGridProps) {
           onClick={() => fileInputRef.current?.click()}
           className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors mb-4 ${
             isDragging
-              ? 'border-blue-500 bg-blue-50'
-              : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+              ? "border-blue-500 bg-blue-50"
+              : "border-gray-300 hover:border-gray-400 hover:bg-gray-50"
           }`}
         >
           <Upload className="w-12 h-12 text-gray-400 mx-auto mb-3" />
@@ -103,7 +103,8 @@ export function EvidenciasGrid({ evidencias, onChange }: EvidenciasGridProps) {
         {evidencias.length > 0 && (
           <div>
             <p className="text-xs text-gray-500 mb-3">
-              💡 As evidências serão inseridas automaticamente abaixo do texto do relatório
+              💡 As evidências serão inseridas automaticamente abaixo do texto
+              do relatório
             </p>
             <div className="grid grid-cols-2 gap-3">
               {evidencias.map((evidencia, index) => (
@@ -132,11 +133,17 @@ interface EvidenciaItemProps {
   onUpdateLegenda: (id: string, legenda: string) => void;
 }
 
-function EvidenciaItem({ evidencia, index, moveEvidencia, onRemove, onUpdateLegenda }: EvidenciaItemProps) {
+function EvidenciaItem({
+  evidencia,
+  index,
+  moveEvidencia,
+  onRemove,
+  onUpdateLegenda,
+}: EvidenciaItemProps) {
   const ref = useRef<HTMLDivElement>(null);
 
   const [{ isDragging }, drag] = useDrag({
-    type: 'evidencia',
+    type: "evidencia",
     item: { index },
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
@@ -144,7 +151,7 @@ function EvidenciaItem({ evidencia, index, moveEvidencia, onRemove, onUpdateLege
   });
 
   const [, drop] = useDrop({
-    accept: 'evidencia',
+    accept: "evidencia",
     hover: (item: { index: number }) => {
       if (!ref.current) return;
       const dragIndex = item.index;
@@ -161,7 +168,7 @@ function EvidenciaItem({ evidencia, index, moveEvidencia, onRemove, onUpdateLege
     <div
       ref={ref}
       className={`border border-gray-200 rounded-lg overflow-hidden bg-white ${
-        isDragging ? 'opacity-50' : ''
+        isDragging ? "opacity-50" : ""
       }`}
     >
       <div className="relative group">
@@ -175,7 +182,7 @@ function EvidenciaItem({ evidencia, index, moveEvidencia, onRemove, onUpdateLege
         </div>
         <button
           onClick={() => onRemove(evidencia.id)}
-          className="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+          className="cursor-pointer absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
         >
           <X className="w-4 h-4" />
         </button>
@@ -187,7 +194,7 @@ function EvidenciaItem({ evidencia, index, moveEvidencia, onRemove, onUpdateLege
         <input
           type="text"
           placeholder="Legenda (opcional)"
-          value={evidencia.legenda || ''}
+          value={evidencia.legenda || ""}
           onChange={(e) => onUpdateLegenda(evidencia.id, e.target.value)}
           className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
         />

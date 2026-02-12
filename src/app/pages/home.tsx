@@ -55,7 +55,7 @@ export function Home({ onNovaOcorrencia, onGerarRelatorio }: HomeProps) {
             <div className="flex gap-3">
               <button
                 onClick={onGerarRelatorio}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
               >
                 <FileText className="w-5 h-5" />
                 Relatório do Dia
@@ -63,9 +63,9 @@ export function Home({ onNovaOcorrencia, onGerarRelatorio }: HomeProps) {
 
               <button
                 onClick={onNovaOcorrencia}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium "
               >
-                <Plus className="w-5 h-5" />
+                <Plus className="w-5 h-5 " />
                 Nova Ocorrência
               </button>
             </div>
@@ -107,7 +107,7 @@ export function Home({ onNovaOcorrencia, onGerarRelatorio }: HomeProps) {
             </p>
             <button
               onClick={() => refetch()}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
+              className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
             >
               Tentar novamente
             </button>
@@ -132,7 +132,7 @@ export function Home({ onNovaOcorrencia, onGerarRelatorio }: HomeProps) {
             </p>
             <button
               onClick={onNovaOcorrencia}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
             >
               <Plus className="w-5 h-5" />
               Nova Ocorrência

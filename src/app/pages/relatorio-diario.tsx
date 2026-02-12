@@ -115,7 +115,7 @@ export function RelatorioDiario({ onVoltar }: RelatorioDiarioProps) {
             <div className="flex items-center gap-4">
               <button
                 onClick={onVoltar}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="cursor-pointer p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-5 h-5 text-gray-600" />
               </button>
@@ -133,7 +133,7 @@ export function RelatorioDiario({ onVoltar }: RelatorioDiarioProps) {
               <button
                 onClick={handleCopiar}
                 disabled={!canActions}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors font-medium ${
+                className={`cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg transition-colors font-medium ${
                   canActions
                     ? "bg-gray-700 text-white hover:bg-gray-800"
                     : "bg-gray-200 text-gray-500 cursor-not-allowed"
@@ -155,7 +155,7 @@ export function RelatorioDiario({ onVoltar }: RelatorioDiarioProps) {
               <button
                 onClick={handleExportar}
                 disabled={!canActions}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors font-medium ${
+                className={`cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg transition-colors font-medium ${
                   canActions
                     ? "bg-blue-600 text-white hover:bg-blue-700"
                     : "bg-blue-200 text-blue-900/40 cursor-not-allowed"

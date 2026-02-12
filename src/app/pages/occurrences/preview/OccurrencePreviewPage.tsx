@@ -166,7 +166,7 @@ export function OccurrencePreviewPage(props: {
           <div className="flex items-center gap-3">
             <button
               onClick={onBack}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="cursor-pointer p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5 text-gray-600" />
             </button>
@@ -181,7 +181,7 @@ export function OccurrencePreviewPage(props: {
           <div className="flex items-center gap-2">
             <button
               onClick={onEdit}
-              className="h-10 px-4 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 flex items-center gap-2"
+              className="cursor-pointer h-10 px-4 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 flex items-center gap-2"
             >
               <PencilLine className="w-4 h-4" />
               Editar
@@ -190,7 +190,7 @@ export function OccurrencePreviewPage(props: {
             <button
               onClick={() => handleGenerate(false)}
               disabled={getPdf.isPending}
-              className="h-10 px-4 rounded-lg bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 flex items-center gap-2"
+              className="cursor-pointer h-10 px-4 rounded-lg bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 flex items-center gap-2"
             >
               <RefreshCw className="w-4 h-4" />
               {getPdf.isPending ? "Gerando..." : "Gerar PDF"}
@@ -304,7 +304,7 @@ export function OccurrencePreviewPage(props: {
             </h2>
             <button
               onClick={() => navigator.clipboard.writeText(whatsappTxt)}
-              className="h-9 px-3 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-sm"
+              className="cursor-pointer h-9 px-3 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-sm"
             >
               Copiar
             </button>
@@ -321,7 +321,7 @@ export function OccurrencePreviewPage(props: {
             </h2>
             <button
               onClick={() => navigator.clipboard.writeText(relatorioTxt)}
-              className="h-9 px-3 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-sm"
+              className="cursor-pointer h-9 px-3 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-sm"
             >
               Copiar
             </button>

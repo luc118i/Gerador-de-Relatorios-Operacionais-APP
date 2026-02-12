@@ -69,7 +69,7 @@ export function DriverCreateModal({
           onClick={handleSubmit}
           disabled={!canSubmit}
           className={[
-            "h-9 px-4 rounded-lg font-medium",
+            "cursor-pointer h-9 px-4 rounded-lg font-medium",
             "bg-slate-900 text-white",
             "disabled:opacity-50 disabled:cursor-not-allowed",
             "hover:bg-slate-800",
@@ -147,37 +147,6 @@ export function DriverCreateModal({
           {touched.name && errors.name ? (
             <p className="text-xs text-red-600">{errors.name}</p>
           ) : null}
-        </div>
-
-        {/* Footer actions (opcional) */}
-        <div className="flex justify-end gap-2 pt-2">
-          <button
-            type="button"
-            onClick={() => onOpenChange(false)}
-            disabled={createDriver.isPending}
-            className={[
-              "h-9 px-4 rounded-lg font-medium",
-              "bg-white/60 text-slate-800",
-              "border border-white/30",
-              "hover:bg-white/70",
-              "disabled:opacity-50 disabled:cursor-not-allowed",
-            ].join(" ")}
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={!canSubmit}
-            className={[
-              "h-9 px-4 rounded-lg font-medium",
-              "bg-slate-900 text-white",
-              "disabled:opacity-50 disabled:cursor-not-allowed",
-              "hover:bg-slate-800",
-            ].join(" ")}
-          >
-            {createDriver.isPending ? "Salvando..." : "Salvar"}
-          </button>
         </div>
       </div>
     </AppDialog>
