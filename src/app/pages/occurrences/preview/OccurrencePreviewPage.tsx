@@ -51,13 +51,11 @@ export function OccurrencePreviewPage(props: {
   }
 
   function getOccurrenceTitle(o: Ocorrencia): string {
-    const v = o.viagem;
-    const linha = getViagemLinha(v);
-    const origem = getViagemOrigem(v);
-    const destino = getViagemDestino(v);
+    // Se o seu objeto 'o' tiver o campo typeCode ou similar, podemos mapear.
+    // Como no seu componente anterior você usou o texto fixo:
+    const tipoAmigavel = "PARADA FORA DO PROGRAMADO";
 
-    const od = origem && destino ? `${origem} x ${destino}` : "";
-    return ["OCORRÊNCIA", linha, od].filter(Boolean).join(" - ");
+    return tipoAmigavel;
   }
 
   type DriverSnapshot = {

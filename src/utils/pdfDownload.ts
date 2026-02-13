@@ -26,24 +26,14 @@ export function formatDateYYYYMMDD(dateLike?: string | Date | null): string {
 function abbreviateOccurrenceTitle(title: string): string {
   const t = title.toUpperCase();
 
-  const rules: Array<[RegExp, string]> = [
-    [/DESCUMPRIMENTO\s+OPERACIONAL/, "DESC_OP"],
-    [/PARADA\s+IRREGULAR/, "PAR_IRREG"],
-    [/PARADA\s+FORA\s+DO\s+PROGRAMADO/, "PAR_FORA_PROG"],
-    [/AVARIA/, "AVARIA"],
-    [/CHECKLIST/, "CHECKLIST"],
-  ];
+  // Se o título contiver esses termos, retorna a sigla curta
+  if (t.includes("PARADA FORA")) return "PARADA_FORA";
+  if (t.includes("DESCUMPRIMENTO")) return "DESC_OP";
+  if (t.includes("AVARIA")) return "AVARIA";
 
-  for (const [regex, abbr] of rules) {
-    if (regex.test(t)) return abbr;
-  }
-
-  // fallback genérico: pega 3 primeiras palavras abreviadas
-  return t
-    .split(/\s+/)
-    .slice(0, 3)
-    .map((w) => w.slice(0, 4))
-    .join("_");
+  // Se for o título genérico "OCORRÊNCIA - 1998...",
+  // ele vai cair aqui e retornar apenas "OCOR"
+  return t.split(" ")[0].substring(0, 4);
 }
 
 function formatDateDDMMAA(dateLike?: string | Date | null): string {
