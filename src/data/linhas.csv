@@ -195,5 +195,6 @@ Codigo Linha,Nome da Linha ,Hora Partida,Sentido
 ALSP0053032,MACEIO (AL) - SAO PAULO (SP),08:00,Ida
 Codigo Linha,Nome da Linha ,Hora Partida,Sentido
 MGPI0053023,UBERLANDIA (MG) - TERESINA (PI),02:30,Ida
-Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+
 MGPI0053023,UBERLANDIA (MG) - TERESINA (PI),13:00,Volta
+DFSP0053016,SAO PAULO (SP) - BRASILIA (DF),19:30,Volta
