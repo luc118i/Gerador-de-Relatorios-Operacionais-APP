@@ -27,7 +27,7 @@ function abbreviateOccurrenceTitle(title: string): string {
   const t = title.toUpperCase();
 
   // Se o título contiver esses termos, retorna a sigla curta
-  if (t.includes("PARADA FORA")) return "PARADA_FORA";
+  if (t.includes("PARADA FORA")) return "PARADA_IRREGULAR";
   if (t.includes("DESCUMPRIMENTO")) return "DESC_OP";
   if (t.includes("AVARIA")) return "AVARIA";
 
