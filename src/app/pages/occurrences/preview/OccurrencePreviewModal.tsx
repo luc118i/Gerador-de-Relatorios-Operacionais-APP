@@ -25,16 +25,26 @@ type Props = {
 export function OccurrencePreviewModal({ occurrenceId, open, onClose }: Props) {
   const getPdf = useGetOccurrencePdf();
 
+  // No OccurrencePreviewModal.tsx
   const {
     data: occ,
     isLoading,
     isError,
+    error, // Adicione isso para debugar
   } = useQuery<OccurrenceDTO>({
     queryKey: ["occurrence", occurrenceId],
     queryFn: () => occurrencesApi.getOccurrenceById(occurrenceId!),
-    enabled: !!occurrenceId && open,
+    // Só executa se tiver ID, se o modal estiver aberto E se o ID tiver o tamanho de um UUID
+    enabled: !!occurrenceId && open && occurrenceId.length > 10,
+    retry: false, // Desativa retentativas para vermos o erro real no console
   });
 
+  // Use o useEffect para monitorar erros durante o desenvolvimento
+  useEffect(() => {
+    if (isError) {
+      console.error("Erro detalhado da query:", error);
+    }
+  }, [isError, error]);
   // ESC fecha
   useEffect(() => {
     if (!open) return;

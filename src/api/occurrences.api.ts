@@ -24,6 +24,7 @@ export const occurrencesApi = {
     return request<ApiData<OccurrenceDTO[]>>({
       method: "GET",
       path: "/occurrences",
+
       query: { date },
     });
   },

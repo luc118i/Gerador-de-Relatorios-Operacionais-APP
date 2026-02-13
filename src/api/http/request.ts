@@ -35,7 +35,8 @@ export async function request<T>({
   query,
   body,
 }: RequestOptions): Promise<T> {
-  const url = new URL(`${BASE_URL}${path}`);
+  let urlString = `${BASE_URL}${path}`;
+  const url = new URL(urlString);
 
   if (query) {
     Object.entries(query).forEach(([key, value]) => {

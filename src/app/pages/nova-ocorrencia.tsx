@@ -140,7 +140,6 @@ export function NovaOcorrencia({ onVoltar, onSaved }: NovaOcorrenciaProps) {
     const lineLabel = `${viagemSelecionada.codigoLinha} - ${viagemSelecionada.nomeLinha}`;
 
     try {
-      console.log("dataEvento =>", dataEvento);
       const payload = buildOccurrencePayload({
         driver1Id,
         driver2Id,
@@ -155,12 +154,6 @@ export function NovaOcorrencia({ onVoltar, onSaved }: NovaOcorrenciaProps) {
         lineLabel,
         typeCode: "DESCUMP_OP_PARADA_FORA",
       });
-      console.log("payload =>", payload);
-      console.log("payload.eventDate =>", (payload as any).eventDate);
-      console.log("payload.tripDate  =>", (payload as any).tripDate);
-      console.log("payload.place     =>", (payload as any).place);
-      console.log("payload.vehicleNumber =>", (payload as any).vehicleNumber);
-      console.log("payload.typeCode =>", (payload as any).typeCode);
 
       // 👇 AQUI ESTÁ A VIRADA DE CHAVE
       const created = await createOccurrence.mutateAsync(payload);

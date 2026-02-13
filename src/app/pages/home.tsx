@@ -21,11 +21,22 @@ export function Home({ onNovaOcorrencia, onGerarRelatorio }: HomeProps) {
     day: "numeric",
   });
 
-  const todayISO = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const todayISO = useMemo(() => {
+    const date = new Date();
+    // Formata como YYYY-MM-DD respeitando o fuso horário local
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }, []);
 
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["occurrences", "byDate", todayISO],
+    // Mudamos a chave para deixar claro que é por data de criação/relatório
+    queryKey: ["occurrences", "byCreationDate", todayISO],
     queryFn: async () => {
+      // Aqui você chama a API passando a data de hoje.
+      // IMPORTANTE: O seu Back-end deve usar esse 'todayISO' na query:
+      // WHERE created_at::date = '2026-02-13'
       const res = await occurrencesApi.listOccurrences(todayISO);
       return res.data;
     },

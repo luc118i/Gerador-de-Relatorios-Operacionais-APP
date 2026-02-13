@@ -30,37 +30,52 @@ export default function App() {
   };
 
   return (
-    <>
+    // Adicionamos um flex-col com min-h-screen para o footer "empurrar" para baixo
+    <div className="min-h-screen flex flex-col bg-gray-50">
       <Toaster position="top-right" />
 
-      {currentPage === "home" && (
-        <Home
-          onNovaOcorrencia={() => setCurrentPage("nova-ocorrencia")}
-          onGerarRelatorio={() => setCurrentPage("relatorio-diario")}
-        />
-      )}
-
-      {currentPage === "nova-ocorrencia" && (
-        <NovaOcorrencia
-          onVoltar={() => setCurrentPage("home")}
-          onSaved={handleSavedToPreview}
-        />
-      )}
-
-      {currentPage === "relatorio-diario" && (
-        <RelatorioDiario onVoltar={() => setCurrentPage("home")} />
-      )}
-
-      {currentPage === "preview-ocorrencia" &&
-        previewOccurrenceId &&
-        previewOccurrenceView && (
-          <OccurrencePreviewPage
-            occurrenceId={previewOccurrenceId}
-            occurrence={previewOccurrenceView}
-            onBack={() => setCurrentPage("home")}
-            onEdit={() => setCurrentPage("nova-ocorrencia")}
+      <main className="flex-grow">
+        {currentPage === "home" && (
+          <Home
+            onNovaOcorrencia={() => setCurrentPage("nova-ocorrencia")}
+            onGerarRelatorio={() => setCurrentPage("relatorio-diario")}
           />
         )}
-    </>
+
+        {currentPage === "nova-ocorrencia" && (
+          <NovaOcorrencia
+            onVoltar={() => setCurrentPage("home")}
+            onSaved={handleSavedToPreview}
+          />
+        )}
+
+        {currentPage === "relatorio-diario" && (
+          <RelatorioDiario onVoltar={() => setCurrentPage("home")} />
+        )}
+
+        {currentPage === "preview-ocorrencia" &&
+          previewOccurrenceId &&
+          previewOccurrenceView && (
+            <OccurrencePreviewPage
+              occurrenceId={previewOccurrenceId}
+              occurrence={previewOccurrenceView}
+              onBack={() => setCurrentPage("home")}
+              onEdit={() => setCurrentPage("nova-ocorrencia")}
+            />
+          )}
+      </main>
+
+      <footer className="py-6 px-6 md:px-12 border-t border-gray-200 bg-transparent">
+        <div
+          className="max-w-7xl mx-auto text-center"
+          style={{ color: "#718096" }} // Um cinza um pouco mais escuro para melhor contraste
+        >
+          <p className="text-sm">
+            © {new Date().getFullYear()} Lucas Inacio • Gerador de Relatórios
+            Operacionais
+          </p>
+        </div>
+      </footer>
+    </div>
   );
 }
