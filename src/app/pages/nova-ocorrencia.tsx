@@ -23,7 +23,10 @@ import { DriverPicker } from "../components/DriverPicker/DriverPicker";
 import { DriverCreateModal } from "../components/DriverCreateModal/DriverCreateModal";
 import type { Driver } from "../../domain/drivers";
 
-import { useCreateOccurrence } from "../../features/occurrences/queries/occurrences.queries";
+import {
+  useCreateOccurrence,
+  useUpdateOccurrence,
+} from "../../features/occurrences/queries/occurrences.queries";
 import { buildOccurrencePayload } from "../../features/occurrences/buildOccurrencePayload";
 
 import { getApiErrorMessage } from "../../api/http";
@@ -41,9 +44,14 @@ import { occurrencesApi } from "../../api/occurrences.api";
 interface NovaOcorrenciaProps {
   onVoltar: () => void;
   onSaved: (args: { id: string; view: Ocorrencia }) => void;
+  edicao?: Ocorrencia;
 }
 
-export function NovaOcorrencia({ onVoltar, onSaved }: NovaOcorrenciaProps) {
+export function NovaOcorrencia({
+  onVoltar,
+  onSaved,
+  edicao,
+}: NovaOcorrenciaProps) {
   const [motorista2Ativo, setMotorista2Ativo] = useState(false);
   const [dataEvento, setDataEvento] = useState(
     new Date().toISOString().split("T")[0],
@@ -99,6 +107,76 @@ export function NovaOcorrencia({ onVoltar, onSaved }: NovaOcorrenciaProps) {
   const [vehicleNumber, setVehicleNumber] = useState("");
 
   useEffect(() => {
+    if (edicao) {
+      // Casting da viagem para o tipo Viagem (o formato salvo na ocorrência)
+      // Isso libera o acesso a .prefixo, .linha e .horario
+      const viagemSalva = edicao.viagem as Viagem;
+
+      // 1. Campos Simples
+      setDataEvento(edicao.dataEvento);
+      setDataViagem(edicao.dataViagem || edicao.dataEvento);
+      setHorarioInicial(edicao.horarioInicial);
+      setHorarioFinal(edicao.horarioFinal);
+      setLocalParada(edicao.localParada);
+      setVehicleNumber(viagemSalva.prefixo || "");
+
+      // 2. Viagem (Recuperando do Catálogo para o Autocomplete)
+      const viagemNoCatalogo = viagensCatalog.rows.find(
+        (v) => v.id === viagemSalva.id,
+      );
+
+      if (viagemNoCatalogo) {
+        setViagemSelecionada(viagemNoCatalogo);
+      } else {
+        // Reconstrói o objeto ViagemCatalog a partir da string salva
+        // Garante que o split não falhe se a linha for uma string vazia
+        const [codigo, ...resto] = (viagemSalva.linha || "").split(" - ");
+
+        setViagemSelecionada({
+          id: viagemSalva.id,
+          codigoLinha: codigo || "",
+          nomeLinha: resto.join(" - ") || "",
+          horaPartida: viagemSalva.horario,
+          sentido: "",
+        } as ViagemCatalog);
+      }
+
+      // 3. Motoristas
+      if (edicao.motorista1) {
+        setDriver1Id(edicao.motorista1.id);
+        setDriver1({
+          id: edicao.motorista1.id,
+          code: edicao.motorista1.matricula,
+          name: edicao.motorista1.nome,
+          base: edicao.motorista1.base,
+        } as any);
+      }
+
+      if (edicao.motorista2) {
+        setMotorista2Ativo(true);
+        setDriver2Id(edicao.motorista2.id);
+        setDriver2({
+          id: edicao.motorista2.id,
+          code: edicao.motorista2.matricula,
+          name: edicao.motorista2.nome,
+          base: edicao.motorista2.base,
+        } as any);
+      }
+
+      // 4. Evidências
+      if (edicao.evidencias?.length > 0) {
+        setEvidencias(
+          edicao.evidencias.map((ev) => ({
+            id: ev.id,
+            url: ev.url,
+            legenda: ev.legenda || "",
+          })),
+        );
+      }
+    }
+  }, [edicao]);
+
+  useEffect(() => {
     const onPaste = (ev: ClipboardEvent) => {
       const items = ev.clipboardData?.items;
       if (!items) return;
@@ -137,6 +215,7 @@ export function NovaOcorrencia({ onVoltar, onSaved }: NovaOcorrenciaProps) {
 
   const handleSalvar = async () => {
     if (!isFormValido() || !viagemSelecionada) return;
+
     const lineLabel = `${viagemSelecionada.codigoLinha} - ${viagemSelecionada.nomeLinha}`;
 
     try {
@@ -155,29 +234,40 @@ export function NovaOcorrencia({ onVoltar, onSaved }: NovaOcorrenciaProps) {
         typeCode: "DESCUMP_OP_PARADA_FORA",
       });
 
-      // 👇 AQUI ESTÁ A VIRADA DE CHAVE
-      const created = await createOccurrence.mutateAsync(payload);
+      let resultId: string;
 
-      const files = evidencias.map((e) => e.file).filter(Boolean) as File[];
-      if (files.length) {
-        await occurrencesApi.uploadEvidences(created.id, files);
+      // 1. Define se vai para o Create ou Update
+      if (edicao?.id) {
+        await updateOccurrence.mutateAsync({ id: edicao.id, input: payload });
+        resultId = edicao.id;
+      } else {
+        const created = await createOccurrence.mutateAsync(payload);
+        resultId = created.id;
       }
 
-      const novaOcorrenciaView: Ocorrencia = {
-        id: created.id,
-        viagem: toViagemView(viagemSelecionada),
+      // 2. Upload de evidências (apenas novos arquivos selecionados)
+      const files = evidencias.map((e) => e.file).filter(Boolean) as File[];
+      if (files.length) {
+        await occurrencesApi.uploadEvidences(resultId, files);
+      }
 
+      // 3. Monta o objeto de visualização para retornar à lista
+      const novaOcorrenciaView: Ocorrencia = {
+        id: resultId,
+        viagem: toViagemView(viagemSelecionada),
         motorista1: toMotoristaView(driver1)!,
         motorista2: motorista2Ativo ? toMotoristaView(driver2) : undefined,
         dataEvento,
+        dataViagem,
         horarioInicial,
         horarioFinal,
         localParada,
-        evidencias,
-        createdAt: new Date().toISOString(),
+        evidencias, // Aqui você pode querer buscar as fotos recém-subidas ou manter as locais
+        createdAt: edicao?.createdAt || new Date().toISOString(),
       };
 
-      onSaved({ id: created.id, view: novaOcorrenciaView });
+      toast.success(edicao ? "Atualizado com sucesso!" : "Criado com sucesso!");
+      onSaved({ id: resultId, view: novaOcorrenciaView });
     } catch (e) {
       toast.error(getApiErrorMessage(e));
     }
@@ -197,6 +287,7 @@ export function NovaOcorrencia({ onVoltar, onSaved }: NovaOcorrenciaProps) {
       motorista1: m1,
       motorista2: m2,
       dataEvento,
+      dataViagem,
       horarioInicial,
       horarioFinal,
       localParada,
@@ -223,6 +314,7 @@ export function NovaOcorrencia({ onVoltar, onSaved }: NovaOcorrenciaProps) {
       motorista1: m1,
       motorista2: m2,
       dataEvento,
+      dataViagem,
       horarioInicial,
       horarioFinal,
       localParada,
@@ -236,6 +328,7 @@ export function NovaOcorrencia({ onVoltar, onSaved }: NovaOcorrenciaProps) {
   };
 
   const createOccurrence = useCreateOccurrence();
+  const updateOccurrence = useUpdateOccurrence();
 
   function toViagemView(v: ViagemCatalog): Viagem {
     const parts = (v.nomeLinha ?? "").split(" - ").map((s) => s.trim());
@@ -266,7 +359,7 @@ export function NovaOcorrencia({ onVoltar, onSaved }: NovaOcorrenciaProps) {
             </button>
             <div>
               <h1 className="text-2xl font-semibold text-gray-900">
-                Nova Ocorrência
+                {edicao ? "Editar Ocorrência" : "Nova Ocorrência"}
               </h1>
               <p className="text-sm text-gray-600 mt-0.5">
                 Descumprimento Operacional / Parada Fora do Programado
@@ -615,6 +708,7 @@ export function NovaOcorrencia({ onVoltar, onSaved }: NovaOcorrenciaProps) {
                     : undefined,
 
                   dataEvento,
+                  dataViagem,
                   horarioInicial,
                   horarioFinal,
                   localParada,
@@ -638,6 +732,7 @@ export function NovaOcorrencia({ onVoltar, onSaved }: NovaOcorrenciaProps) {
 function toMotoristaView(d: Driver | null): Motorista | undefined {
   if (!d) return undefined;
   return {
+    id: d.id,
     matricula: d.code,
     nome: d.name,
     base: d.base ?? "",

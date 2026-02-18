@@ -1,4 +1,5 @@
 export interface Motorista {
+  id: string;
   matricula: string;
   nome: string;
   base: string;
@@ -6,11 +7,13 @@ export interface Motorista {
 
 export interface Viagem {
   id: string;
-  linha: string;
-  prefixo: string;
-  horario: string;
-  origem: string;
-  destino: string;
+  linha?: string;
+  prefixo?: string;
+  horario?: string;
+  codigoLinha?: string;
+  nomeLinha?: string;
+  origem?: string;
+  destino?: string;
 }
 
 export interface Evidencia {
@@ -22,10 +25,11 @@ export interface Evidencia {
 
 export interface Ocorrencia {
   id: string;
-  viagem: Viagem | ViagemCatalog;
+  viagem: Viagem;
   motorista1: Motorista;
   motorista2?: Motorista;
   dataEvento: string;
+  dataViagem: string;
   horarioInicial: string;
   horarioFinal: string;
   localParada: string;

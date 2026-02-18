@@ -19,6 +19,19 @@ export function OcorrenciaCard({ ocorrencia, onClick }: OcorrenciaCardProps) {
     ocorrencia.horarioFinal,
   );
 
+  // Criamos constantes para facilitar a leitura e garantir strings
+  const viagem = ocorrencia.viagem;
+
+  // Se tem prefixo, usamos o formato "Full", se não, tentamos o ID
+  const identificadorViagem = viagem.prefixo || viagem.id || "N/A";
+
+  // Lógica para a linha: se não tiver 'linha', tenta compor com 'codigoLinha'
+  const descricaoLinha = viagem.linha
+    ? `Linha ${viagem.linha}`
+    : viagem.codigoLinha
+      ? `${viagem.codigoLinha} - ${viagem.nomeLinha || ""}`
+      : "Linha não identificada";
+
   return (
     <div
       className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
@@ -27,19 +40,13 @@ export function OcorrenciaCard({ ocorrencia, onClick }: OcorrenciaCardProps) {
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2 mb-1">
           <span className="font-semibold text-lg text-gray-900">
-            {isViagemFull(ocorrencia.viagem)
-              ? ocorrencia.viagem.prefixo
-              : ocorrencia.viagem.id}
+            {identificadorViagem}
           </span>
 
           <BaseChip base={ocorrencia.motorista1.base} />
         </div>
 
-        <p className="text-sm text-gray-600">
-          {isViagemFull(ocorrencia.viagem)
-            ? `Linha ${ocorrencia.viagem.linha}`
-            : `${ocorrencia.viagem.codigoLinha} - ${ocorrencia.viagem.nomeLinha}`}
-        </p>
+        <p className="text-sm text-gray-600">{descricaoLinha}</p>
 
         {ocorrencia.evidencias.length > 0 && (
           <div className="flex items-center gap-1 text-gray-600 bg-gray-50 px-2 py-1 rounded">

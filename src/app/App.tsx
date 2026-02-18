@@ -22,6 +22,13 @@ export default function App() {
   const [previewOccurrenceView, setPreviewOccurrenceView] =
     useState<Ocorrencia | null>(null);
 
+  // Função auxiliar para limpar os estados de edição/preview ao criar uma nova
+  const handleIrParaNovo = () => {
+    setPreviewOccurrenceId(null);
+    setPreviewOccurrenceView(null);
+    setCurrentPage("nova-ocorrencia");
+  };
+
   const handleSavedToPreview = (args: { id: string; view: Ocorrencia }) => {
     toast.success("Ocorrência salva! Abrindo preview...");
     setPreviewOccurrenceId(args.id);
@@ -30,14 +37,13 @@ export default function App() {
   };
 
   return (
-    // Adicionamos um flex-col com min-h-screen para o footer "empurrar" para baixo
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Toaster position="top-right" />
 
       <main className="flex-grow">
         {currentPage === "home" && (
           <Home
-            onNovaOcorrencia={() => setCurrentPage("nova-ocorrencia")}
+            onNovaOcorrencia={handleIrParaNovo} // Usa a função que limpa o estado
             onGerarRelatorio={() => setCurrentPage("relatorio-diario")}
           />
         )}
@@ -46,6 +52,8 @@ export default function App() {
           <NovaOcorrencia
             onVoltar={() => setCurrentPage("home")}
             onSaved={handleSavedToPreview}
+            // AQUI ESTÁ A CHAVE: Passamos o objeto que estava no preview para o formulário
+            edicao={previewOccurrenceView ?? undefined}
           />
         )}
 
@@ -60,7 +68,7 @@ export default function App() {
               occurrenceId={previewOccurrenceId}
               occurrence={previewOccurrenceView}
               onBack={() => setCurrentPage("home")}
-              onEdit={() => setCurrentPage("nova-ocorrencia")}
+              onEdit={() => setCurrentPage("nova-ocorrencia")} // Agora o 'nova-ocorrencia' acima terá o 'edicao' preenchido
             />
           )}
       </main>

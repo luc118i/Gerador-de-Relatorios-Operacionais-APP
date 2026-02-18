@@ -19,6 +19,13 @@ export const occurrencesApi = {
       body: input,
     });
   },
+  updateOccurrence(id: string, input: CreateOccurrenceInput) {
+    return request<void>({
+      method: "PUT",
+      path: `/occurrences/${id}`,
+      body: input,
+    });
+  },
 
   listOccurrences(date: string) {
     return request<ApiData<OccurrenceDTO[]>>({
