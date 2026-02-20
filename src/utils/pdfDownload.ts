@@ -53,9 +53,8 @@ export function buildDriverPdfFileName(args: {
   name?: string | null;
   base?: string | null;
   occurrenceTitle?: string | null;
-  // eventDate não é mais necessário para o nome do arquivo se quer a data de hoje
+  eventDate?: string | Date | null;
 }) {
-  // Pega a data exata do momento do download
   const date = formatDateDDMMAA(new Date());
   const typeAbbr = abbreviateOccurrenceTitle(args.occurrenceTitle ?? "");
 

@@ -51,7 +51,6 @@ export function DriverPdfCard(props: {
       name: driver.name,
       base: driver.base ?? "",
       occurrenceTitle,
-      eventDate,
     });
   }, [driver.registry, driver.name, driver.base, occurrenceTitle, eventDate]);
 
