@@ -729,12 +729,15 @@ export function NovaOcorrencia({
   );
 }
 
-function toMotoristaView(d: Driver | null): Motorista | undefined {
+function toMotoristaView(d: Driver | null): any {
+  // alterado para any para aceitar a mistura de campos
   if (!d) return undefined;
   return {
     id: d.id,
-    matricula: d.code,
-    nome: d.name,
+    registry: d.code, // Adicione esta linha
+    matricula: d.code, // Mantenha para compatibilidade com outras telas
+    name: d.name, // Adicione esta linha
+    nome: d.name, // Mantenha para compatibilidade
     base: d.base ?? "",
   };
 }

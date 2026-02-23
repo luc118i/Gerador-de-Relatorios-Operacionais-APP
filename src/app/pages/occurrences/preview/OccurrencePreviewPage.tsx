@@ -66,36 +66,20 @@ export function OccurrencePreviewPage(props: {
   };
 
   const drivers = useMemo(() => {
-    const map = (
-      raw:
-        | Ocorrencia["motorista1"]
-        | Ocorrencia["motorista2"]
-        | null
-        | undefined,
-      position: 1 | 2,
-    ): DriverSnapshot | null => {
+    const map = (raw: any, position: 1 | 2): DriverSnapshot | null => {
       if (!raw) return null;
 
-      // Ajuste os nomes abaixo para o shape real do motorista no seu type:
-      // Aqui estou assumindo o padrão mais comum: { matricula, nome, base }
-      const registry = String(
-        (raw as any).registry ??
-          (raw as any).matricula ??
-          (raw as any).codigo ??
-          "",
-      );
-      const name = String((raw as any).name ?? (raw as any).nome ?? "");
-      const base =
-        (raw as any).base ??
-        (raw as any).baseCode ??
-        (raw as any).baseSigla ??
-        null;
+      // Se o backend não enviou o nome/matricula, evite usar o ID (UUID)
+      const code = raw.code || raw.registry || raw.matricula || "";
+      const name = raw.name || raw.nome || "";
+      const base = raw.base || "";
 
       return {
         position,
-        registry,
-        name,
-        base,
+        // Se code ou name forem vazios, passamos string vazia para o Card tratar
+        registry: String(code).trim(),
+        name: String(name).trim(),
+        base: String(base).trim() || null,
       };
     };
 

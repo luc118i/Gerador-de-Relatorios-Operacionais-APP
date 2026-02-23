@@ -197,4 +197,8 @@ Codigo Linha,Nome da Linha ,Hora Partida,Sentido
 MGPI0053023,UBERLANDIA (MG) - TERESINA (PI),02:30,Ida
 
 MGPI0053023,UBERLANDIA (MG) - TERESINA (PI),13:00,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
 DFSP0053016,SAO PAULO (SP) - BRASILIA (DF),19:30,Volta
+Codigo Linha,Nome da Linha ,Hora Partida,Sentido
+GOTO0053059,GOIANIA (GO) - PORTO NACIONAL, 20:00,Volta
+GOTO0053059,GOIANIA (GO) - PORTO NACIONAL, 19:00,Ida
