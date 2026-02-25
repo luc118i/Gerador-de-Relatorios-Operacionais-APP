@@ -21,6 +21,8 @@ export interface Evidencia {
   url: string;
   legenda?: string;
   file?: File;
+  linkTexto?: string;
+  linkUrl?: string;
 }
 
 export interface Ocorrencia {

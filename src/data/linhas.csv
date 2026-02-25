@@ -203,3 +203,5 @@ DFSP0053016,SAO PAULO (SP) - BRASILIA (DF),19:30,Volta
 Codigo Linha,Nome da Linha ,Hora Partida,Sentido
 GOTO0053059,GOIANIA (GO) - PORTO NACIONAL, 20:00,Volta
 GOTO0053059,GOIANIA (GO) - PORTO NACIONAL, 19:00,Ida
+GOTO0053026,Valparaíso de Goiás (GO) - Palmas (TO), 19:15,Volta
+GOTO0053026,Valparaíso de Goiás (GO) - Palmas (TO), 18:20,Ida

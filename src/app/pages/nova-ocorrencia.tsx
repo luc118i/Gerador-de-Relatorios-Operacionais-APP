@@ -653,28 +653,16 @@ export function NovaOcorrencia({
               <button
                 onClick={handleSalvar}
                 disabled={!isFormValido() || createOccurrence.isPending}
-                className="cursor-pointer flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium flex-1"
+                className="cursor-pointer inline-flex items-center gap-2 px-5 py-2.5 
+             bg-blue-600 text-white rounded-md
+             hover:bg-blue-700 
+             disabled:bg-gray-300 disabled:cursor-not-allowed 
+             transition-colors font-medium"
               >
-                <Save className="w-5 h-5" />
+                <Save className="w-4 h-4" />
                 {createOccurrence.isPending
                   ? "Salvando..."
                   : "Salvar Ocorrência"}
-              </button>
-              <button
-                onClick={handleGerarRelatorio}
-                disabled={!isFormValido() || createOccurrence.isPending}
-                className="cursor-pointer flex items-center gap-2 px-6 py-3 bg-gray-700 text-white rounded-lg hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium flex-1"
-              >
-                <FileText className="w-5 h-5" />
-                Gerar Relatório Individual
-              </button>
-              <button
-                onClick={handleCopiarWhatsApp}
-                disabled={!isFormValido() || createOccurrence.isPending}
-                className="cursor-pointer flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium flex-1"
-              >
-                <MessageCircle className="w-5 h-5" />
-                Copiar Texto WhatsApp
               </button>
             </div>
           </section>
