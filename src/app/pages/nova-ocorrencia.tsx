@@ -14,6 +14,7 @@ import {
   Evidencia,
   Ocorrencia,
   ViagemCatalog,
+  EvidenceUploadInput,
 } from "../types";
 import { AutocompleteViagem } from "../components/autocomplete-viagem";
 import { EvidenciasGrid } from "../components/evidencias-grid";
@@ -246,9 +247,17 @@ export function NovaOcorrencia({
       }
 
       // 2. Upload de evidências (apenas novos arquivos selecionados)
-      const files = evidencias.map((e) => e.file).filter(Boolean) as File[];
-      if (files.length) {
-        await occurrencesApi.uploadEvidences(resultId, files);
+      const evidencesToUpload: EvidenceUploadInput[] = evidencias
+        .filter((e) => e.file) // apenas novas
+        .map((e) => ({
+          file: e.file!,
+          caption: e.legenda ?? undefined,
+          linkTexto: e.linkTexto ?? undefined,
+          linkUrl: e.linkUrl ?? undefined,
+        }));
+
+      if (evidencesToUpload.length) {
+        await occurrencesApi.uploadEvidences(resultId, evidencesToUpload);
       }
 
       // 3. Monta o objeto de visualização para retornar à lista

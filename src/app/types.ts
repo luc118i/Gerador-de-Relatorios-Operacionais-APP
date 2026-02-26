@@ -19,10 +19,10 @@ export interface Viagem {
 export interface Evidencia {
   id: string;
   url: string;
-  legenda?: string;
+  legenda?: string | null;
   file?: File;
-  linkTexto?: string;
-  linkUrl?: string;
+  linkTexto?: string | null;
+  linkUrl?: string | null;
 }
 
 export interface Ocorrencia {
@@ -57,4 +57,11 @@ export type ViagemCatalog = {
   nomeLinha: string;
   horaPartida: string;
   sentido: string;
+};
+
+export type EvidenceUploadInput = {
+  file: File;
+  caption?: string;
+  linkTexto?: string;
+  linkUrl?: string;
 };

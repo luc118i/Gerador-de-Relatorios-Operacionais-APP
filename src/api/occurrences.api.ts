@@ -4,6 +4,7 @@ import type {
   OccurrenceDetailDTO,
 } from "../domain/occurrences";
 import type { OccurrenceDTO } from "../domain/occurrences";
+import { EvidenceUploadInput } from "../app/types";
 
 const BASE_URL = import.meta.env.VITE_API_URL as string;
 
@@ -44,9 +45,29 @@ export const occurrencesApi = {
     return json.data;
   },
 
-  async uploadEvidences(occurrenceId: string, files: File[]) {
+  async uploadEvidences(
+    occurrenceId: string,
+    evidences: EvidenceUploadInput[],
+  ) {
     const form = new FormData();
-    for (const f of files) form.append("files", f);
+
+    const metadata: {
+      caption?: string;
+      linkTexto?: string;
+      linkUrl?: string;
+    }[] = [];
+
+    evidences.forEach((ev) => {
+      form.append("files", ev.file);
+
+      metadata.push({
+        caption: ev.caption ?? undefined,
+        linkTexto: ev.linkTexto ?? undefined,
+        linkUrl: ev.linkUrl ?? undefined,
+      });
+    });
+
+    form.append("metadata", JSON.stringify(metadata));
 
     const res = await fetch(
       `${BASE_URL}/occurrences/${occurrenceId}/evidences`,

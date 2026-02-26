@@ -21,6 +21,8 @@ export function EvidenciasGrid({ evidencias, onChange }: EvidenciasGridProps) {
       url: URL.createObjectURL(file),
       file,
       legenda: "",
+      linkTexto: "",
+      linkUrl: "",
     }));
 
     onChange([...evidencias, ...newEvidencias]);
@@ -54,6 +56,14 @@ export function EvidenciasGrid({ evidencias, onChange }: EvidenciasGridProps) {
     const [draggedItem] = newEvidencias.splice(dragIndex, 1);
     newEvidencias.splice(hoverIndex, 0, draggedItem);
     onChange(newEvidencias);
+  };
+
+  const updateLinkTexto = (id: string, linkTexto: string) => {
+    onChange(evidencias.map((e) => (e.id === id ? { ...e, linkTexto } : e)));
+  };
+
+  const updateLinkUrl = (id: string, linkUrl: string) => {
+    onChange(evidencias.map((e) => (e.id === id ? { ...e, linkUrl } : e)));
   };
 
   return (
@@ -115,6 +125,8 @@ export function EvidenciasGrid({ evidencias, onChange }: EvidenciasGridProps) {
                   moveEvidencia={moveEvidencia}
                   onRemove={removeEvidencia}
                   onUpdateLegenda={updateLegenda}
+                  onUpdateLinkTexto={updateLinkTexto}
+                  onUpdateLinkUrl={updateLinkUrl}
                 />
               ))}
             </div>
@@ -131,6 +143,8 @@ interface EvidenciaItemProps {
   moveEvidencia: (dragIndex: number, hoverIndex: number) => void;
   onRemove: (id: string) => void;
   onUpdateLegenda: (id: string, legenda: string) => void;
+  onUpdateLinkTexto: (id: string, texto: string) => void;
+  onUpdateLinkUrl: (id: string, url: string) => void;
 }
 
 function EvidenciaItem({
@@ -139,6 +153,8 @@ function EvidenciaItem({
   moveEvidencia,
   onRemove,
   onUpdateLegenda,
+  onUpdateLinkTexto,
+  onUpdateLinkUrl,
 }: EvidenciaItemProps) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -190,7 +206,7 @@ function EvidenciaItem({
           <GripVertical className="w-4 h-4 text-gray-600" />
         </div>
       </div>
-      <div className="p-2">
+      <div className="p-2 space-y-2">
         <input
           type="text"
           placeholder="Legenda (opcional)"
@@ -198,6 +214,24 @@ function EvidenciaItem({
           onChange={(e) => onUpdateLegenda(evidencia.id, e.target.value)}
           className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
         />
+
+        <div className="space-y-1">
+          <input
+            type="text"
+            placeholder="Texto do link (opcional)"
+            value={evidencia.linkTexto || ""}
+            onChange={(e) => onUpdateLinkTexto(evidencia.id, e.target.value)}
+            className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+          />
+
+          <input
+            type="text"
+            placeholder="URL do link (https://...)"
+            value={evidencia.linkUrl || ""}
+            onChange={(e) => onUpdateLinkUrl(evidencia.id, e.target.value)}
+            className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+          />
+        </div>
       </div>
     </div>
   );
