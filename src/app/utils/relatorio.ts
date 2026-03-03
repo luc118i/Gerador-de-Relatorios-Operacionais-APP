@@ -45,11 +45,7 @@ export function gerarTextoRelatorioIndividual(ocorrencia: Ocorrencia): string {
       ? `\n\nEvidências anexadas: ${ocorrencia.evidencias.length} foto(s).`
       : "";
 
-  return `Em ${data}, durante a execução da viagem do veículo prefixo ${prefixo}${linhaInfo}, foi constatado que o motorista realizou ${tipo}${local}${horario ? `, no período de ${horario}` : ""}, caracterizando ${caracterizacao}.
-
-A conduta impactou a regularidade da operação e o cumprimento das diretrizes estabelecidas pela empresa.
-
-Registro para fins de apuração administrativa e aplicação de medida disciplinar cabível.`;
+  return `Em ${data}, durante a execução da viagem do veículo prefixo ${prefixo}${linhaInfo}, foi constatado que o motorista realizou ${tipo}${local}${horario ? `, no período de ${horario}` : ""}, caracterizando ${caracterizacao}.`;
 }
 
 function formatarData(data: string): string {

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ArrowLeft, RefreshCw, PencilLine } from "lucide-react";
+import { Home, RefreshCw, PencilLine, Check, Copy } from "lucide-react";
 import type { Ocorrencia } from "../../../types";
 import {
   gerarTextoRelatorioIndividual,
@@ -150,7 +150,7 @@ export function OccurrencePreviewPage(props: {
               onClick={onBack}
               className="cursor-pointer p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              <ArrowLeft className="w-5 h-5 text-gray-600" />
+              <Home className="w-5 h-5 text-gray-600" />
             </button>
             <div>
               <h1 className="text-2xl font-semibold text-gray-900">
@@ -206,9 +206,6 @@ export function OccurrencePreviewPage(props: {
             <h2 className="text-lg font-semibold text-gray-900">
               PDF por motorista
             </h2>
-            <p className="text-sm text-gray-600">
-              Baixe com nome padronizado e status por motorista.
-            </p>
           </div>
 
           <div className="flex flex-col gap-4">
@@ -284,12 +281,8 @@ export function OccurrencePreviewPage(props: {
             <h2 className="text-lg font-semibold text-gray-900">
               Texto WhatsApp
             </h2>
-            <button
-              onClick={() => navigator.clipboard.writeText(whatsappTxt)}
-              className="cursor-pointer h-9 px-3 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-sm"
-            >
-              Copiar
-            </button>
+            {/* Novo botão com sensação de clique */}
+            <CopyButton textToCopy={whatsappTxt} />
           </div>
           <pre className="text-sm whitespace-pre-wrap font-mono text-gray-800 bg-gray-50 border border-gray-200 rounded-lg p-4">
             {whatsappTxt}
@@ -301,12 +294,8 @@ export function OccurrencePreviewPage(props: {
             <h2 className="text-lg font-semibold text-gray-900">
               Relatório Individual
             </h2>
-            <button
-              onClick={() => navigator.clipboard.writeText(relatorioTxt)}
-              className="cursor-pointer h-9 px-3 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-sm"
-            >
-              Copiar
-            </button>
+            {/* Novo botão com sensação de clique */}
+            <CopyButton textToCopy={relatorioTxt} />
           </div>
           <pre className="text-sm whitespace-pre-wrap font-mono text-gray-800 bg-gray-50 border border-gray-200 rounded-lg p-4">
             {relatorioTxt}
@@ -321,5 +310,39 @@ export function OccurrencePreviewPage(props: {
         ) : null}
       </main>
     </div>
+  );
+}
+
+function CopyButton({ textToCopy }: { textToCopy: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(textToCopy);
+    setCopied(true);
+    toast.success("Copiado para a área de transferência!");
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <button
+      onClick={handleCopy}
+      className={`cursor-pointer h-9 px-3 rounded-lg border transition-all flex items-center gap-2 text-sm font-medium ${
+        copied
+          ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+          : "border-gray-200 bg-white hover:bg-gray-50 text-gray-700 active:scale-95"
+      }`}
+    >
+      {copied ? (
+        <>
+          <Check className="w-4 h-4" />
+          Copiado!
+        </>
+      ) : (
+        <>
+          <Copy className="w-4 h-4" />
+          Copiar
+        </>
+      )}
+    </button>
   );
 }

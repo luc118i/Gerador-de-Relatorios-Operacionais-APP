@@ -1,6 +1,6 @@
 // src/modules/ocorrencias/pages/preview/components/DriverPdfCard.tsx
 import { useCallback, useMemo, useRef, useState } from "react";
-import { FileDown, RefreshCw } from "lucide-react";
+import { FileDown, Copy, Check } from "lucide-react"; // Importação dos novos ícones
 import { toast } from "sonner";
 import { getApiErrorMessage } from "../../../../../api/http";
 import {
@@ -20,14 +20,9 @@ type DriverSnapshot = {
 
 export function DriverPdfCard(props: {
   occurrenceId: string;
-  occurrenceTitle: string; // ex: occurrence.tipoOcorrencia?.titulo ?? "OCORRÊNCIA"
-  eventDate: string; // occurrence.dataEvento
+  occurrenceTitle: string;
+  eventDate: string;
   driver: DriverSnapshot;
-
-  /**
-   * Retorna a signedUrl para baixar.
-   * Nesta versão: reutiliza o signedUrl global (se já existir), ou gera via handleGenerate().
-   */
   getOrCreateSignedUrl: (args: {
     force?: boolean;
     reason: "driver-download";
@@ -41,6 +36,7 @@ export function DriverPdfCard(props: {
 
   const [status, setStatus] = useState<Status>("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false); // Estado para feedback visual da cópia
 
   const cachedBlobRef = useRef<Blob | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -53,6 +49,16 @@ export function DriverPdfCard(props: {
       occurrenceTitle,
     });
   }, [driver.registry, driver.name, driver.base, occurrenceTitle, eventDate]);
+
+  // Função para copiar o nome do arquivo sem a extensão .pdf
+  const handleCopyName = useCallback(() => {
+    const nameWithoutExtension = fileName.replace(/\.pdf$/i, "");
+    navigator.clipboard.writeText(nameWithoutExtension);
+    setCopied(true);
+    toast.success("Nome copiado para a área de transferência!");
+
+    setTimeout(() => setCopied(false), 2000); // Reseta o ícone após 2 segundos
+  }, [fileName]);
 
   const statusBadge = useMemo(() => {
     switch (status) {
@@ -78,10 +84,8 @@ export function DriverPdfCard(props: {
 
   const handleDownload = useCallback(async () => {
     if (status === "generating") return;
-
     setStatus("generating");
     setErrorMsg(null);
-
     abortRef.current?.abort();
     const ac = new AbortController();
     abortRef.current = ac;
@@ -103,39 +107,7 @@ export function DriverPdfCard(props: {
       setStatus("ready");
     } catch (e: any) {
       if (e?.name === "AbortError") return;
-
       const msg = getApiErrorMessage(e, "Falha ao baixar PDF do motorista");
-      setErrorMsg(msg);
-      setStatus("error");
-      toast.error(msg);
-    }
-  }, [status, getOrCreateSignedUrl, fileName]);
-
-  const handleForce = useCallback(async () => {
-    if (status === "generating") return;
-
-    setStatus("generating");
-    setErrorMsg(null);
-    cachedBlobRef.current = null;
-
-    abortRef.current?.abort();
-    const ac = new AbortController();
-    abortRef.current = ac;
-
-    try {
-      const { signedUrl } = await getOrCreateSignedUrl({
-        reason: "driver-download",
-        force: true,
-      });
-
-      const b = await fetchBlobFromUrl(signedUrl, ac.signal);
-      cachedBlobRef.current = b;
-
-      downloadBlob(b, fileName);
-      setStatus("ready");
-    } catch (e: any) {
-      if (e?.name === "AbortError") return;
-      const msg = getApiErrorMessage(e, "Falha ao regenerar/baixar PDF");
       setErrorMsg(msg);
       setStatus("error");
       toast.error(msg);
@@ -145,7 +117,7 @@ export function DriverPdfCard(props: {
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-4">
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700">
               Motorista {String(driver.position).padStart(2, "0")}
@@ -168,10 +140,25 @@ export function DriverPdfCard(props: {
             </span>
           </p>
 
-          <p className="mt-2 text-xs text-gray-500 truncate" title={fileName}>
-            Nome do arquivo:{" "}
-            <span className="font-medium text-gray-700">{fileName}</span>
-          </p>
+          {/* Área do Nome do Arquivo com Botão de Cópia */}
+          <div className="mt-2 flex items-center gap-2 group">
+            <p className="text-xs text-gray-500 truncate" title={fileName}>
+              Nome do arquivo:{" "}
+              <span className="font-medium text-gray-700">{fileName}</span>
+            </p>
+            <button
+              type="button"
+              onClick={handleCopyName}
+              className="cursor-pointer p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-blue-600 transition-colors"
+              title="Copiar nome"
+            >
+              {copied ? (
+                <Check className="w-3.5 h-3.5 text-emerald-500" />
+              ) : (
+                <Copy className="w-3.5 h-3.5" />
+              )}
+            </button>
+          </div>
 
           {status === "error" && errorMsg ? (
             <p className="mt-2 text-xs text-red-700">{errorMsg}</p>
