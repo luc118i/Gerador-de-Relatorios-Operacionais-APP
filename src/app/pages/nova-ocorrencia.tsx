@@ -2,11 +2,11 @@ import { useState, useEffect } from "react";
 import {
   ArrowLeft,
   Save,
-  FileText,
-  MessageCircle,
+  CheckCircle2,
   Plus,
   X,
   AlertCircle,
+  Loader2,
 } from "lucide-react";
 import {
   Viagem,
@@ -85,7 +85,9 @@ export function NovaOcorrencia({
     const totalFinal = hF * 60 + mF;
     return totalFinal > totalInicial;
   };
-
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "success">(
+    "idle",
+  );
   const [viagemSelecionada, setViagemSelecionada] =
     useState<ViagemCatalog | null>(null);
 
@@ -214,8 +216,61 @@ export function NovaOcorrencia({
     return () => window.removeEventListener("paste", onPaste);
   }, []);
 
+  // Dentro da função NovaOcorrencia, adicione este efeito:
+
+  useEffect(() => {
+    // Se não houver viagem ou se estivermos em modo de EDIÇÃO (onde os dados vêm do banco), não auto-preenchemos
+    if (!viagemSelecionada || edicao) return;
+
+    // 1. Verificar se a viagem no catálogo possui motoristas
+    // Assumindo que seu objeto ViagemCatalog tenha algo como motorista1 e motorista2
+    const v = viagemSelecionada as any; // Usando any temporário para checar propriedades extras
+
+    if (v.motorista1) {
+      setDriver1Id(v.motorista1.id);
+      setDriver1({
+        id: v.motorista1.id,
+        code: v.motorista1.matricula || v.motorista1.code,
+        name: v.motorista1.nome || v.motorista1.name,
+        base: v.motorista1.base,
+      } as Driver);
+    }
+
+    if (v.motorista2) {
+      setMotorista2Ativo(true);
+      setDriver2Id(v.motorista2.id);
+      setDriver2({
+        id: v.motorista2.id,
+        code: v.motorista2.matricula || v.motorista2.code,
+        name: v.motorista2.nome || v.motorista2.name,
+        base: v.motorista2.base,
+      } as Driver);
+    } else {
+      setMotorista2Ativo(false);
+      setDriver2Id(null);
+      setDriver2(null);
+    }
+  }, [viagemSelecionada, edicao]);
+
+  useEffect(() => {
+    if (saveStatus !== "idle") {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "auto";
+    }
+
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, [saveStatus]);
+
   const handleSalvar = async () => {
     if (!isFormValido() || !viagemSelecionada) return;
+
+    // FORÇA O STATUS DE SAVING NO INÍCIO
+    setSaveStatus("saving");
+
+    await new Promise((resolve) => setTimeout(resolve, 500));
 
     const lineLabel = `${viagemSelecionada.codigoLinha} - ${viagemSelecionada.nomeLinha}`;
 
@@ -237,7 +292,6 @@ export function NovaOcorrencia({
 
       let resultId: string;
 
-      // 1. Define se vai para o Create ou Update
       if (edicao?.id) {
         await updateOccurrence.mutateAsync({ id: edicao.id, input: payload });
         resultId = edicao.id;
@@ -246,21 +300,17 @@ export function NovaOcorrencia({
         resultId = created.id;
       }
 
-      // 2. Upload de evidências (apenas novos arquivos selecionados)
       const evidencesToUpload: EvidenceUploadInput[] = evidencias
-        .filter((e) => e.file) // apenas novas
+        .filter((e) => e.file)
         .map((e) => ({
           file: e.file!,
           caption: e.legenda ?? undefined,
-          linkTexto: e.linkTexto ?? undefined,
-          linkUrl: e.linkUrl ?? undefined,
         }));
 
       if (evidencesToUpload.length) {
         await occurrencesApi.uploadEvidences(resultId, evidencesToUpload);
       }
 
-      // 3. Monta o objeto de visualização para retornar à lista
       const novaOcorrenciaView: Ocorrencia = {
         id: resultId,
         viagem: toViagemView(viagemSelecionada),
@@ -271,69 +321,22 @@ export function NovaOcorrencia({
         horarioInicial,
         horarioFinal,
         localParada,
-        evidencias, // Aqui você pode querer buscar as fotos recém-subidas ou manter as locais
+        evidencias,
         createdAt: edicao?.createdAt || new Date().toISOString(),
       };
 
-      toast.success(edicao ? "Atualizado com sucesso!" : "Criado com sucesso!");
-      onSaved({ id: resultId, view: novaOcorrenciaView });
+      // TRANSIÇÃO PARA SUCESSO
+      setSaveStatus("success");
+
+      // Delay para o usuário ver o "visto" verde antes de fechar a tela
+      setTimeout(() => {
+        onSaved({ id: resultId, view: novaOcorrenciaView });
+      }, 1500);
     } catch (e) {
+      console.error(e);
+      setSaveStatus("idle"); // Se der erro, volta ao normal para o usuário corrigir
       toast.error(getApiErrorMessage(e));
     }
-  };
-
-  const handleGerarRelatorio = () => {
-    if (!isFormValido() || !viagemSelecionada || !driver1) return;
-
-    const m1 = toMotoristaView(driver1) as Motorista;
-    const m2 =
-      motorista2Ativo && driver2 ? toMotoristaView(driver2) : undefined;
-
-    const ocorrenciaTemp: Ocorrencia = {
-      id: "temp",
-      viagem: toViagemView(viagemSelecionada),
-
-      motorista1: m1,
-      motorista2: m2,
-      dataEvento,
-      dataViagem,
-      horarioInicial,
-      horarioFinal,
-      localParada,
-      evidencias,
-      createdAt: new Date().toISOString(),
-    };
-
-    const texto = gerarTextoRelatorioIndividual(ocorrenciaTemp);
-    navigator.clipboard.writeText(texto);
-    setShowPreview(true);
-  };
-
-  const handleCopiarWhatsApp = () => {
-    if (!isFormValido() || !viagemSelecionada || !driver1) return;
-
-    const m1 = toMotoristaView(driver1) as Motorista;
-    const m2 =
-      motorista2Ativo && driver2 ? toMotoristaView(driver2) : undefined;
-
-    const ocorrenciaTemp: Ocorrencia = {
-      id: "temp",
-      viagem: toViagemView(viagemSelecionada),
-
-      motorista1: m1,
-      motorista2: m2,
-      dataEvento,
-      dataViagem,
-      horarioInicial,
-      horarioFinal,
-      localParada,
-      evidencias,
-      createdAt: new Date().toISOString(),
-    };
-
-    const texto = gerarTextoWhatsApp(ocorrenciaTemp);
-    navigator.clipboard.writeText(texto);
-    toast.success("Texto copiado para o WhatsApp!");
   };
 
   const createOccurrence = useCreateOccurrence();
@@ -661,17 +664,24 @@ export function NovaOcorrencia({
             <div className="flex gap-3">
               <button
                 onClick={handleSalvar}
-                disabled={!isFormValido() || createOccurrence.isPending}
-                className="cursor-pointer inline-flex items-center gap-2 px-5 py-2.5 
+                disabled={!isFormValido() || saveStatus !== "idle"}
+                className="inline-flex items-center gap-2 px-5 py-2.5 
              bg-blue-600 text-white rounded-md
              hover:bg-blue-700 
              disabled:bg-gray-300 disabled:cursor-not-allowed 
              transition-colors font-medium"
               >
-                <Save className="w-4 h-4" />
-                {createOccurrence.isPending
-                  ? "Salvando..."
-                  : "Salvar Ocorrência"}
+                {saveStatus === "saving" ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    Salvar Ocorrência
+                  </>
+                )}
               </button>
             </div>
           </section>
@@ -722,40 +732,54 @@ export function NovaOcorrencia({
           </div>
         </div>
       )}
+
+      {/* Overlay de Status (Aguarde / Sucesso) */}
+      {saveStatus !== "idle" && (
+        <div
+          className="fixed inset-0 z-[999] flex items-center justify-center 
+                  bg-black/50 backdrop-blur-md 
+                  transition-opacity duration-300"
+        >
+          <div
+            className="bg-white px-10 py-12 rounded-2xl shadow-2xl 
+                    flex flex-col items-center text-center
+                    animate-in fade-in zoom-in-95 duration-200"
+          >
+            {saveStatus === "saving" ? (
+              <>
+                <Loader2 className="w-16 h-16 text-blue-600 animate-spin mb-6" />
+                <h3 className="text-2xl font-bold text-gray-800 mb-2">
+                  Aguarde
+                </h3>
+                <p className="text-gray-500">Salvando a ocorrência...</p>
+              </>
+            ) : (
+              <>
+                <div
+                  className="w-20 h-20 bg-green-100 rounded-full 
+                          flex items-center justify-center mb-6"
+                >
+                  <CheckCircle2 className="w-12 h-12 text-green-600" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-800 mb-2">
+                  Pronto!
+                </h3>
+                <p className="text-gray-500">Ocorrência salva com sucesso.</p>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function toMotoristaView(d: Driver | null): any {
-  // alterado para any para aceitar a mistura de campos
+function toMotoristaView(d: Driver | null): Motorista | undefined {
   if (!d) return undefined;
   return {
     id: d.id,
-    registry: d.code, // Adicione esta linha
-    matricula: d.code, // Mantenha para compatibilidade com outras telas
-    name: d.name, // Adicione esta linha
-    nome: d.name, // Mantenha para compatibilidade
+    matricula: d.code,
+    nome: d.name,
     base: d.base ?? "",
   };
-}
-
-interface MotoristaDisplayProps {
-  motorista: Motorista;
-  numero: number;
-}
-
-function MotoristaDisplay({ motorista, numero }: MotoristaDisplayProps) {
-  return (
-    <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-xs font-medium text-gray-600">
-          Motorista {numero < 10 ? `0${numero}` : numero}
-        </span>
-        <BaseChip base={motorista.base} />
-      </div>
-      <p className="font-medium text-gray-900">
-        {motorista.matricula} – {motorista.nome} – {motorista.base}
-      </p>
-    </div>
-  );
 }
