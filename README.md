@@ -14,8 +14,10 @@ Este projeto utiliza as seguintes tecnologias:
 - [Tailwind CSS](https://tailwindcss.com/)
 - [Lucide React](https://lucide.dev/)
 
-## 📂 Estrutura de Arquivos
+📂 Estrutura de Pastas
+O projeto segue uma arquitetura modular, separando responsabilidades entre dados, lógica de negócio e interface:
 
+Plaintext
 src/
 ├── api/             # Infraestrutura e chamadas HTTP
 │   ├── http/        # Configurações globais (Axios/Fetch)
@@ -37,6 +39,14 @@ src/
 ├── styles/          # Estilização global e configurações de tema
 ├── catalogs/        # Arquivos de dados estáticos ou catálogos
 └── data/            # Mock de dados ou persistência local temporária
+Detalhes das Camadas:
+API: Centraliza toda a comunicação com o backend, garantindo que o resto do app não precise saber os endpoints de cor.
+
+App: Onde o React "vive". Foca em como os dados aparecem para o usuário.
+
+Domain: A "verdade" dos dados. Se o formato de uma ocorrência mudar no banco, é aqui que alteramos primeiro.
+
+Features: Organiza o código por domínio de funcionalidade em vez de tipo de arquivo, facilitando a manutenção e escala.
 ## 🛠️ Instalação e Execução
 
 1. Clone o repositório:
