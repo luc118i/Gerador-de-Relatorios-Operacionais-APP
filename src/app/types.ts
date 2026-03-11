@@ -35,8 +35,27 @@ export interface Ocorrencia {
   horarioInicial: string;
   horarioFinal: string;
   localParada: string;
+  descricao?: string;
   evidencias: Evidencia[];
   createdAt: string;
+  details: {
+    velocidade?: string;
+    [key: string]: string | undefined;
+  };
+  type?: {
+    id: string;
+    code: string;
+    title: string;
+  };
+}
+
+export interface OccurrenceTypeDTO {
+  id: string;
+  code: string;
+  title: string;
+  description?: string;
+  template?: string;
+  active: boolean;
 }
 
 export type ApiError = {

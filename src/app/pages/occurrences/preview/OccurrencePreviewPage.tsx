@@ -51,11 +51,11 @@ export function OccurrencePreviewPage(props: {
   }
 
   function getOccurrenceTitle(o: Ocorrencia): string {
-    // Se o seu objeto 'o' tiver o campo typeCode ou similar, podemos mapear.
-    // Como no seu componente anterior você usou o texto fixo:
-    const tipoAmigavel = "PARADA FORA DO PROGRAMADO";
-
-    return tipoAmigavel;
+    const titles: Record<string, string> = {
+      DESCUMP_OP_VELOCIDADE: "EXCESSO DE VELOCIDADE",
+      PARADA_FORA_PROG: "PARADA FORA DO PROGRAMADO",
+    };
+    return titles[o.type?.code ?? ""] || "OCORRÊNCIA OPERACIONAL";
   }
 
   type DriverSnapshot = {
@@ -231,9 +231,16 @@ export function OccurrencePreviewPage(props: {
           </div>
         </div>
 
-        {/* Resumo (simples por enquanto) */}
+        {/* Resumo Adaptável */}
         <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Resumo</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Resumo</h2>
+            {/* Badge de Tipo */}
+            <span className="px-2 py-1 rounded-md bg-slate-100 text-slate-700 text-xs font-bold border border-slate-200">
+              {occurrence.type?.code}
+            </span>
+          </div>
+
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <div className="text-gray-500">Linha</div>
@@ -247,6 +254,25 @@ export function OccurrencePreviewPage(props: {
                 {getViagemPrefixo(occurrence.viagem)}
               </div>
             </div>
+
+            {/* EXIBIÇÃO DO KM: Somente se for velocidade */}
+            {occurrence.type?.code === "DESCUMP_OP_VELOCIDADE" && (
+              <div className="col-span-2 bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center justify-between">
+                <div>
+                  <div className="text-amber-700 text-xs font-bold uppercase tracking-wider">
+                    Velocidade Atingida
+                  </div>
+                  <div className="text-2xl font-black text-amber-900">
+                    {occurrence.details?.velocidade}{" "}
+                    <span className="text-sm font-normal">km/h</span>
+                  </div>
+                </div>
+                <div className="text-amber-400">
+                  <RefreshCw className="w-8 h-8 opacity-20" />
+                </div>
+              </div>
+            )}
+
             <div className="col-span-2">
               <div className="text-gray-500">Origem x Destino</div>
               <div className="font-medium text-gray-900">
@@ -254,18 +280,27 @@ export function OccurrencePreviewPage(props: {
                 {getViagemDestino(occurrence.viagem)}
               </div>
             </div>
+
             <div>
               <div className="text-gray-500">Data</div>
               <div className="font-medium text-gray-900">
                 {occurrence.dataEvento}
               </div>
             </div>
+
             <div>
-              <div className="text-gray-500">Horários</div>
+              <div className="text-gray-500">
+                {occurrence.type?.code === "DESCUMP_OP_VELOCIDADE"
+                  ? "Horário do Evento"
+                  : "Horários"}
+              </div>
               <div className="font-medium text-gray-900">
-                {occurrence.horarioInicial} → {occurrence.horarioFinal}
+                {occurrence.type?.code === "DESCUMP_OP_VELOCIDADE"
+                  ? occurrence.horarioInicial
+                  : `${occurrence.horarioInicial} → ${occurrence.horarioFinal}`}
               </div>
             </div>
+
             <div className="col-span-2">
               <div className="text-gray-500">Local</div>
               <div className="font-medium text-gray-900">

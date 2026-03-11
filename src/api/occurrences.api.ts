@@ -2,6 +2,7 @@ import { request } from "./http";
 import type {
   CreateOccurrenceInput,
   OccurrenceDetailDTO,
+  OccurrenceTypeDTO,
 } from "../domain/occurrences";
 import type { OccurrenceDTO } from "../domain/occurrences";
 import { EvidenceUploadInput } from "../app/types";
@@ -14,11 +15,19 @@ export type CreateOccurrenceResponse = { id: string };
 
 export const occurrencesApi = {
   createOccurrence(input: CreateOccurrenceInput) {
-    return request<CreateOccurrenceResponse>({
+    console.log("[DEBUG] Payload enviado:", input);
+
+    const response = request<CreateOccurrenceResponse>({
       method: "POST",
       path: "/occurrences",
       body: input,
     });
+
+    response.then((res) => {
+      console.log("[DEBUG] Resposta recebida do back-end:", res);
+    });
+
+    return response;
   },
   updateOccurrence(id: string, input: CreateOccurrenceInput) {
     return request<void>({
@@ -79,6 +88,12 @@ export const occurrencesApi = {
 
     if (!res.ok) throw new Error(await res.text());
     return res.json();
+  },
+  listTypes() {
+    return request<ApiData<OccurrenceTypeDTO[]>>({
+      method: "GET",
+      path: "/occurrence-types",
+    });
   },
 };
 

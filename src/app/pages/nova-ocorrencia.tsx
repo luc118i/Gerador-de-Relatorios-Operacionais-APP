@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+
 import {
   ArrowLeft,
   Save,
@@ -18,7 +19,6 @@ import {
 } from "../types";
 import { AutocompleteViagem } from "../components/autocomplete-viagem";
 import { EvidenciasGrid } from "../components/evidencias-grid";
-import { BaseChip } from "../components/base-chip";
 
 import { DriverPicker } from "../components/DriverPicker/DriverPicker";
 import { DriverCreateModal } from "../components/DriverCreateModal/DriverCreateModal";
@@ -43,40 +43,70 @@ import {
 import { occurrencesApi } from "../../api/occurrences.api";
 
 interface NovaOcorrenciaProps {
+  occurrenceType: {
+    id: string;
+    code: string;
+    title: string;
+    template?: string;
+  };
   onVoltar: () => void;
   onSaved: (args: { id: string; view: Ocorrencia }) => void;
   edicao?: Ocorrencia;
 }
 
+const CONFIG_POR_TIPO: Record<
+  string,
+  { fields: string[]; labels?: Record<string, string> }
+> = {
+  DESCUMP_OP_VELOCIDADE: {
+    fields: [
+      "dataEvento",
+      "dataViagem",
+      "horarioEvento",
+      "vehicleNumber",
+      "velocidadeAtingida",
+      "localParada",
+    ],
+  },
+
+  DESCUMP_OP_PARADA_FORA: {
+    fields: [
+      "dataEvento",
+      "dataViagem",
+      "horarioInicial",
+      "horarioFinal",
+      "vehicleNumber",
+      "localParada",
+    ],
+    labels: { localParada: "Local da Parada" },
+  },
+};
+
 export function NovaOcorrencia({
   onVoltar,
   onSaved,
   edicao,
+  occurrenceType,
 }: NovaOcorrenciaProps) {
   const [motorista2Ativo, setMotorista2Ativo] = useState(false);
   const [dataEvento, setDataEvento] = useState(
     new Date().toISOString().split("T")[0],
   );
+
   const [horarioInicial, setHorarioInicial] = useState("");
   const [horarioFinal, setHorarioFinal] = useState("");
   const [localParada, setLocalParada] = useState("");
   const [evidencias, setEvidencias] = useState<Evidencia[]>([]);
   const [showPreview, setShowPreview] = useState(false);
-
   const [driver1Id, setDriver1Id] = useState<string | null>(null);
   const [driver2Id, setDriver2Id] = useState<string | null>(null);
-
-  // guardar o objeto selecionado para exibir/gerar texto sem depender do cache
   const [driver1, setDriver1] = useState<Driver | null>(null);
   const [driver2, setDriver2] = useState<Driver | null>(null);
-
   const [isDriverModalOpen, setIsDriverModalOpen] = useState(false);
   const [createTarget, setCreateTarget] = useState<1 | 2 | null>(null);
-
   const [dataViagem, setDataViagem] = useState(
     new Date().toISOString().split("T")[0],
   );
-
   const isHorarioValido = () => {
     if (!horarioInicial || !horarioFinal) return true;
     const [hI, mI] = horarioInicial.split(":").map(Number);
@@ -91,23 +121,37 @@ export function NovaOcorrencia({
   const [viagemSelecionada, setViagemSelecionada] =
     useState<ViagemCatalog | null>(null);
 
+  const [vehicleNumber, setVehicleNumber] = useState("");
+  const [relato, setRelato] = useState("");
+  const [horarioEvento, setHorarioEvento] = useState(""); // Novo campo para tipos que não usam Range
+  const [velocidadeAtingida, setVelocidadeAtingida] = useState("");
+
+  // Busca a config baseada no código que veio do modal anterior
+  const config =
+    CONFIG_POR_TIPO[occurrenceType.code] || CONFIG_POR_TIPO.DEFAULT;
+
+  // Função mágica para decidir se renderiza o campo
+  const show = (field: string) => config.fields.includes(field);
+  const getLabel = (field: string, defaultLabel: string) =>
+    config.labels?.[field] || defaultLabel;
+
+  // Atualize o isFormValido para ser dinâmico também
   const isFormValido = () => {
     const driversOk = !!driver1 && (!driver2Id || driver2Id !== driver1Id);
+    const commonOk =
+      viagemSelecionada && dataEvento && vehicleNumber.trim() && driversOk;
 
+    if (occurrenceType.code === "DESCUMP_OP_VELOCIDADE") {
+      return commonOk && Boolean(horarioEvento) && Boolean(velocidadeAtingida);
+    }
     return (
-      viagemSelecionada &&
-      dataEvento &&
-      dataViagem &&
+      commonOk &&
       horarioInicial &&
       horarioFinal &&
-      localParada.trim() &&
-      vehicleNumber.trim() &&
       isHorarioValido() &&
-      driversOk
+      localParada.trim()
     );
   };
-
-  const [vehicleNumber, setVehicleNumber] = useState("");
 
   useEffect(() => {
     if (edicao) {
@@ -176,9 +220,24 @@ export function NovaOcorrencia({
           })),
         );
       }
+
+      // 5. Dados Específicos (Velocidade / KM)
+      if (edicao.details && typeof edicao.details === "object") {
+        const details = edicao.details as any;
+
+        // Preenche o input de velocidade com o que vem do banco
+        if (details.velocidade) {
+          setVelocidadeAtingida(details.velocidade);
+        }
+      }
+
+      // 6. Ajuste de Horário para o tipo Velocidade
+      if (occurrenceType.code === "DESCUMP_OP_VELOCIDADE") {
+        // O tipo velocidade usa 'horarioEvento', mas no banco é salvo em 'horarioInicial'
+        setHorarioEvento(edicao.horarioInicial || "");
+      }
     }
   }, [edicao]);
-
   useEffect(() => {
     const onPaste = (ev: ClipboardEvent) => {
       const items = ev.clipboardData?.items;
@@ -215,9 +274,6 @@ export function NovaOcorrencia({
     window.addEventListener("paste", onPaste);
     return () => window.removeEventListener("paste", onPaste);
   }, []);
-
-  // Dentro da função NovaOcorrencia, adicione este efeito:
-
   useEffect(() => {
     // Se não houver viagem ou se estivermos em modo de EDIÇÃO (onde os dados vêm do banco), não auto-preenchemos
     if (!viagemSelecionada || edicao) return;
@@ -264,34 +320,49 @@ export function NovaOcorrencia({
     };
   }, [saveStatus]);
 
-  const handleSalvar = async () => {
-    if (!isFormValido() || !viagemSelecionada) return;
+  useEffect(() => {
+    if (occurrenceType.template && !edicao) {
+      setRelato(occurrenceType.template);
+    } else if (edicao) {
+      setRelato(edicao.descricao || ""); // Assumindo que seu DTO de edição tenha 'descricao'
+    }
+  }, [occurrenceType, edicao]);
 
-    // FORÇA O STATUS DE SAVING NO INÍCIO
+  const handleSalvar = async () => {
+    if (!isFormValido() || !viagemSelecionada || !driver1) return;
+
     setSaveStatus("saving");
 
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    const lineLabel = `${viagemSelecionada.codigoLinha} - ${viagemSelecionada.nomeLinha}`;
+    // Criamos a variável aqui para usá-la no payload e na view
+    const labelDaLinha = `${viagemSelecionada.codigoLinha} - ${viagemSelecionada.nomeLinha}`;
 
     try {
       const payload = buildOccurrencePayload({
-        driver1Id,
-        driver2Id,
+        driver1,
+        driver2,
         motorista2Ativo,
         eventDate: dataEvento,
         tripDate: dataViagem,
-        startTime: horarioInicial,
-        endTime: horarioFinal,
+        startTime: show("horarioEvento") ? horarioEvento : horarioInicial,
+        endTime: show("horarioFinal") ? horarioFinal : undefined,
         place: localParada,
         vehicleNumber,
         tripId: viagemSelecionada.id,
-        lineLabel,
-        typeCode: "DESCUMP_OP_PARADA_FORA",
+        lineLabel: labelDaLinha, // Passando a variável correta
+        typeCode: occurrenceType.code,
+        details: velocidadeAtingida
+          ? { velocidade: velocidadeAtingida }
+          : undefined,
       });
 
-      let resultId: string;
+      console.log(
+        "CONFERÊNCIA DE PAYLOAD ANTES DO ENVIO:",
+        JSON.stringify(payload, null, 2),
+      );
 
+      let resultId: string;
+      console.log("CONFERÊNCIA DE PAYLOAD:", JSON.stringify(payload, null, 2));
+      // 3. Executar a Mutation
       if (edicao?.id) {
         await updateOccurrence.mutateAsync({ id: edicao.id, input: payload });
         resultId = edicao.id;
@@ -300,6 +371,7 @@ export function NovaOcorrencia({
         resultId = created.id;
       }
 
+      // 4. Upload de Evidências (permanece igual)
       const evidencesToUpload: EvidenceUploadInput[] = evidencias
         .filter((e) => e.file)
         .map((e) => ({
@@ -311,6 +383,7 @@ export function NovaOcorrencia({
         await occurrencesApi.uploadEvidences(resultId, evidencesToUpload);
       }
 
+      // 5. Montar a View para a lista (usando os estados locais)
       const novaOcorrenciaView: Ocorrencia = {
         id: resultId,
         viagem: toViagemView(viagemSelecionada),
@@ -318,23 +391,23 @@ export function NovaOcorrencia({
         motorista2: motorista2Ativo ? toMotoristaView(driver2) : undefined,
         dataEvento,
         dataViagem,
-        horarioInicial,
+        horarioInicial: show("horarioEvento") ? horarioEvento : horarioInicial,
         horarioFinal,
         localParada,
         evidencias,
+        // ADICIONE ESTA LINHA PARA RESOLVER O ERRO:
+        details: { velocidade: velocidadeAtingida },
         createdAt: edicao?.createdAt || new Date().toISOString(),
       };
 
-      // TRANSIÇÃO PARA SUCESSO
       setSaveStatus("success");
 
-      // Delay para o usuário ver o "visto" verde antes de fechar a tela
       setTimeout(() => {
         onSaved({ id: resultId, view: novaOcorrenciaView });
       }, 1500);
     } catch (e) {
       console.error(e);
-      setSaveStatus("idle"); // Se der erro, volta ao normal para o usuário corrigir
+      setSaveStatus("idle");
       toast.error(getApiErrorMessage(e));
     }
   };
@@ -374,7 +447,7 @@ export function NovaOcorrencia({
                 {edicao ? "Editar Ocorrência" : "Nova Ocorrência"}
               </h1>
               <p className="text-sm text-gray-600 mt-0.5">
-                Descumprimento Operacional / Parada Fora do Programado
+                {occurrenceType.title}
               </p>
             </div>
           </div>
@@ -552,16 +625,24 @@ export function NovaOcorrencia({
               Dados da Ocorrência
             </h2>
             <div className="space-y-4">
+              {/* O cabeçalho azul do tipo permanece fixo, ele é ótimo para o usuário saber o que está fazendo */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Tipo (não editável)
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Tipo de Ocorrência
                 </label>
-                <div className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-gray-700">
-                  DESCUMPRIMENTO OPERACIONAL / PARADA FORA DO PROGRAMADO
+                <div className="flex items-center gap-2 px-3 py-2.5 bg-blue-50 border border-blue-100 rounded-lg text-blue-700">
+                  <AlertCircle className="w-4 h-4" />
+                  <span className="font-semibold uppercase tracking-wide text-xs">
+                    {occurrenceType.code}
+                  </span>
+                  <span className="text-gray-400">|</span>
+                  <span className="font-medium">{occurrenceType.title}</span>
                 </div>
               </div>
 
+              {/* Aqui começa a parte dinâmica dentro do grid */}
               <div className="grid grid-cols-4 gap-4">
+                {/* Datas geralmente aparecem em todos, então mantemos */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Data do Evento *
@@ -586,42 +667,78 @@ export function NovaOcorrencia({
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Horário Inicial *
-                  </label>
-                  <input
-                    type="time"
-                    value={horarioInicial}
-                    onChange={(e) => setHorarioInicial(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+                {/* HORÁRIOS DINÂMICOS: Só aparecem se a config permitir */}
+                {show("horarioEvento") && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {getLabel("horarioEvento", "Horário do Evento")} *
+                    </label>
+                    <input
+                      type="time"
+                      value={horarioEvento}
+                      onChange={(e) => setHorarioEvento(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                )}
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Horário Final *
-                  </label>
-                  <input
-                    type="time"
-                    value={horarioFinal}
-                    onChange={(e) => setHorarioFinal(e.target.value)}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                      !isHorarioValido()
-                        ? "border-red-300 focus:ring-red-500"
-                        : "border-gray-300 focus:ring-blue-500"
-                    }`}
-                  />
-                </div>
+                {show("horarioInicial") && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Horário Inicial *
+                    </label>
+                    <input
+                      type="time"
+                      value={horarioInicial}
+                      onChange={(e) => setHorarioInicial(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                )}
+
+                {show("horarioFinal") && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Horário Final *
+                    </label>
+                    <input
+                      type="time"
+                      value={horarioFinal}
+                      onChange={(e) => setHorarioFinal(e.target.value)}
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${!isHorarioValido() ? "border-red-300 focus:ring-red-500" : "border-gray-300 focus:ring-blue-500"}`}
+                    />
+                  </div>
+                )}
               </div>
 
-              {!isHorarioValido() && horarioInicial && horarioFinal && (
-                <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-md">
-                  <AlertCircle className="w-4 h-4" />
-                  Horário final deve ser posterior ao horário inicial
+              {/* MENSAGEM DE ERRO: Só aparece se estivermos usando o Range de horários */}
+              {show("horarioInicial") &&
+                !isHorarioValido() &&
+                horarioInicial &&
+                horarioFinal && (
+                  <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-md">
+                    <AlertCircle className="w-4 h-4" />
+                    Horário final deve ser posterior ao horário inicial
+                  </div>
+                )}
+
+              {/* VELOCIDADE: Campo extra que só aparece para o tipo VELOCIDADE */}
+              {show("velocidadeAtingida") && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Velocidade Máxima Atingida (km/h) *
+                  </label>
+                  <input
+                    type="number"
+                    value={velocidadeAtingida}
+                    onChange={(e) => setVelocidadeAtingida(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Ex: 95"
+                  />
                 </div>
               )}
 
+              {/* PREFIXO: Quase sempre obrigatório */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Prefixo do Veículo *
@@ -636,18 +753,20 @@ export function NovaOcorrencia({
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Local da Parada *
-                </label>
-                <input
-                  type="text"
-                  value={localParada}
-                  onChange={(e) => setLocalParada(e.target.value)}
-                  placeholder="Ex: KM 45 BR-324, Posto Graal - Rodovia Ayrton Senna"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+              {/* LOCAL: O label muda dinamicamente (Local da Parada vs Local do Excesso) */}
+              {show("localParada") && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {getLabel("localParada", "Local da Ocorrência")} *
+                  </label>
+                  <input
+                    type="text"
+                    value={localParada}
+                    onChange={(e) => setLocalParada(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  />
+                </div>
+              )}
             </div>
           </section>
 
@@ -716,10 +835,17 @@ export function NovaOcorrencia({
 
                   dataEvento,
                   dataViagem,
-                  horarioInicial,
+                  // Ajuste de horário para o preview de velocidade
+                  horarioInicial: show("horarioEvento")
+                    ? horarioEvento
+                    : horarioInicial,
                   horarioFinal,
                   localParada,
                   evidencias,
+
+                  // ADICIONE ESTA LINHA:
+                  details: { velocidade: velocidadeAtingida },
+
                   createdAt: new Date().toISOString(),
                 })}
               </pre>

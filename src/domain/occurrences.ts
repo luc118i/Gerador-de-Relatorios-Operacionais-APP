@@ -12,7 +12,9 @@ export type OccurrenceDetailDTO = OccurrenceDTO & {
 
 export type OccurrenceDriverInput = {
   position: 1 | 2;
-  driverId: string;
+  registry: string;
+  name: string;
+  baseCode: string;
 };
 
 export type CreateOccurrenceInput = {
@@ -23,16 +25,23 @@ export type CreateOccurrenceInput = {
   startTime: string;
   endTime: string;
 
-  vehicleNumber: string; // ✅ obrigatório no backend
-  place: string; // ✅ obrigatório no backend
+  vehicleNumber: string;
+  place: string;
 
-  tripId?: string; // opcional no backend
+  tripId?: string;
   lineLabel?: string | null;
-  baseCode?: string; // opcional (backend deriva se faltar)
+  baseCode?: string;
 
   drivers: OccurrenceDriverInput[];
+
+  description?: string;
+
+  details?: {
+    velocidade?: string;
+    [key: string]: any;
+  };
 };
-// envelope padrão que o backend usa em listas (GET /drivers, GET /occurrences)
+
 export type ApiData<T> = { data: T };
 
 // retorno real do POST /occurrences (sucesso)
@@ -64,6 +73,12 @@ export type OccurrenceDTO = {
   createdAt: string; // ISO
   drivers: OccurrenceDriverDTO[];
   evidenceCount: number;
+};
+
+export type OccurrenceTypeDTO = {
+  id: string;
+  code: string;
+  title: string;
 };
 
 export type CreateOccurrenceFormInput = {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Home } from "./pages/home";
 import { NovaOcorrencia } from "./pages/nova-ocorrencia";
 import { RelatorioDiario } from "./pages/relatorio-diario";
@@ -6,12 +6,34 @@ import { Ocorrencia } from "./types";
 
 import { toast, Toaster } from "sonner";
 import { OccurrencePreviewPage } from "./pages/occurrences/preview/OccurrencePreviewPage";
+import { TypeSelector } from "./pages/occurrences/selector/TypeSelector";
 
 type Page =
   | "home"
   | "nova-ocorrencia"
   | "relatorio-diario"
+  | "selecionar-tipo"
   | "preview-ocorrencia";
+
+type OccurrenceType = {
+  id: string;
+  code: string;
+  title: string;
+};
+
+function RedirectToSelector({ onRedirect }: { onRedirect: () => void }) {
+  useEffect(() => {
+    onRedirect();
+  }, [onRedirect]);
+
+  return (
+    <div className="flex items-center justify-center min-h-[400px]">
+      <p className="text-gray-500 animate-pulse">
+        Redirecionando para seleção de tipo...
+      </p>
+    </div>
+  );
+}
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>("home");
@@ -22,11 +44,16 @@ export default function App() {
   const [previewOccurrenceView, setPreviewOccurrenceView] =
     useState<Ocorrencia | null>(null);
 
-  // Função auxiliar para limpar os estados de edição/preview ao criar uma nova
-  const handleIrParaNovo = () => {
+  const handleIrParaNovo = (type?: OccurrenceType) => {
     setPreviewOccurrenceId(null);
     setPreviewOccurrenceView(null);
-    setCurrentPage("nova-ocorrencia");
+
+    if (type) {
+      setSelectedOccurrenceType(type);
+      setCurrentPage("nova-ocorrencia");
+    } else {
+      setCurrentPage("selecionar-tipo");
+    }
   };
 
   const handleSavedToPreview = (args: { id: string; view: Ocorrencia }) => {
@@ -36,6 +63,12 @@ export default function App() {
     setCurrentPage("preview-ocorrencia");
   };
 
+  const [selectedOccurrenceType, setSelectedOccurrenceType] = useState<{
+    id: string;
+    code: string;
+    title: string;
+  } | null>(null);
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Toaster position="top-right" />
@@ -43,19 +76,35 @@ export default function App() {
       <main className="flex-grow">
         {currentPage === "home" && (
           <Home
-            onNovaOcorrencia={handleIrParaNovo} // Usa a função que limpa o estado
+            onNovaOcorrencia={handleIrParaNovo}
             onGerarRelatorio={() => setCurrentPage("relatorio-diario")}
           />
         )}
 
-        {currentPage === "nova-ocorrencia" && (
-          <NovaOcorrencia
-            onVoltar={() => setCurrentPage("home")}
-            onSaved={handleSavedToPreview}
-            // AQUI ESTÁ A CHAVE: Passamos o objeto que estava no preview para o formulário
-            edicao={previewOccurrenceView ?? undefined}
+        {currentPage === "selecionar-tipo" && (
+          <TypeSelector
+            onCancel={() => setCurrentPage("home")}
+            onSelect={(type) => {
+              setSelectedOccurrenceType(type);
+              setCurrentPage("nova-ocorrencia");
+            }}
           />
         )}
+
+        {/* Bloco Único para Nova Ocorrência */}
+        {currentPage === "nova-ocorrencia" &&
+          (selectedOccurrenceType ? (
+            <NovaOcorrencia
+              occurrenceType={selectedOccurrenceType}
+              onVoltar={() => setCurrentPage("selecionar-tipo")}
+              onSaved={handleSavedToPreview}
+              edicao={previewOccurrenceView ?? undefined}
+            />
+          ) : (
+            <RedirectToSelector
+              onRedirect={() => setCurrentPage("selecionar-tipo")}
+            />
+          ))}
 
         {currentPage === "relatorio-diario" && (
           <RelatorioDiario onVoltar={() => setCurrentPage("home")} />
@@ -68,7 +117,7 @@ export default function App() {
               occurrenceId={previewOccurrenceId}
               occurrence={previewOccurrenceView}
               onBack={() => setCurrentPage("home")}
-              onEdit={() => setCurrentPage("nova-ocorrencia")} // Agora o 'nova-ocorrencia' acima terá o 'edicao' preenchido
+              onEdit={() => setCurrentPage("nova-ocorrencia")}
             />
           )}
       </main>

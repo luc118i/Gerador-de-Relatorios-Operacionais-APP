@@ -3,13 +3,16 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { occurrencesApi } from "../../api/occurrences.api";
-import type { OccurrenceDTO } from "../../domain/occurrences";
+import type {
+  OccurrenceDTO,
+  OccurrenceTypeDTO,
+} from "../../domain/occurrences";
 import { OccurrenceCard } from "../components/OccurrenceCardDTO";
 
 import { OccurrencePreviewModal } from "./occurrences/preview/OccurrencePreviewModal";
 
 interface HomeProps {
-  onNovaOcorrencia: () => void;
+  onNovaOcorrencia: (type?: OccurrenceTypeDTO) => void;
   onGerarRelatorio: () => void;
 }
 
@@ -73,7 +76,7 @@ export function Home({ onNovaOcorrencia, onGerarRelatorio }: HomeProps) {
               </button>
 
               <button
-                onClick={onNovaOcorrencia}
+                onClick={() => onNovaOcorrencia()}
                 className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium "
               >
                 <Plus className="w-5 h-5 " />
@@ -142,7 +145,7 @@ export function Home({ onNovaOcorrencia, onGerarRelatorio }: HomeProps) {
               operacional
             </p>
             <button
-              onClick={onNovaOcorrencia}
+              onClick={() => onNovaOcorrencia()}
               className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
             >
               <Plus className="w-5 h-5" />
@@ -173,8 +176,8 @@ export function Home({ onNovaOcorrencia, onGerarRelatorio }: HomeProps) {
 
 function SkeletonCard() {
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-4">
-      <div className="h-5 w-28 bg-gray-100 rounded mb-3" />
+    <div className="bg-white border border-gray-200 rounded-lg p-4 animate-pulse">
+      <div className="h-5 w-28 bg-gray-200 rounded mb-3" />
       <div className="h-4 w-44 bg-gray-100 rounded mb-2" />
       <div className="h-4 w-36 bg-gray-100 rounded mb-4" />
       <div className="h-3 w-52 bg-gray-100 rounded" />
