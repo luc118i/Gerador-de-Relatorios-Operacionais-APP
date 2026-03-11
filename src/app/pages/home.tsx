@@ -113,7 +113,7 @@ export function Home({ onNovaOcorrencia, onGerarRelatorio }: HomeProps) {
 
                 <button
                   onClick={() => changeDay(-1)}
-                  className="p-1 rounded hover:bg-gray-100 hover:text-blue-600 transition"
+                  className="cursor-pointer p-1 rounded hover:bg-gray-100 hover:text-blue-600 transition"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
@@ -122,14 +122,14 @@ export function Home({ onNovaOcorrencia, onGerarRelatorio }: HomeProps) {
 
                 <button
                   onClick={() => changeDay(1)}
-                  className="p-1 rounded hover:bg-gray-100 hover:text-blue-600 transition"
+                  className="cursor-pointer p-1 rounded hover:bg-gray-100 hover:text-blue-600 transition"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
 
                 <button
                   onClick={goToday}
-                  className="ml-2 text-xs px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 transition"
+                  className="cursor-pointer ml-2 text-xs px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 transition"
                 >
                   {dateDiffLabel}
                 </button>
@@ -173,7 +173,7 @@ export function Home({ onNovaOcorrencia, onGerarRelatorio }: HomeProps) {
           ) : (
             <p className="text-sm text-gray-600">
               {ocorrencias.length} registro
-              {ocorrencias.length !== 1 ? "s" : ""} hoje
+              {ocorrencias.length !== 1 ? "s" : ""}
             </p>
           )}
         </div>
@@ -208,7 +208,7 @@ export function Home({ onNovaOcorrencia, onGerarRelatorio }: HomeProps) {
               <FileText className="w-8 h-8 text-gray-400" />
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Nenhuma ocorrência registrada hoje
+              Nenhuma ocorrência registrada
             </h3>
             <p className="text-sm text-gray-600 mb-6">
               Clique no botão "Nova Ocorrência" para registrar um descumprimento
