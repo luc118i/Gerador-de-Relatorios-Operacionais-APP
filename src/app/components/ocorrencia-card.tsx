@@ -14,10 +14,10 @@ function isViagemFull(
 }
 
 export function OcorrenciaCard({ ocorrencia, onClick }: OcorrenciaCardProps) {
-  const tempoParada = calcularTempoParada(
-    ocorrencia.horarioInicial,
-    ocorrencia.horarioFinal,
-  );
+  const tempoParada =
+    ocorrencia.horarioInicial && ocorrencia.horarioFinal
+      ? calcularTempoParada(ocorrencia.horarioInicial, ocorrencia.horarioFinal)
+      : "—";
 
   // Criamos constantes para facilitar a leitura e garantir strings
   const viagem = ocorrencia.viagem;
@@ -78,19 +78,21 @@ export function OcorrenciaCard({ ocorrencia, onClick }: OcorrenciaCardProps) {
   );
 }
 
-function calcularTempoParada(inicio: string, fim: string): string {
-  const [hI, mI] = inicio.split(":").map(Number);
-  const [hF, mF] = fim.split(":").map(Number);
+function calcularTempoParada(inicio?: string, fim?: string) {
+  if (!inicio || !fim) return "—";
 
-  const totalMinutosInicio = hI * 60 + mI;
-  const totalMinutosFim = hF * 60 + mF;
-  const diff = totalMinutosFim - totalMinutosInicio;
+  const [h1, m1] = inicio.split(":").map(Number);
+  const [h2, m2] = fim.split(":").map(Number);
 
-  const horas = Math.floor(diff / 60);
-  const minutos = diff % 60;
+  const inicioMin = h1 * 60 + m1;
+  const fimMin = h2 * 60 + m2;
 
-  if (horas > 0) {
-    return `${horas}h ${minutos}min`;
-  }
-  return `${minutos}min`;
+  const diff = fimMin - inicioMin;
+
+  if (diff < 0) return "—";
+
+  const h = Math.floor(diff / 60);
+  const m = diff % 60;
+
+  return `${h}h ${m}m`;
 }

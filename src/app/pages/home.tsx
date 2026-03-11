@@ -14,6 +14,8 @@ import { OccurrenceCard } from "../components/OccurrenceCardDTO";
 
 import { OccurrencePreviewModal } from "./occurrences/preview/OccurrencePreviewModal";
 
+import { formatToLocalDate } from "../utils/dateUtils";
+
 interface HomeProps {
   onNovaOcorrencia: () => void;
   onGerarRelatorio: () => void;
@@ -22,35 +24,27 @@ interface HomeProps {
 export function Home({ onNovaOcorrencia, onGerarRelatorio }: HomeProps) {
   const [selectedDate, setSelectedDate] = useState(() => {
     const date = new Date();
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-
-    return `${year}-${month}-${day}`;
+    return date.toISOString().split("T")[0];
   });
 
   const formattedDate = useMemo(() => {
-    const date = new Date(selectedDate);
-
-    return date.toLocaleDateString("pt-BR", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
+    return formatToLocalDate(selectedDate); // Agora usando a função importada para garantir o fuso horário correto
   }, [selectedDate]);
 
   const dateDiffLabel = useMemo(() => {
     const today = new Date();
-    const current = new Date(selectedDate + "T00:00:00");
+    today.setHours(0, 0, 0, 0); // Zera o horário para comparar apenas os dias
 
+    // Use o mesmo padrão UTC para criar a data de comparação
+    const current = new Date(selectedDate + "T00:00:00Z");
+
+    // Para calcular a diferença de dias de forma segura:
     const diffTime = today.getTime() - current.getTime();
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
     if (diffDays === 0) return "Hoje";
     if (diffDays === 1) return "Ontem";
     if (diffDays > 1) return `${diffDays} dias atrás`;
-
     if (diffDays === -1) return "Amanhã";
     if (diffDays < -1) return `Em ${Math.abs(diffDays)} dias`;
 
@@ -75,15 +69,16 @@ export function Home({ onNovaOcorrencia, onGerarRelatorio }: HomeProps) {
   const [previewId, setPreviewId] = useState<string | null>(null);
 
   function changeDay(offset: number) {
-    const date = new Date(selectedDate + "T00:00:00");
+    const [year, month, day] = selectedDate.split("-").map(Number);
+    const date = new Date(year, month - 1, day);
 
-    date.setDate(date.getDate() + offset);
+    date.setDate(date.getDate() + offset); // Soma ou subtrai o dia
 
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
+    const newYear = date.getFullYear();
+    const newMonth = String(date.getMonth() + 1).padStart(2, "0");
+    const newDay = String(date.getDate()).padStart(2, "0");
 
-    setSelectedDate(`${year}-${month}-${day}`);
+    setSelectedDate(`${newYear}-${newMonth}-${newDay}`);
   }
 
   const today = (() => {
@@ -96,7 +91,6 @@ export function Home({ onNovaOcorrencia, onGerarRelatorio }: HomeProps) {
 
   function goToday() {
     const date = new Date();
-
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
