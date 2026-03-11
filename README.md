@@ -16,13 +16,27 @@ Este projeto utiliza as seguintes tecnologias:
 
 ## 📂 Estrutura de Arquivos
 
-A estrutura do projeto segue uma organização por **Features** e **Domínio**:
-
-- `src/domain`: Contém os contratos (DTOs) e tipos globais.
-- `src/features`: Pastas isoladas por funcionalidade, contendo componentes e lógica específica (queries/mutations).
-- `src/utils`: Helpers globais para formatação de dados e conversão de fusos horários.
-- `src/api`: Configurações de serviços e chamadas HTTP.
-
+src/
+├── api/             # Infraestrutura e chamadas HTTP
+│   ├── http/        # Configurações globais (Axios/Fetch)
+│   └── *.api.ts     # Serviços de busca (drivers, occurrences, reports)
+│
+├── app/             # Camada de Visualização (UI)
+│   ├── components/  # Componentes reutilizáveis de interface
+│   ├── pages/       # Páginas principais da aplicação
+│   └── utils/       # Helpers de UI e formatação local
+│
+├── domain/          # Regras de Negócio e Contratos
+│   └── *.ts         # Tipagens, Interfaces e DTOs (Data Transfer Objects)
+│
+├── features/        # Módulos isolados por funcionalidade
+│   ├── occurrences/ # Lógica de Ocorrências (Queries, Payloads, Keys)
+│   └── reportsPdf/  # Lógica específica para geração de PDFs
+│
+├── shared/          # Recursos compartilhados entre múltiplos módulos
+├── styles/          # Estilização global e configurações de tema
+├── catalogs/        # Arquivos de dados estáticos ou catálogos
+└── data/            # Mock de dados ou persistência local temporária
 ## 🛠️ Instalação e Execução
 
 1. Clone o repositório:
