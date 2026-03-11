@@ -1,4 +1,10 @@
-import { Plus, FileText, Calendar } from "lucide-react";
+import {
+  Plus,
+  FileText,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
@@ -14,38 +20,89 @@ interface HomeProps {
 }
 
 export function Home({ onNovaOcorrencia, onGerarRelatorio }: HomeProps) {
-  const hoje = new Date().toLocaleDateString("pt-BR", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-
-  const todayISO = useMemo(() => {
+  const [selectedDate, setSelectedDate] = useState(() => {
     const date = new Date();
-    // Formata como YYYY-MM-DD respeitando o fuso horário local
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
+
     return `${year}-${month}-${day}`;
-  }, []);
+  });
+
+  const formattedDate = useMemo(() => {
+    const date = new Date(selectedDate);
+
+    return date.toLocaleDateString("pt-BR", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  }, [selectedDate]);
+
+  const dateDiffLabel = useMemo(() => {
+    const today = new Date();
+    const current = new Date(selectedDate + "T00:00:00");
+
+    const diffTime = today.getTime() - current.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return "Hoje";
+    if (diffDays === 1) return "Ontem";
+    if (diffDays > 1) return `${diffDays} dias atrás`;
+
+    if (diffDays === -1) return "Amanhã";
+    if (diffDays < -1) return `Em ${Math.abs(diffDays)} dias`;
+
+    return "";
+  }, [selectedDate]);
 
   const { data, isLoading, isError, refetch } = useQuery({
     // Mudamos a chave para deixar claro que é por data de criação/relatório
-    queryKey: ["occurrences", "byCreationDate", todayISO],
+    queryKey: ["occurrences", "byCreationDate", selectedDate],
     queryFn: async () => {
       // Aqui você chama a API passando a data de hoje.
       // IMPORTANTE: O seu Back-end deve usar esse 'todayISO' na query:
       // WHERE created_at::date = '2026-02-13'
-      const res = await occurrencesApi.listOccurrences(todayISO);
+      const res = await occurrencesApi.listOccurrences(selectedDate);
       return res.data;
     },
     staleTime: 30_000,
   });
 
-  const ocorrenciasHoje: OccurrenceDTO[] = data ?? [];
+  const ocorrencias: OccurrenceDTO[] = data ?? [];
 
   const [previewId, setPreviewId] = useState<string | null>(null);
+
+  function changeDay(offset: number) {
+    const date = new Date(selectedDate + "T00:00:00");
+
+    date.setDate(date.getDate() + offset);
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+
+    setSelectedDate(`${year}-${month}-${day}`);
+  }
+
+  const today = (() => {
+    const date = new Date();
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  })();
+
+  function goToday() {
+    const date = new Date();
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+
+    setSelectedDate(`${year}-${month}-${day}`);
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -57,9 +114,31 @@ export function Home({ onNovaOcorrencia, onGerarRelatorio }: HomeProps) {
               <h1 className="text-2xl font-semibold text-gray-900">
                 Gerador de Relatórios Operacionais
               </h1>
-              <p className="text-sm text-gray-600 mt-1 capitalize">
-                <Calendar className="w-4 h-4 inline mr-1" />
-                {hoje}
+              <p className="text-sm text-gray-600 mt-1 capitalize flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+
+                <button
+                  onClick={() => changeDay(-1)}
+                  className="p-1 rounded hover:bg-gray-100 hover:text-blue-600 transition"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+
+                {formattedDate}
+
+                <button
+                  onClick={() => changeDay(1)}
+                  className="p-1 rounded hover:bg-gray-100 hover:text-blue-600 transition"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+
+                <button
+                  onClick={goToday}
+                  className="ml-2 text-xs px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 transition"
+                >
+                  {dateDiffLabel}
+                </button>
               </p>
             </div>
 
@@ -69,7 +148,7 @@ export function Home({ onNovaOcorrencia, onGerarRelatorio }: HomeProps) {
                 className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
               >
                 <FileText className="w-5 h-5" />
-                Relatório do Dia
+                Ocorrências da Data
               </button>
 
               <button
@@ -99,8 +178,8 @@ export function Home({ onNovaOcorrencia, onGerarRelatorio }: HomeProps) {
             </p>
           ) : (
             <p className="text-sm text-gray-600">
-              {ocorrenciasHoje.length} registro
-              {ocorrenciasHoje.length !== 1 ? "s" : ""} hoje
+              {ocorrencias.length} registro
+              {ocorrencias.length !== 1 ? "s" : ""} hoje
             </p>
           )}
         </div>
@@ -129,7 +208,7 @@ export function Home({ onNovaOcorrencia, onGerarRelatorio }: HomeProps) {
             <SkeletonCard />
             <SkeletonCard />
           </div>
-        ) : ocorrenciasHoje.length === 0 ? (
+        ) : ocorrencias.length === 0 ? (
           <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <FileText className="w-8 h-8 text-gray-400" />
@@ -151,7 +230,7 @@ export function Home({ onNovaOcorrencia, onGerarRelatorio }: HomeProps) {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {ocorrenciasHoje.map((occ) => (
+            {ocorrencias.map((occ) => (
               <OccurrenceCard
                 key={occ.id}
                 occurrence={occ}
