@@ -1,11 +1,5 @@
-import {
-  Plus,
-  FileText,
-  Calendar,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
-import { useMemo, useState } from "react";
+import { Plus, FileText, ChevronLeft, ChevronRight } from "lucide-react";
+import { useMemo, useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { occurrencesApi } from "../../api/occurrences.api";
@@ -16,16 +10,20 @@ import { OccurrencePreviewModal } from "./occurrences/preview/OccurrencePreviewM
 
 import { formatToLocalDate } from "../utils/dateUtils";
 
+import { Calendar as CalendarIcon } from "lucide-react";
+
+import { DayPicker } from "react-day-picker";
+import "react-day-picker/dist/style.css";
+
 interface HomeProps {
   onNovaOcorrencia: () => void;
   onGerarRelatorio: () => void;
 }
 
 export function Home({ onNovaOcorrencia, onGerarRelatorio }: HomeProps) {
-  const [selectedDate, setSelectedDate] = useState(() => {
-    const date = new Date();
-    return date.toISOString().split("T")[0];
-  });
+  const [selectedDate, setSelectedDate] = useState(() =>
+    getLocalDateString(new Date()),
+  );
 
   const formattedDate = useMemo(() => {
     return formatToLocalDate(selectedDate); // Agora usando a função importada para garantir o fuso horário correto
@@ -36,7 +34,9 @@ export function Home({ onNovaOcorrencia, onGerarRelatorio }: HomeProps) {
     today.setHours(0, 0, 0, 0); // Zera o horário para comparar apenas os dias
 
     // Use o mesmo padrão UTC para criar a data de comparação
-    const current = new Date(selectedDate + "T00:00:00Z");
+    const [year, month, day] = selectedDate.split("-").map(Number);
+    const current = new Date(year, month - 1, day);
+    current.setHours(0, 0, 0, 0);
 
     // Para calcular a diferença de dias de forma segura:
     const diffTime = today.getTime() - current.getTime();
@@ -49,6 +49,13 @@ export function Home({ onNovaOcorrencia, onGerarRelatorio }: HomeProps) {
     if (diffDays < -1) return `Em ${Math.abs(diffDays)} dias`;
 
     return "";
+  }, [selectedDate]);
+
+  const calendarRef = useRef<HTMLDivElement | null>(null);
+
+  const selectedDateObj = useMemo(() => {
+    const [year, month, day] = selectedDate.split("-").map(Number);
+    return new Date(year, month - 1, day);
   }, [selectedDate]);
 
   const { data, isLoading, isError, refetch } = useQuery({
@@ -89,14 +96,47 @@ export function Home({ onNovaOcorrencia, onGerarRelatorio }: HomeProps) {
     return `${year}-${month}-${day}`;
   })();
 
+  const [calendarVisible, setCalendarVisible] = useState(false);
+
   function goToday() {
-    const date = new Date();
+    setSelectedDate(getLocalDateString(new Date()));
+  }
+
+  function getLocalDateString(date: Date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+  }
+
+  function handleSelect(date?: Date) {
+    if (!date) return;
+
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
 
     setSelectedDate(`${year}-${month}-${day}`);
+    setCalendarVisible(false);
   }
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        calendarRef.current &&
+        !calendarRef.current.contains(event.target as Node)
+      ) {
+        setCalendarVisible(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -104,12 +144,20 @@ export function Home({ onNovaOcorrencia, onGerarRelatorio }: HomeProps) {
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <div>
+            <div className="relative">
               <h1 className="text-2xl font-semibold text-gray-900">
                 Gerador de Relatórios Operacionais
               </h1>
-              <p className="text-sm text-gray-600 mt-1 capitalize flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
+              <div
+                ref={calendarRef}
+                className="relative text-sm text-gray-600 mt-1 capitalize flex items-center gap-2"
+              >
+                <button
+                  onClick={() => setCalendarVisible((v) => !v)}
+                  className="p-1 rounded hover:bg-gray-100 hover:text-blue-600 transition"
+                >
+                  <CalendarIcon className="cursor-pointer w-4 h-4" />
+                </button>
 
                 <button
                   onClick={() => changeDay(-1)}
@@ -133,7 +181,24 @@ export function Home({ onNovaOcorrencia, onGerarRelatorio }: HomeProps) {
                 >
                   {dateDiffLabel}
                 </button>
-              </p>
+
+                {calendarVisible && (
+                  <div className="absolute top-8 left-0 bg-white shadow-lg border rounded-lg p-2 z-50">
+                    <DayPicker
+                      mode="single"
+                      selected={selectedDateObj}
+                      onSelect={handleSelect}
+                      className="p-3 bg-white rounded-xl shadow-xl border"
+                      classNames={{
+                        day_selected:
+                          "bg-blue-600 text-white hover:bg-blue-600",
+                        day_today: "border border-blue-500",
+                        nav_button: "hover:bg-gray-100 rounded-md",
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="flex gap-3">
