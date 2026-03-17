@@ -36,7 +36,7 @@ export const driversApi = {
   },
 
   createDriver(input: CreateDriverInput) {
-    return request<{ id: string }>({
+    return request<Driver>({
       method: "POST",
       path: "/drivers",
       body: input,
