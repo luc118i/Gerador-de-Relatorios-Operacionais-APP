@@ -18,7 +18,6 @@ import {
 } from "../types";
 import { AutocompleteViagem } from "../components/autocomplete-viagem";
 import { EvidenciasGrid } from "../components/evidencias-grid";
-import { BaseChip } from "../components/base-chip";
 
 import { DriverPicker } from "../components/DriverPicker/DriverPicker";
 import { DriverCreateModal } from "../components/DriverCreateModal/DriverCreateModal";
@@ -35,12 +34,12 @@ import { toast } from "sonner";
 
 import { viagensCatalog } from "../../catalogs/viagens.catalog";
 
-import {
-  gerarTextoRelatorioIndividual,
-  gerarTextoWhatsApp,
-} from "../utils/relatorio";
+import { gerarTextoRelatorioIndividual } from "../utils/relatorio";
 
 import { occurrencesApi } from "../../api/occurrences.api";
+import { LocalPicker } from "../components/LocalPicker/LocalPicker";
+
+import type { Local } from "../../api/locais.api";
 
 interface NovaOcorrenciaProps {
   onVoltar: () => void;
@@ -59,7 +58,7 @@ export function NovaOcorrencia({
   );
   const [horarioInicial, setHorarioInicial] = useState("");
   const [horarioFinal, setHorarioFinal] = useState("");
-  const [localParada, setLocalParada] = useState("");
+  const [localParada, setLocalParada] = useState<Local | null>(null);
   const [evidencias, setEvidencias] = useState<Evidencia[]>([]);
   const [showPreview, setShowPreview] = useState(false);
 
@@ -100,7 +99,7 @@ export function NovaOcorrencia({
       dataViagem &&
       horarioInicial &&
       horarioFinal &&
-      localParada.trim() &&
+      !!localParada &&
       vehicleNumber.trim() &&
       isHorarioValido() &&
       driversOk
@@ -120,7 +119,9 @@ export function NovaOcorrencia({
       setDataViagem(edicao.dataViagem || edicao.dataEvento);
       setHorarioInicial(edicao.horarioInicial);
       setHorarioFinal(edicao.horarioFinal);
-      setLocalParada(edicao.localParada);
+      setLocalParada(
+        edicao.localParada ? { id: 0, nome: edicao.localParada } : null,
+      );
       setVehicleNumber(viagemSalva.prefixo || "");
 
       // 2. Viagem (Recuperando do Catálogo para o Autocomplete)
@@ -283,7 +284,7 @@ export function NovaOcorrencia({
         tripDate: dataViagem,
         startTime: horarioInicial,
         endTime: horarioFinal,
-        place: localParada,
+        place: localParada?.nome ?? "",
         vehicleNumber,
         tripId: viagemSelecionada.id,
         lineLabel,
@@ -320,7 +321,7 @@ export function NovaOcorrencia({
         dataViagem,
         horarioInicial,
         horarioFinal,
-        localParada,
+        localParada: localParada?.nome ?? "",
         evidencias,
         createdAt: edicao?.createdAt || new Date().toISOString(),
       };
@@ -637,15 +638,10 @@ export function NovaOcorrencia({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Local da Parada *
-                </label>
-                <input
-                  type="text"
+                <LocalPicker
                   value={localParada}
-                  onChange={(e) => setLocalParada(e.target.value)}
-                  placeholder="Ex: KM 45 BR-324, Posto Graal - Rodovia Ayrton Senna"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onChange={setLocalParada}
+                  required
                 />
               </div>
             </div>
@@ -718,7 +714,7 @@ export function NovaOcorrencia({
                   dataViagem,
                   horarioInicial,
                   horarioFinal,
-                  localParada,
+                  localParada: localParada?.nome ?? "",
                   evidencias,
                   createdAt: new Date().toISOString(),
                 })}
