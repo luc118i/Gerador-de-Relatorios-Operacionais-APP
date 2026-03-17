@@ -35,8 +35,7 @@ export async function request<T>({
   query,
   body,
 }: RequestOptions): Promise<T> {
-  let urlString = `${BASE_URL}${path}`;
-  const url = new URL(urlString);
+  const url = new URL(`${BASE_URL}${path}`);
 
   if (query) {
     Object.entries(query).forEach(([key, value]) => {
@@ -51,7 +50,19 @@ export async function request<T>({
   });
 
   if (res.ok) {
-    return res.json();
+    // se for 204 No Content, ou Content-Length 0, não tenta fazer json()
+    if (res.status === 204) {
+      // @ts-expect-error: caller deve usar void
+      return undefined;
+    }
+
+    const text = await res.text();
+    if (!text) {
+      // @ts-expect-error: caller deve usar void ou tipo compatível
+      return undefined;
+    }
+
+    return tryParseJson(text) as T;
   }
 
   const text = await res.text();

@@ -6,12 +6,14 @@ import { Ocorrencia } from "./types";
 
 import { toast, Toaster } from "sonner";
 import { OccurrencePreviewPage } from "./pages/occurrences/preview/OccurrencePreviewPage";
+import { DriversPage } from "./pages/DriversPage";
 
 type Page =
   | "home"
   | "nova-ocorrencia"
   | "relatorio-diario"
-  | "preview-ocorrencia";
+  | "preview-ocorrencia"
+  | "motoristas";
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>("home");
@@ -45,6 +47,7 @@ export default function App() {
           <Home
             onNovaOcorrencia={handleIrParaNovo} // Usa a função que limpa o estado
             onGerarRelatorio={() => setCurrentPage("relatorio-diario")}
+            onGerenciarMotoristas={() => setCurrentPage("motoristas")}
           />
         )}
 
@@ -71,6 +74,10 @@ export default function App() {
               onEdit={() => setCurrentPage("nova-ocorrencia")} // Agora o 'nova-ocorrencia' acima terá o 'edicao' preenchido
             />
           )}
+
+        {currentPage === "motoristas" && (
+          <DriversPage onVoltar={() => setCurrentPage("home")} />
+        )}
       </main>
 
       <footer className="py-6 px-6 md:px-12 border-t border-gray-200 bg-transparent">
