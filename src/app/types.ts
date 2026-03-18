@@ -14,6 +14,7 @@ export interface Viagem {
   nomeLinha?: string;
   origem?: string;
   destino?: string;
+  sentido?: string;
 }
 
 export interface Evidencia {

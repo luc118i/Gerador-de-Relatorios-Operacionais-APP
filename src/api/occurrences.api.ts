@@ -37,6 +37,13 @@ export const occurrencesApi = {
     });
   },
 
+  deleteOccurrence(id: string) {
+    return request<void>({
+      method: "DELETE",
+      path: `/occurrences/${id}`,
+    });
+  },
+
   async getOccurrenceById(id: string): Promise<OccurrenceDTO> {
     const json = await request<ApiData<OccurrenceDTO>>({
       method: "GET",
@@ -79,6 +86,16 @@ export const occurrencesApi = {
 
     if (!res.ok) throw new Error(await res.text());
     return res.json();
+  },
+
+  async getEvidenceSignedUrls(id: string) {
+    const json = await request<{
+      data: Array<{ id: string; url: string; caption: string }>;
+    }>({
+      method: "GET",
+      path: `/occurrences/${id}/evidences/signed-urls`,
+    });
+    return json.data;
   },
 };
 

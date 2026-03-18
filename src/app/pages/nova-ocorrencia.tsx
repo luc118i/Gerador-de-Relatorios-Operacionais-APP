@@ -128,6 +128,12 @@ export function NovaOcorrencia({
       const viagemNoCatalogo = viagensCatalog.rows.find(
         (v) => v.id === viagemSalva.id,
       );
+      console.log("viagemSalva.id:", JSON.stringify(viagemSalva.id));
+      console.log(
+        "primeiro id do catálogo:",
+        JSON.stringify(viagensCatalog.rows[0]?.id),
+      );
+      console.log("encontrou:", !!viagemNoCatalogo);
 
       if (viagemNoCatalogo) {
         setViagemSelecionada(viagemNoCatalogo);
@@ -448,12 +454,20 @@ export function NovaOcorrencia({
                   label="Motorista 01"
                   required
                   value={driver1Id}
+                  initialDriver={
+                    driver1
+                      ? {
+                          id: driver1.id,
+                          code: driver1.code,
+                          name: driver1.name,
+                          base: driver1.base ?? "",
+                        }
+                      : undefined
+                  }
                   excludedIds={driver2Id ? [driver2Id] : []}
                   onChange={(id, d) => {
                     setDriver1Id(id);
                     setDriver1(d ?? null);
-
-                    // se o usuário escolheu algo que conflita com o 02, limpamos o 02
                     if (id && driver2Id === id) {
                       setDriver2Id(null);
                       setDriver2(null);
@@ -470,13 +484,21 @@ export function NovaOcorrencia({
                     <DriverPicker
                       label="Motorista 02"
                       value={driver2Id}
+                      initialDriver={
+                        driver2
+                          ? {
+                              id: driver2.id,
+                              code: driver2.code,
+                              name: driver2.name,
+                              base: driver2.base ?? "",
+                            }
+                          : undefined
+                      }
                       excludedIds={driver1Id ? [driver1Id] : []}
                       onChange={(id, d) => {
                         setDriver2Id(id);
                         setDriver2(d ?? null);
-
                         if (id && driver1Id === id) {
-                          // proteção extra (em teoria excludedIds já impede)
                           setDriver2Id(null);
                           setDriver2(null);
                         }

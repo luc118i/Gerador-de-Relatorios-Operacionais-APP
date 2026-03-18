@@ -71,7 +71,13 @@ export function AutocompleteViagem({
   }, [indexed, viagens, search]);
 
   const displayText = value
-    ? `${value.codigoLinha} - ${value.nomeLinha} - ${value.horaPartida} (${value.sentido})`
+    ? [
+        `${value.codigoLinha} - ${value.nomeLinha}`,
+        value.horaPartida,
+        value.sentido || null,
+      ]
+        .filter(Boolean)
+        .join(" - ")
     : "Selecione uma viagem";
 
   return (

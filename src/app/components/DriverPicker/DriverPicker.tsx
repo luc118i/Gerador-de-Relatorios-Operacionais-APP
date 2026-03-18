@@ -20,6 +20,7 @@ export function DriverPicker({
   value,
   onChange,
   required,
+  initialDriver,
   disabled,
   excludedIds = [],
   onCreateRequested,
@@ -44,6 +45,18 @@ export function DriverPicker({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (initialDriver && value === initialDriver.id && !selectedDriver) {
+      setSelectedDriver({
+        id: initialDriver.id,
+        code: initialDriver.code,
+        name: initialDriver.name,
+        base: initialDriver.base ?? "",
+        active: true,
+      } as Driver);
+    }
+  }, [initialDriver, value]);
 
   const options = useMemo(() => {
     const list = Array.isArray(data) ? data : [];
