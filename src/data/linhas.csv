@@ -194,7 +194,7 @@ Codigo Linha,Nome da Linha ,Hora Partida,Sentido
 PESP0053021,RECIFE (PE) - SAO PAULO (SP),20:00,Volta
 Codigo Linha,Nome da Linha ,Hora Partida,Sentido
 ALSP0053032,MACEIO (AL) - SAO PAULO (SP),08:00,Ida
-ALSP0053032,MACEIO (AL) - SAO PAULO (SP),20:00,Ida
+ALSP0053032,MACEIO (AL) - SAO PAULO (SP),20:00,Volta
 ALSP0053032,MACEIO (AL) - SAO PAULO (SP),12:00,Volta
 Codigo Linha,Nome da Linha ,Hora Partida,Sentido
 MGPI0053023,UBERLANDIA (MG) - TERESINA (PI),02:30,Ida
