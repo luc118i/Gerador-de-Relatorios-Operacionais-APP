@@ -41,6 +41,16 @@ export interface Ocorrencia {
   speedKmh?: number | null;
   evidencias: Evidencia[];
   createdAt: string;
+
+  // Campos do tipo GENERICO (CCO)
+  reportTitle?: string | null;        // Nome do relatório (ex: "Atendimento Especial")
+  ccoOperator?: string | null;        // Operador CCO
+  vehicleKm?: number | null;          // KM do Veículo
+  passengerCount?: number | null;     // Qtd. Passageiros
+  passengerConnection?: string | null; // Passageiros Conexão
+  relatoHtml?: string | null;         // HTML do relato (rich text)
+  devolutivaHtml?: string | null;     // HTML da devolutiva (opcional)
+  devolutivaStatus?: string | null;   // Status: "EM_ANDAMENTO" | "RESOLVIDO" | null
 }
 
 export type ApiError = {

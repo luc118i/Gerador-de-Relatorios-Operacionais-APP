@@ -231,65 +231,173 @@ export function OccurrencePreviewPage(props: {
         <div className="bg-white border border-gray-200 rounded-lg p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Resumo</h2>
           <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <div className="text-gray-500">Linha</div>
-              <div className="font-medium text-gray-900">
-                {getViagemLinha(occurrence.viagem)}
-              </div>
-            </div>
-            <div>
-              <div className="text-gray-500">Prefixo</div>
-              <div className="font-medium text-gray-900">
-                {getViagemPrefixo(occurrence.viagem)}
-              </div>
-            </div>
-            <div className="col-span-2">
-              <div className="text-gray-500">Origem x Destino</div>
-              <div className="font-medium text-gray-900">
-                {getViagemOrigem(occurrence.viagem)} x{" "}
-                {getViagemDestino(occurrence.viagem)}
-              </div>
-            </div>
-            <div>
-              <div className="text-gray-500">Data</div>
-              <div className="font-medium text-gray-900">
-                {occurrence.dataEvento}
-              </div>
-            </div>
-
-            {occurrence.typeCode === "EXCESSO_VELOCIDADE" ? (
-              <div>
-                <div className="text-gray-500">Horário do Evento</div>
-                <div className="font-medium text-gray-900">
-                  {occurrence.horarioInicial}
+            {occurrence.typeCode === "GENERICO" ? (
+              // Layout GENERICO (CCO)
+              <>
+                <div className="col-span-2">
+                  <div className="text-gray-500">Nome do Relatório</div>
+                  <div className="font-medium text-gray-900">
+                    {occurrence.reportTitle || "—"}
+                  </div>
                 </div>
-              </div>
+                <div>
+                  <div className="text-gray-500">Operador CCO</div>
+                  <div className="font-medium text-gray-900">
+                    {occurrence.ccoOperator || "—"}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-gray-500">Data Origem</div>
+                  <div className="font-medium text-gray-900">
+                    {occurrence.dataEvento}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-gray-500">Horário</div>
+                  <div className="font-medium text-gray-900">
+                    {occurrence.horarioInicial}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-gray-500">Prefixo do Veículo</div>
+                  <div className="font-medium text-gray-900">
+                    {getViagemPrefixo(occurrence.viagem)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-gray-500">Itinerário</div>
+                  <div className="font-medium text-gray-900">
+                    {getViagemLinha(occurrence.viagem)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-gray-500">Local</div>
+                  <div className="font-medium text-gray-900">
+                    {occurrence.localParada || "—"}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-gray-500">KM do Veículo</div>
+                  <div className="font-medium text-gray-900">
+                    {occurrence.vehicleKm ?? "—"}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-gray-500">Qtd. Passageiros</div>
+                  <div className="font-medium text-gray-900">
+                    {occurrence.passengerCount ?? "—"}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-gray-500">Passageiros Conexão</div>
+                  <div className="font-medium text-gray-900">
+                    {occurrence.passengerConnection || "—"}
+                  </div>
+                </div>
+              </>
             ) : (
-              <div>
-                <div className="text-gray-500">Horários</div>
-                <div className="font-medium text-gray-900">
-                  {occurrence.horarioInicial} → {occurrence.horarioFinal}
+              // Layout padrão (DESCUMP e EXCESSO)
+              <>
+                <div>
+                  <div className="text-gray-500">Linha</div>
+                  <div className="font-medium text-gray-900">
+                    {getViagemLinha(occurrence.viagem)}
+                  </div>
                 </div>
-              </div>
-            )}
+                <div>
+                  <div className="text-gray-500">Prefixo</div>
+                  <div className="font-medium text-gray-900">
+                    {getViagemPrefixo(occurrence.viagem)}
+                  </div>
+                </div>
+                <div className="col-span-2">
+                  <div className="text-gray-500">Origem x Destino</div>
+                  <div className="font-medium text-gray-900">
+                    {getViagemOrigem(occurrence.viagem)} x{" "}
+                    {getViagemDestino(occurrence.viagem)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-gray-500">Data</div>
+                  <div className="font-medium text-gray-900">
+                    {occurrence.dataEvento}
+                  </div>
+                </div>
 
-            {occurrence.typeCode === "EXCESSO_VELOCIDADE" ? (
-              <div className="col-span-2">
-                <div className="text-gray-500">Velocidade Atingida</div>
-                <div className="font-medium text-gray-900">
-                  {occurrence.speedKmh ? `${occurrence.speedKmh} km/h` : "—"}
-                </div>
-              </div>
-            ) : (
-              <div className="col-span-2">
-                <div className="text-gray-500">Local</div>
-                <div className="font-medium text-gray-900">
-                  {occurrence.localParada || "—"}
-                </div>
-              </div>
+                {occurrence.typeCode === "EXCESSO_VELOCIDADE" ? (
+                  <div>
+                    <div className="text-gray-500">Horário do Evento</div>
+                    <div className="font-medium text-gray-900">
+                      {occurrence.horarioInicial}
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="text-gray-500">Horários</div>
+                    <div className="font-medium text-gray-900">
+                      {occurrence.horarioInicial} → {occurrence.horarioFinal}
+                    </div>
+                  </div>
+                )}
+
+                {occurrence.typeCode === "EXCESSO_VELOCIDADE" ? (
+                  <div className="col-span-2">
+                    <div className="text-gray-500">Velocidade Atingida</div>
+                    <div className="font-medium text-gray-900">
+                      {occurrence.speedKmh ? `${occurrence.speedKmh} km/h` : "—"}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="col-span-2">
+                    <div className="text-gray-500">Local</div>
+                    <div className="font-medium text-gray-900">
+                      {occurrence.localParada || "—"}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
+
+        {/* Relato e Devolutiva (apenas GENERICO) */}
+        {occurrence.typeCode === "GENERICO" && occurrence.relatoHtml && (
+          <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 mb-2">
+                📝 Relato da Ocorrência
+              </h2>
+              <div
+                className="text-sm text-gray-800 prose prose-sm max-w-none"
+                dangerouslySetInnerHTML={{ __html: occurrence.relatoHtml }}
+              />
+            </div>
+            {occurrence.devolutivaHtml && (
+              <div className="pt-4 border-t border-gray-100">
+                <h2 className="text-lg font-semibold text-gray-900 mb-2">
+                  ✅ Devolutiva / Solução Adotada
+                  {occurrence.devolutivaStatus && (
+                    <span
+                      className={`ml-2 text-xs font-normal px-2 py-0.5 rounded-full ${
+                        occurrence.devolutivaStatus === "RESOLVIDO"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-yellow-100 text-yellow-700"
+                      }`}
+                    >
+                      {occurrence.devolutivaStatus === "RESOLVIDO"
+                        ? "✅ Resolvido"
+                        : "⚠️ Em Andamento"}
+                    </span>
+                  )}
+                </h2>
+                <div
+                  className="text-sm text-gray-800 prose prose-sm max-w-none"
+                  dangerouslySetInnerHTML={{ __html: occurrence.devolutivaHtml }}
+                />
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Textos */}
         <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-3">

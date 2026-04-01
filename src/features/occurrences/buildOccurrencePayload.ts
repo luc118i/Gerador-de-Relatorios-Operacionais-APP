@@ -16,6 +16,16 @@ export function buildOccurrencePayload(args: {
   tripId?: string | null;
   lineLabel?: string | null;
   speedKmh?: number | null;
+
+  // Campos do tipo GENERICO (CCO)
+  reportTitle?: string | null;
+  ccoOperator?: string | null;
+  vehicleKm?: number | null;
+  passengerCount?: number | null;
+  passengerConnection?: string | null;
+  relatoHtml?: string | null;
+  devolutivaHtml?: string | null;
+  devolutivaStatus?: string | null;
 }): CreateOccurrenceInput {
   if (!args.driver1Id) throw new Error("Motorista 01 é obrigatório.");
 
@@ -46,6 +56,15 @@ export function buildOccurrencePayload(args: {
     tripId: args.tripId ?? undefined,
     lineLabel: args.lineLabel ?? null,
     speedKmh: args.speedKmh ?? null,
+    // Campos GENERICO
+    reportTitle: args.reportTitle ?? null,
+    ccoOperator: args.ccoOperator ?? null,
+    vehicleKm: args.vehicleKm ?? null,
+    passengerCount: args.passengerCount ?? null,
+    passengerConnection: args.passengerConnection ?? null,
+    relatoHtml: args.relatoHtml ?? null,
+    devolutivaHtml: args.devolutivaHtml ?? null,
+    devolutivaStatus: args.devolutivaStatus ?? null,
     drivers,
     // baseCode: não manda (backend deriva)
   };

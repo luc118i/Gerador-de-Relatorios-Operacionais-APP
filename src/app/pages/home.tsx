@@ -428,6 +428,16 @@ function dtoToOcorrencia(
     typeTitle: dto.typeTitle ?? "",
     speedKmh: dto.speedKmh ?? null,
 
+    // Campos GENERICO
+    reportTitle: dto.reportTitle ?? null,
+    ccoOperator: dto.ccoOperator ?? null,
+    vehicleKm: dto.vehicleKm ?? null,
+    passengerCount: dto.passengerCount ?? null,
+    passengerConnection: dto.passengerConnection ?? null,
+    relatoHtml: dto.relatoHtml ?? null,
+    devolutivaHtml: dto.devolutivaHtml ?? null,
+    devolutivaStatus: dto.devolutivaStatus ?? null,
+
     createdAt: dto.createdAt ?? "",
   };
 }

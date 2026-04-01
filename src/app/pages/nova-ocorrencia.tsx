@@ -8,6 +8,7 @@ import {
   AlertCircle,
   Loader2,
 } from "lucide-react";
+import { RichTextEditor } from "../components/RichTextEditor";
 import {
   Viagem,
   Motorista,
@@ -58,6 +59,16 @@ export function NovaOcorrencia({
 }: NovaOcorrenciaProps) {
   const [typeCode, setTypeCode] = useState("DESCUMP_OP_PARADA_FORA");
   const [speedKmh, setSpeedKmh] = useState<number | null>(null);
+
+  // Campos do tipo GENERICO (CCO)
+  const [reportTitle, setReportTitle] = useState("");
+  const [ccoOperator, setCcoOperator] = useState("");
+  const [vehicleKm, setVehicleKm] = useState<number | null>(null);
+  const [passengerCount, setPassengerCount] = useState<number | null>(null);
+  const [passengerConnection, setPassengerConnection] = useState("");
+  const [relatoHtml, setRelatoHtml] = useState("");
+  const [devolutivaHtml, setDevolutivaHtml] = useState("");
+  const [devolutivaStatus, setDevolutivaStatus] = useState<string>("EM_ANDAMENTO");
   const [motorista2Ativo, setMotorista2Ativo] = useState(false);
   const [dataEvento, setDataEvento] = useState(
     new Date().toISOString().split("T")[0],
@@ -104,6 +115,9 @@ export function NovaOcorrencia({
     const horarioOk = typeConfig.singleTime
       ? !!horarioInicial
       : !!horarioInicial && !!horarioFinal && isHorarioValido();
+    const genericOk = typeConfig.isGeneric
+      ? !!reportTitle.trim() && !!relatoHtml.trim()
+      : true;
 
     return (
       viagemSelecionada &&
@@ -113,7 +127,8 @@ export function NovaOcorrencia({
       localOk &&
       vehicleNumber.trim() &&
       driversOk &&
-      speedOk
+      speedOk &&
+      genericOk
     );
   };
 
@@ -136,6 +151,16 @@ export function NovaOcorrencia({
       setVehicleNumber(viagemSalva.prefixo || "");
       if (edicao.typeCode) setTypeCode(edicao.typeCode);
       setSpeedKmh(edicao.speedKmh ?? null);
+
+      // Campos GENERICO
+      setReportTitle(edicao.reportTitle ?? "");
+      setCcoOperator(edicao.ccoOperator ?? "");
+      setVehicleKm(edicao.vehicleKm ?? null);
+      setPassengerCount(edicao.passengerCount ?? null);
+      setPassengerConnection(edicao.passengerConnection ?? "");
+      setRelatoHtml(edicao.relatoHtml ?? "");
+      setDevolutivaHtml(edicao.devolutivaHtml ?? "");
+      setDevolutivaStatus(edicao.devolutivaStatus ?? "EM_ANDAMENTO");
 
       // 2. Viagem (Recuperando do Catálogo para o Autocomplete)
       const viagemNoCatalogo = viagensCatalog.rows.find(
@@ -297,6 +322,7 @@ export function NovaOcorrencia({
     const lineLabel = `${viagemSelecionada.codigoLinha} - ${viagemSelecionada.nomeLinha}`;
 
     try {
+      const typeConfig = getOccurrenceTypeConfig(typeCode);
       const payload = buildOccurrencePayload({
         driver1Id,
         driver2Id,
@@ -311,6 +337,15 @@ export function NovaOcorrencia({
         lineLabel,
         typeCode,
         speedKmh,
+        // GENERICO
+        reportTitle: typeConfig.isGeneric ? reportTitle : null,
+        ccoOperator: typeConfig.isGeneric ? ccoOperator : null,
+        vehicleKm: typeConfig.isGeneric ? vehicleKm : null,
+        passengerCount: typeConfig.isGeneric ? passengerCount : null,
+        passengerConnection: typeConfig.isGeneric ? passengerConnection : null,
+        relatoHtml: typeConfig.isGeneric ? relatoHtml : null,
+        devolutivaHtml: typeConfig.isGeneric ? devolutivaHtml || null : null,
+        devolutivaStatus: typeConfig.isGeneric ? devolutivaStatus : null,
       });
 
       let resultId: string;
@@ -347,8 +382,6 @@ export function NovaOcorrencia({
         ),
       );
 
-      const typeConfig = getOccurrenceTypeConfig(typeCode);
-
       const novaOcorrenciaView: Ocorrencia = {
         id: resultId,
         typeCode,
@@ -364,6 +397,15 @@ export function NovaOcorrencia({
         speedKmh: typeConfig.showSpeed ? speedKmh : null,
         evidencias,
         createdAt: edicao?.createdAt || new Date().toISOString(),
+        // GENERICO
+        reportTitle: typeConfig.isGeneric ? reportTitle : null,
+        ccoOperator: typeConfig.isGeneric ? ccoOperator : null,
+        vehicleKm: typeConfig.isGeneric ? vehicleKm : null,
+        passengerCount: typeConfig.isGeneric ? passengerCount : null,
+        passengerConnection: typeConfig.isGeneric ? passengerConnection || null : null,
+        relatoHtml: typeConfig.isGeneric ? relatoHtml : null,
+        devolutivaHtml: typeConfig.isGeneric ? devolutivaHtml || null : null,
+        devolutivaStatus: typeConfig.isGeneric ? devolutivaStatus : null,
       };
 
       // TRANSIÇÃO PARA SUCESSO
@@ -620,6 +662,15 @@ export function NovaOcorrencia({
                     setTypeCode(e.target.value);
                     setSpeedKmh(null);
                     setLocalParada(null);
+                    // Resetar campos GENERICO ao trocar tipo
+                    setReportTitle("");
+                    setCcoOperator("");
+                    setVehicleKm(null);
+                    setPassengerCount(null);
+                    setPassengerConnection("");
+                    setRelatoHtml("");
+                    setDevolutivaHtml("");
+                    setDevolutivaStatus("EM_ANDAMENTO");
                   }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                 >
@@ -753,11 +804,34 @@ export function NovaOcorrencia({
 
               {getOccurrenceTypeConfig(typeCode).showPlace && (
                 <div>
-                  <LocalPicker
-                    value={localParada}
-                    onChange={setLocalParada}
-                    required
-                  />
+                  {getOccurrenceTypeConfig(typeCode).isGeneric ? (
+                    // GENERICO: campo de texto livre para o local da ocorrência
+                    <>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Local da Ocorrência
+                      </label>
+                      <input
+                        type="text"
+                        value={localParada?.nome ?? ""}
+                        onChange={(e) =>
+                          setLocalParada(
+                            e.target.value
+                              ? { id: 0, nome: e.target.value }
+                              : null,
+                          )
+                        }
+                        placeholder="Ex: Campinas – SP, Rodoviária de Curitiba..."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </>
+                  ) : (
+                    // Demais tipos: seletor de local cadastrado
+                    <LocalPicker
+                      value={localParada}
+                      onChange={setLocalParada}
+                      required
+                    />
+                  )}
                 </div>
               )}
 
@@ -784,7 +858,142 @@ export function NovaOcorrencia({
             </div>
           </section>
 
-          {/* Bloco 4 - Evidências */}
+          {/* Bloco 4 - Campos GENERICO */}
+          {getOccurrenceTypeConfig(typeCode).isGeneric && (
+            <>
+              {/* Identificação do Relatório */}
+              <section>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                  📋 Identificação do Relatório
+                </h2>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Nome do Relatório *
+                    </label>
+                    <input
+                      type="text"
+                      value={reportTitle}
+                      onChange={(e) => setReportTitle(e.target.value)}
+                      placeholder="Ex: Atendimento Especial, Acidente, Pane Mecânica..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Operador CCO
+                    </label>
+                    <input
+                      type="text"
+                      value={ccoOperator}
+                      onChange={(e) => setCcoOperator(e.target.value)}
+                      placeholder="Ex: Paulo Cesar"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      KM do Veículo
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={vehicleKm ?? ""}
+                      onChange={(e) =>
+                        setVehicleKm(e.target.value ? Number(e.target.value) : null)
+                      }
+                      placeholder="Ex: 526178"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+              </section>
+
+              {/* Passageiros */}
+              <section>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                  👥 Passageiros
+                </h2>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Qtd. Passageiros
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={passengerCount ?? ""}
+                      onChange={(e) =>
+                        setPassengerCount(
+                          e.target.value ? Number(e.target.value) : null,
+                        )
+                      }
+                      placeholder="Ex: 15"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Passageiros Conexão
+                    </label>
+                    <input
+                      type="text"
+                      value={passengerConnection}
+                      onChange={(e) => setPassengerConnection(e.target.value)}
+                      placeholder="Ex: 3 ou —"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+              </section>
+
+              {/* Relato da Ocorrência */}
+              <section>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                  📝 Relato da Ocorrência *
+                </h2>
+                <RichTextEditor
+                  value={relatoHtml}
+                  onChange={setRelatoHtml}
+                  placeholder="Descreva o que ocorreu..."
+                  minHeight="150px"
+                />
+              </section>
+
+              {/* Devolutiva / Solução Adotada */}
+              <section>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                  ✅ Devolutiva / Solução Adotada
+                  <span className="text-sm font-normal text-gray-500 ml-2">
+                    (opcional)
+                  </span>
+                </h2>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Status
+                    </label>
+                    <select
+                      value={devolutivaStatus}
+                      onChange={(e) => setDevolutivaStatus(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    >
+                      <option value="EM_ANDAMENTO">⚠️ Em Andamento</option>
+                      <option value="RESOLVIDO">✅ Resolvido</option>
+                    </select>
+                  </div>
+                  <RichTextEditor
+                    value={devolutivaHtml}
+                    onChange={setDevolutivaHtml}
+                    placeholder="Descreva a solução adotada..."
+                    minHeight="100px"
+                  />
+                </div>
+              </section>
+            </>
+          )}
+
+          {/* Bloco 5 - Evidências */}
           <section>
             <h2 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
               Evidências

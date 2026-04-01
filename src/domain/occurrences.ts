@@ -31,6 +31,16 @@ export type CreateOccurrenceInput = {
   baseCode?: string; // opcional (backend deriva se faltar)
   speedKmh?: number | null; // para tipo EXCESSO_VELOCIDADE
 
+  // Campos do tipo GENERICO (CCO)
+  reportTitle?: string | null;
+  ccoOperator?: string | null;
+  vehicleKm?: number | null;
+  passengerCount?: number | null;
+  passengerConnection?: string | null;
+  relatoHtml?: string | null;
+  devolutivaHtml?: string | null;
+  devolutivaStatus?: string | null;
+
   drivers: OccurrenceDriverInput[];
 };
 // envelope padrão que o backend usa em listas (GET /drivers, GET /occurrences)
@@ -66,6 +76,16 @@ export type OccurrenceDTO = {
   createdAt: string; // ISO
   drivers: OccurrenceDriverDTO[];
   evidenceCount: number;
+
+  // Campos do tipo GENERICO (CCO)
+  reportTitle?: string | null;
+  ccoOperator?: string | null;
+  vehicleKm?: number | null;
+  passengerCount?: number | null;
+  passengerConnection?: string | null;
+  relatoHtml?: string | null;
+  devolutivaHtml?: string | null;
+  devolutivaStatus?: string | null;
 };
 
 export type CreateOccurrenceFormInput = {

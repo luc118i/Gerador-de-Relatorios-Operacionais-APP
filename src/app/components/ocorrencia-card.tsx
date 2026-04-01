@@ -114,6 +114,13 @@ export function OcorrenciaCard({
               {ocorrencia.speedKmh ? `${ocorrencia.speedKmh} km/h` : "—"}
             </span>
           </p>
+        ) : ocorrencia.typeCode === "GENERICO" ? (
+          <p className="text-sm text-gray-600">
+            📋{" "}
+            <span className="font-semibold text-gray-800">
+              {ocorrencia.reportTitle || "—"}
+            </span>
+          </p>
         ) : (
           <p className="text-sm text-gray-600">📍 {ocorrencia.localParada}</p>
         )}

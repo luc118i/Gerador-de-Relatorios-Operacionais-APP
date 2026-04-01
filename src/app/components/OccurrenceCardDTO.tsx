@@ -60,7 +60,11 @@ export function OccurrenceCard({
             <BaseChip base={driver1?.baseCode ?? occurrence.baseCode} />
           </div>
           <p className="text-sm text-gray-600">
-            {occurrence.lineLabel ? occurrence.lineLabel : occurrence.typeTitle}
+            {occurrence.typeCode === "GENERICO"
+              ? (occurrence as any).reportTitle || occurrence.typeTitle
+              : occurrence.lineLabel
+              ? occurrence.lineLabel
+              : occurrence.typeTitle}
           </p>
         </div>
         {occurrence.evidenceCount > 0 && (
@@ -96,6 +100,8 @@ export function OccurrenceCard({
               {occurrence.speedKmh ? `${occurrence.speedKmh} km/h` : "—"}
             </span>
           </p>
+        ) : occurrence.typeCode === "GENERICO" ? (
+          <p className="text-sm text-gray-600">📋 {occurrence.place || "—"}</p>
         ) : (
           <p className="text-sm text-gray-600">📍 {occurrence.place}</p>
         )}

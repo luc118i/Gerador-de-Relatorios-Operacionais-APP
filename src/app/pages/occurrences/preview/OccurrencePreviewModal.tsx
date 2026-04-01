@@ -148,6 +148,13 @@ export function OccurrencePreviewModal({ occurrenceId, open, onClose }: Props) {
                         {occ.speedKmh ? `${occ.speedKmh} km/h` : "—"}
                       </p>
                     </div>
+                  ) : occ.typeCode === "GENERICO" ? (
+                    <div className="rounded-xl bg-white border border-black/10 p-4">
+                      <p className="text-xs text-gray-500">Nome do Relatório</p>
+                      <p className="text-sm font-semibold text-gray-900">
+                        {(occ as any).reportTitle ?? "—"}
+                      </p>
+                    </div>
                   ) : (
                     <div className="rounded-xl bg-white border border-black/10 p-4">
                       <p className="text-xs text-gray-500">Local</p>
@@ -190,12 +197,32 @@ export function OccurrencePreviewModal({ occurrenceId, open, onClose }: Props) {
                   ) : (
                     <InfoRow
                       icon={Clock}
-                      label="Duração"
-                      value={formatTimeRangeWithDuration(
-                        occ.startTime,
-                        occ.endTime,
-                      )}
+                      label={occ.typeCode === "GENERICO" ? "Horário" : "Duração"}
+                      value={
+                        occ.typeCode === "GENERICO"
+                          ? occ.startTime
+                          : formatTimeRangeWithDuration(occ.startTime, occ.endTime)
+                      }
                     />
+                  )}
+
+                  {occ.typeCode === "GENERICO" && (
+                    <>
+                      {(occ as any).ccoOperator && (
+                        <InfoRow
+                          icon={User}
+                          label="Operador CCO"
+                          value={(occ as any).ccoOperator}
+                        />
+                      )}
+                      {(occ as any).passengerCount != null && (
+                        <InfoRow
+                          icon={MapPin}
+                          label="Passageiros"
+                          value={String((occ as any).passengerCount)}
+                        />
+                      )}
+                    </>
                   )}
 
                   <div className="flex items-center justify-between text-sm pt-2 border-t border-black/10">
