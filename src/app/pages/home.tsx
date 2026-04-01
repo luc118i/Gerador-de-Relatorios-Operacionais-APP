@@ -368,7 +368,13 @@ function getLocalDateString(date: Date) {
 
 function dtoToOcorrencia(
   dto: any,
-  signedUrls: Array<{ id: string; url: string; caption: string }> = [],
+  signedUrls: Array<{
+    id: string;
+    url: string;
+    caption?: string;
+    linkTexto?: string;
+    linkUrl?: string;
+  }> = [],
 ): Ocorrencia {
   const viagemNoCatalogo = dto.tripId
     ? viagensCatalog.byKey.get(dto.tripId)

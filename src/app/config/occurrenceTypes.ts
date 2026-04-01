@@ -23,15 +23,14 @@ export const OCCURRENCE_TYPES: OccurrenceTypeConfig[] = [
   },
 ];
 
-export function getOccurrenceTypeConfig(
-  code: string,
-): OccurrenceTypeConfig {
+export function getOccurrenceTypeConfig(code: string): OccurrenceTypeConfig {
   return (
     OCCURRENCE_TYPES.find((t) => t.code === code) ?? {
       code,
       title: code,
       showPlace: true,
       showSpeed: false,
+      singleTime: true,
     }
   );
 }
