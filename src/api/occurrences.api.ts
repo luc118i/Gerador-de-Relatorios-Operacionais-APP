@@ -88,9 +88,26 @@ export const occurrencesApi = {
     return res.json();
   },
 
+  async updateEvidenceCaption(
+    occurrenceId: string,
+    evidenceId: string,
+    caption: string,
+  ) {
+    const res = await fetch(
+      `${BASE_URL}/occurrences/${occurrenceId}/evidences/${evidenceId}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ caption }),
+      },
+    );
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+
   async getEvidenceSignedUrls(id: string) {
     const json = await request<{
-      data: Array<{ id: string; url: string; caption: string }>;
+      data: Array<{ id: string; url: string; caption: string; linkTexto: string; linkUrl: string }>;
     }>({
       method: "GET",
       path: `/occurrences/${id}/evidences/signed-urls`,

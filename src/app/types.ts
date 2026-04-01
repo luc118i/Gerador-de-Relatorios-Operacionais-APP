@@ -28,6 +28,8 @@ export interface Evidencia {
 
 export interface Ocorrencia {
   id: string;
+  typeCode?: string;
+  typeTitle?: string;
   viagem: Viagem;
   motorista1: Motorista;
   motorista2?: Motorista;
@@ -36,6 +38,7 @@ export interface Ocorrencia {
   horarioInicial: string;
   horarioFinal: string;
   localParada: string;
+  speedKmh?: number | null;
   evidencias: Evidencia[];
   createdAt: string;
 }

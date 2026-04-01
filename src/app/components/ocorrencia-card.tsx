@@ -95,12 +95,29 @@ export function OcorrenciaCard({
       <div className="space-y-2">
         <div className="flex items-center gap-2 text-sm text-gray-700">
           <Clock className="w-4 h-4 text-gray-400" />
-          <span>
-            {ocorrencia.horarioInicial} - {ocorrencia.horarioFinal}
-          </span>
-          <span className="text-gray-400">({tempoParada})</span>
+          {ocorrencia.typeCode === "EXCESSO_VELOCIDADE" ? (
+            <span>{ocorrencia.horarioInicial}</span>
+          ) : (
+            <>
+              <span>
+                {ocorrencia.horarioInicial} - {ocorrencia.horarioFinal}
+              </span>
+              <span className="text-gray-400">({tempoParada})</span>
+            </>
+          )}
         </div>
-        <p className="text-sm text-gray-600">📍 {ocorrencia.localParada}</p>
+
+        {ocorrencia.typeCode === "EXCESSO_VELOCIDADE" ? (
+          <p className="text-sm text-gray-600">
+            🏎️{" "}
+            <span className="font-semibold text-gray-800">
+              {ocorrencia.speedKmh ? `${ocorrencia.speedKmh} km/h` : "—"}
+            </span>
+          </p>
+        ) : (
+          <p className="text-sm text-gray-600">📍 {ocorrencia.localParada}</p>
+        )}
+
         <div className="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-100">
           {ocorrencia.motorista1.nome}
           {ocorrencia.motorista2 && ` • ${ocorrencia.motorista2.nome}`}

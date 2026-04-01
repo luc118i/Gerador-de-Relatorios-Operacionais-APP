@@ -9,12 +9,13 @@ export function buildOccurrencePayload(args: {
   tripDate: string;
   startTime: string;
   endTime: string;
-  place: string;
+  place?: string;
 
   vehicleNumber: string;
   typeCode?: string;
   tripId?: string | null;
   lineLabel?: string | null;
+  speedKmh?: number | null;
 }): CreateOccurrenceInput {
   if (!args.driver1Id) throw new Error("Motorista 01 é obrigatório.");
 
@@ -41,9 +42,10 @@ export function buildOccurrencePayload(args: {
     startTime: args.startTime,
     endTime: args.endTime,
     vehicleNumber: args.vehicleNumber.trim(),
-    place: args.place.trim(),
+    place: args.place?.trim() ?? "",
     tripId: args.tripId ?? undefined,
     lineLabel: args.lineLabel ?? null,
+    speedKmh: args.speedKmh ?? null,
     drivers,
     // baseCode: não manda (backend deriva)
   };

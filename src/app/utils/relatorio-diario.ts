@@ -72,23 +72,23 @@ export function buildDailyReport(occurrences: OccurrenceDTO[]): {
       baseCode: base,
     });
 
+    const narrativa = buildNarrativa(o, eventDate, tripDate, start, end);
+
     const blockVisual = `${marker} OCORRÊNCIA: ${o.typeTitle}
 DATA: ${eventDate}
 Horario do evento: ${start} à ${end}.
-Durante a análise das atividades do veículo de número ${o.vehicleNumber} na viagem do dia ${tripDate}, identificamos o descumprimento operacional/comercial por parte do condutor, realizando uma parada em local fora do esquema operacional.
+${narrativa}
 LINHA: ${line}
-LOCAL: ${place}
-BASE: ${base}
+${o.typeCode !== "EXCESSO_VELOCIDADE" ? `LOCAL: ${place}\n` : ""}${o.typeCode === "EXCESSO_VELOCIDADE" ? `VELOCIDADE: ${o.speedKmh ?? "—"} km/h\n` : ""}BASE: ${base}
 EVIDÊNCIAS: ${o.evidenceCount ?? 0}
 `;
 
     const blockCopy = `OCORRÊNCIA: ${o.typeTitle}
 DATA: ${eventDate}
 Horario do evento: ${start} à ${end}.
-Durante a análise das atividades do veículo de número ${o.vehicleNumber} na viagem do dia ${tripDate}, identificamos o descumprimento operacional/comercial por parte do condutor, realizando uma parada em local fora do esquema operacional.
+${narrativa}
 LINHA: ${line}
-LOCAL: ${place}
-BASE: ${base}
+${o.typeCode !== "EXCESSO_VELOCIDADE" ? `LOCAL: ${place}\n` : ""}${o.typeCode === "EXCESSO_VELOCIDADE" ? `VELOCIDADE: ${o.speedKmh ?? "—"} km/h\n` : ""}BASE: ${base}
 `;
 
     outVisual += blockVisual;
@@ -120,4 +120,21 @@ function formatHourBR(hhmm: string): string {
 function truncate(s: string, max: number): string {
   if (s.length <= max) return s;
   return s.slice(0, max - 1) + "…";
+}
+
+function buildNarrativa(
+  o: OccurrenceDTO,
+  eventDate: string,
+  tripDate: string,
+  start: string,
+  end: string,
+): string {
+  switch (o.typeCode) {
+    case "EXCESSO_VELOCIDADE": {
+      const vel = o.speedKmh ? `${o.speedKmh} km/h` : "velocidade não informada";
+      return `Em ${eventDate}, durante a viagem do veículo de número ${o.vehicleNumber} na viagem do dia ${tripDate}, foi constatado que o motorista atingiu ${vel} no período de ${start} à ${end}, caracterizando EXCESSO DE VELOCIDADE.`;
+    }
+    default:
+      return `Durante a análise das atividades do veículo de número ${o.vehicleNumber} na viagem do dia ${tripDate}, identificamos o descumprimento operacional/comercial por parte do condutor, realizando uma parada em local fora do esquema operacional.`;
+  }
 }

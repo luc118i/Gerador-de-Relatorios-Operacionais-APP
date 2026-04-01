@@ -51,11 +51,7 @@ export function OccurrencePreviewPage(props: {
   }
 
   function getOccurrenceTitle(o: Ocorrencia): string {
-    // Se o seu objeto 'o' tiver o campo typeCode ou similar, podemos mapear.
-    // Como no seu componente anterior você usou o texto fixo:
-    const tipoAmigavel = "PARADA FORA DO PROGRAMADO";
-
-    return tipoAmigavel;
+    return o.typeTitle || o.typeCode || "PARADA FORA DO PROGRAMADO";
   }
 
   type DriverSnapshot = {
@@ -231,7 +227,7 @@ export function OccurrencePreviewPage(props: {
           </div>
         </div>
 
-        {/* Resumo (simples por enquanto) */}
+        {/* Resumo */}
         <div className="bg-white border border-gray-200 rounded-lg p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Resumo</h2>
           <div className="grid grid-cols-2 gap-4 text-sm">
@@ -260,18 +256,38 @@ export function OccurrencePreviewPage(props: {
                 {occurrence.dataEvento}
               </div>
             </div>
-            <div>
-              <div className="text-gray-500">Horários</div>
-              <div className="font-medium text-gray-900">
-                {occurrence.horarioInicial} → {occurrence.horarioFinal}
+
+            {occurrence.typeCode === "EXCESSO_VELOCIDADE" ? (
+              <div>
+                <div className="text-gray-500">Horário do Evento</div>
+                <div className="font-medium text-gray-900">
+                  {occurrence.horarioInicial}
+                </div>
               </div>
-            </div>
-            <div className="col-span-2">
-              <div className="text-gray-500">Local</div>
-              <div className="font-medium text-gray-900">
-                {occurrence.localParada}
+            ) : (
+              <div>
+                <div className="text-gray-500">Horários</div>
+                <div className="font-medium text-gray-900">
+                  {occurrence.horarioInicial} → {occurrence.horarioFinal}
+                </div>
               </div>
-            </div>
+            )}
+
+            {occurrence.typeCode === "EXCESSO_VELOCIDADE" ? (
+              <div className="col-span-2">
+                <div className="text-gray-500">Velocidade Atingida</div>
+                <div className="font-medium text-gray-900">
+                  {occurrence.speedKmh ? `${occurrence.speedKmh} km/h` : "—"}
+                </div>
+              </div>
+            ) : (
+              <div className="col-span-2">
+                <div className="text-gray-500">Local</div>
+                <div className="font-medium text-gray-900">
+                  {occurrence.localParada || "—"}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

@@ -111,7 +111,9 @@ export function OccurrencePreviewModal({ occurrenceId, open, onClose }: Props) {
               </h2>
               <p className="text-xs text-gray-600 mt-1">
                 {occ
-                  ? `${occ.startTime} — ${occ.endTime} • ${occ.eventDate}`
+                  ? occ.startTime === occ.endTime
+                    ? `${occ.startTime} • ${occ.eventDate}`
+                    : `${occ.startTime} — ${occ.endTime} • ${occ.eventDate}`
                   : ""}
               </p>
             </div>
@@ -139,12 +141,21 @@ export function OccurrencePreviewModal({ occurrenceId, open, onClose }: Props) {
             ) : occ ? (
               <>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="rounded-xl bg-white border border-black/10 p-4">
-                    <p className="text-xs text-gray-500">Local</p>
-                    <p className="text-sm font-semibold text-gray-900">
-                      {occ.place ?? "—"}
-                    </p>
-                  </div>
+                  {occ.typeCode === "EXCESSO_VELOCIDADE" ? (
+                    <div className="rounded-xl bg-white border border-black/10 p-4">
+                      <p className="text-xs text-gray-500">Velocidade</p>
+                      <p className="text-sm font-semibold text-gray-900">
+                        {occ.speedKmh ? `${occ.speedKmh} km/h` : "—"}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="rounded-xl bg-white border border-black/10 p-4">
+                      <p className="text-xs text-gray-500">Local</p>
+                      <p className="text-sm font-semibold text-gray-900">
+                        {occ.place ?? "—"}
+                      </p>
+                    </div>
+                  )}
 
                   <div className="rounded-xl bg-white border border-black/10 p-4">
                     <p className="text-xs text-gray-500">Tipo</p>
@@ -170,14 +181,22 @@ export function OccurrencePreviewModal({ occurrenceId, open, onClose }: Props) {
                     }
                   />
 
-                  <InfoRow
-                    icon={Clock}
-                    label="Duração"
-                    value={formatTimeRangeWithDuration(
-                      occ.startTime,
-                      occ.endTime,
-                    )}
-                  />
+                  {occ.typeCode === "EXCESSO_VELOCIDADE" ? (
+                    <InfoRow
+                      icon={Clock}
+                      label="Horário do Evento"
+                      value={occ.startTime}
+                    />
+                  ) : (
+                    <InfoRow
+                      icon={Clock}
+                      label="Duração"
+                      value={formatTimeRangeWithDuration(
+                        occ.startTime,
+                        occ.endTime,
+                      )}
+                    />
+                  )}
 
                   <div className="flex items-center justify-between text-sm pt-2 border-t border-black/10">
                     <span className="text-gray-500">Evidências</span>

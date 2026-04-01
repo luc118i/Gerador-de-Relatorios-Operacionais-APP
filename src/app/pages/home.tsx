@@ -396,6 +396,8 @@ function dtoToOcorrencia(
       id: e.id,
       url: e.url,
       legenda: e.caption ?? "",
+      linkTexto: e.linkTexto ?? "",
+      linkUrl: e.linkUrl ?? "",
     })),
     motorista1: {
       id: dto.drivers?.[0]?.driverId ?? "",
@@ -416,6 +418,9 @@ function dtoToOcorrencia(
     horarioInicial: dto.startTime ?? "",
     horarioFinal: dto.endTime ?? "",
     localParada: dto.place ?? "",
+    typeCode: dto.typeCode ?? "",
+    typeTitle: dto.typeTitle ?? "",
+    speedKmh: dto.speedKmh ?? null,
 
     createdAt: dto.createdAt ?? "",
   };

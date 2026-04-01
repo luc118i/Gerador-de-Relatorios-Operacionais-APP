@@ -24,11 +24,12 @@ export type CreateOccurrenceInput = {
   endTime: string;
 
   vehicleNumber: string; // ✅ obrigatório no backend
-  place: string; // ✅ obrigatório no backend
+  place?: string; // opcional — alguns tipos não têm local
 
   tripId?: string; // opcional no backend
   lineLabel?: string | null;
   baseCode?: string; // opcional (backend deriva se faltar)
+  speedKmh?: number | null; // para tipo EXCESSO_VELOCIDADE
 
   drivers: OccurrenceDriverInput[];
 };
@@ -61,6 +62,7 @@ export type OccurrenceDTO = {
   baseCode: string;
   lineLabel: string | null;
   place: string;
+  speedKmh?: number | null;
   createdAt: string; // ISO
   drivers: OccurrenceDriverDTO[];
   evidenceCount: number;

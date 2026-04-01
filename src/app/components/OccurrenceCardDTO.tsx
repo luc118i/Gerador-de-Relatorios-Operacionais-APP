@@ -77,12 +77,29 @@ export function OccurrenceCard({
       <div className="space-y-2">
         <div className="flex items-center gap-2 text-sm text-gray-700">
           <Clock className="w-4 h-4 text-gray-400" />
-          <span>
-            {occurrence.startTime} - {occurrence.endTime}
-          </span>
-          <span className="text-gray-400">({tempoParada})</span>
+          {occurrence.typeCode === "EXCESSO_VELOCIDADE" ? (
+            <span>{occurrence.startTime}</span>
+          ) : (
+            <>
+              <span>
+                {occurrence.startTime} - {occurrence.endTime}
+              </span>
+              <span className="text-gray-400">({tempoParada})</span>
+            </>
+          )}
         </div>
-        <p className="text-sm text-gray-600">📍 {occurrence.place}</p>
+
+        {occurrence.typeCode === "EXCESSO_VELOCIDADE" ? (
+          <p className="text-sm text-gray-600">
+            🏎️{" "}
+            <span className="font-semibold text-gray-800">
+              {occurrence.speedKmh ? `${occurrence.speedKmh} km/h` : "—"}
+            </span>
+          </p>
+        ) : (
+          <p className="text-sm text-gray-600">📍 {occurrence.place}</p>
+        )}
+
         <div className="text-xs text-gray-500 pt-2 border-t border-gray-100">
           {driver1?.name ?? "—"}
           {driver2?.name ? ` • ${driver2.name}` : ""}

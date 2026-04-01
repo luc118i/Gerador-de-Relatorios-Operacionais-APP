@@ -38,6 +38,10 @@ import { gerarTextoRelatorioIndividual } from "../utils/relatorio";
 
 import { occurrencesApi } from "../../api/occurrences.api";
 import { LocalPicker } from "../components/LocalPicker/LocalPicker";
+import {
+  OCCURRENCE_TYPES,
+  getOccurrenceTypeConfig,
+} from "../config/occurrenceTypes";
 
 import type { Local } from "../../api/locais.api";
 
@@ -52,6 +56,8 @@ export function NovaOcorrencia({
   onSaved,
   edicao,
 }: NovaOcorrenciaProps) {
+  const [typeCode, setTypeCode] = useState("DESCUMP_OP_PARADA_FORA");
+  const [speedKmh, setSpeedKmh] = useState<number | null>(null);
   const [motorista2Ativo, setMotorista2Ativo] = useState(false);
   const [dataEvento, setDataEvento] = useState(
     new Date().toISOString().split("T")[0],
@@ -92,17 +98,22 @@ export function NovaOcorrencia({
 
   const isFormValido = () => {
     const driversOk = !!driver1 && (!driver2Id || driver2Id !== driver1Id);
+    const typeConfig = getOccurrenceTypeConfig(typeCode);
+    const localOk = typeConfig.showPlace ? !!localParada : true;
+    const speedOk = typeConfig.showSpeed ? speedKmh != null && speedKmh > 0 : true;
+    const horarioOk = typeConfig.singleTime
+      ? !!horarioInicial
+      : !!horarioInicial && !!horarioFinal && isHorarioValido();
 
     return (
       viagemSelecionada &&
       dataEvento &&
       dataViagem &&
-      horarioInicial &&
-      horarioFinal &&
-      !!localParada &&
+      horarioOk &&
+      localOk &&
       vehicleNumber.trim() &&
-      isHorarioValido() &&
-      driversOk
+      driversOk &&
+      speedOk
     );
   };
 
@@ -123,6 +134,8 @@ export function NovaOcorrencia({
         edicao.localParada ? { id: 0, nome: edicao.localParada } : null,
       );
       setVehicleNumber(viagemSalva.prefixo || "");
+      if (edicao.typeCode) setTypeCode(edicao.typeCode);
+      setSpeedKmh(edicao.speedKmh ?? null);
 
       // 2. Viagem (Recuperando do Catálogo para o Autocomplete)
       const viagemNoCatalogo = viagensCatalog.rows.find(
@@ -180,6 +193,8 @@ export function NovaOcorrencia({
             id: ev.id,
             url: ev.url,
             legenda: ev.legenda || "",
+            linkTexto: ev.linkTexto || "",
+            linkUrl: ev.linkUrl || "",
           })),
         );
       }
@@ -294,7 +309,8 @@ export function NovaOcorrencia({
         vehicleNumber,
         tripId: viagemSelecionada.id,
         lineLabel,
-        typeCode: "DESCUMP_OP_PARADA_FORA",
+        typeCode,
+        speedKmh,
       });
 
       let resultId: string;
@@ -312,14 +328,31 @@ export function NovaOcorrencia({
         .map((e) => ({
           file: e.file!,
           caption: e.legenda ?? undefined,
+          linkTexto: e.linkTexto ?? undefined,
+          linkUrl: e.linkUrl ?? undefined,
         }));
 
       if (evidencesToUpload.length) {
         await occurrencesApi.uploadEvidences(resultId, evidencesToUpload);
       }
 
+      const existingEvidences = evidencias.filter((e) => !e.file && e.id);
+      await Promise.all(
+        existingEvidences.map((e) =>
+          occurrencesApi.updateEvidenceCaption(
+            resultId,
+            e.id,
+            e.legenda ?? "",
+          ),
+        ),
+      );
+
+      const typeConfig = getOccurrenceTypeConfig(typeCode);
+
       const novaOcorrenciaView: Ocorrencia = {
         id: resultId,
+        typeCode,
+        typeTitle: typeConfig.title,
         viagem: toViagemView(viagemSelecionada),
         motorista1: toMotoristaView(driver1)!,
         motorista2: motorista2Ativo ? toMotoristaView(driver2) : undefined,
@@ -328,6 +361,7 @@ export function NovaOcorrencia({
         horarioInicial,
         horarioFinal,
         localParada: localParada?.nome ?? "",
+        speedKmh: typeConfig.showSpeed ? speedKmh : null,
         evidencias,
         createdAt: edicao?.createdAt || new Date().toISOString(),
       };
@@ -381,7 +415,8 @@ export function NovaOcorrencia({
                 {edicao ? "Editar Ocorrência" : "Nova Ocorrência"}
               </h1>
               <p className="text-sm text-gray-600 mt-0.5">
-                Descumprimento Operacional / Parada Fora do Programado
+                Descumprimento Operacional /{" "}
+                {getOccurrenceTypeConfig(typeCode).title}
               </p>
             </div>
           </div>
@@ -577,72 +612,129 @@ export function NovaOcorrencia({
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Tipo (não editável)
+                  Tipo de Ocorrência *
                 </label>
-                <div className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-gray-700">
-                  DESCUMPRIMENTO OPERACIONAL / PARADA FORA DO PROGRAMADO
-                </div>
+                <select
+                  value={typeCode}
+                  onChange={(e) => {
+                    setTypeCode(e.target.value);
+                    setSpeedKmh(null);
+                    setLocalParada(null);
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                >
+                  {OCCURRENCE_TYPES.map((t) => (
+                    <option key={t.code} value={t.code}>
+                      {t.title}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              <div className="grid grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Data do Evento *
-                  </label>
-                  <input
-                    type="date"
-                    value={dataEvento}
-                    onChange={(e) => setDataEvento(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+              {getOccurrenceTypeConfig(typeCode).singleTime ? (
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Data do Evento *
+                    </label>
+                    <input
+                      type="date"
+                      value={dataEvento}
+                      onChange={(e) => setDataEvento(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Data da Viagem *
-                  </label>
-                  <input
-                    type="date"
-                    value={dataViagem}
-                    onChange={(e) => setDataViagem(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Data da Viagem *
+                    </label>
+                    <input
+                      type="date"
+                      value={dataViagem}
+                      onChange={(e) => setDataViagem(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Horário Inicial *
-                  </label>
-                  <input
-                    type="time"
-                    value={horarioInicial}
-                    onChange={(e) => setHorarioInicial(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Horário do Evento *
+                    </label>
+                    <input
+                      type="time"
+                      value={horarioInicial}
+                      onChange={(e) => {
+                        setHorarioInicial(e.target.value);
+                        setHorarioFinal(e.target.value);
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
                 </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-4 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Data do Evento *
+                      </label>
+                      <input
+                        type="date"
+                        value={dataEvento}
+                        onChange={(e) => setDataEvento(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Horário Final *
-                  </label>
-                  <input
-                    type="time"
-                    value={horarioFinal}
-                    onChange={(e) => setHorarioFinal(e.target.value)}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                      !isHorarioValido()
-                        ? "border-red-300 focus:ring-red-500"
-                        : "border-gray-300 focus:ring-blue-500"
-                    }`}
-                  />
-                </div>
-              </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Data da Viagem *
+                      </label>
+                      <input
+                        type="date"
+                        value={dataViagem}
+                        onChange={(e) => setDataViagem(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
 
-              {!isHorarioValido() && horarioInicial && horarioFinal && (
-                <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-md">
-                  <AlertCircle className="w-4 h-4" />
-                  Horário final deve ser posterior ao horário inicial
-                </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Horário Inicial *
+                      </label>
+                      <input
+                        type="time"
+                        value={horarioInicial}
+                        onChange={(e) => setHorarioInicial(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Horário Final *
+                      </label>
+                      <input
+                        type="time"
+                        value={horarioFinal}
+                        onChange={(e) => setHorarioFinal(e.target.value)}
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                          !isHorarioValido()
+                            ? "border-red-300 focus:ring-red-500"
+                            : "border-gray-300 focus:ring-blue-500"
+                        }`}
+                      />
+                    </div>
+                  </div>
+
+                  {!isHorarioValido() && horarioInicial && horarioFinal && (
+                    <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-md">
+                      <AlertCircle className="w-4 h-4" />
+                      Horário final deve ser posterior ao horário inicial
+                    </div>
+                  )}
+                </>
               )}
 
               <div>
@@ -659,13 +751,36 @@ export function NovaOcorrencia({
                 />
               </div>
 
-              <div>
-                <LocalPicker
-                  value={localParada}
-                  onChange={setLocalParada}
-                  required
-                />
-              </div>
+              {getOccurrenceTypeConfig(typeCode).showPlace && (
+                <div>
+                  <LocalPicker
+                    value={localParada}
+                    onChange={setLocalParada}
+                    required
+                  />
+                </div>
+              )}
+
+              {getOccurrenceTypeConfig(typeCode).showSpeed && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Velocidade Atingida (km/h) *
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={300}
+                    value={speedKmh ?? ""}
+                    onChange={(e) =>
+                      setSpeedKmh(
+                        e.target.value ? Number(e.target.value) : null,
+                      )
+                    }
+                    placeholder="Ex: 92"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              )}
             </div>
           </section>
 
