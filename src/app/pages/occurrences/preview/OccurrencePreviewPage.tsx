@@ -240,60 +240,68 @@ export function OccurrencePreviewPage(props: {
                     {occurrence.reportTitle || "—"}
                   </div>
                 </div>
-                <div>
-                  <div className="text-gray-500">Operador CCO</div>
-                  <div className="font-medium text-gray-900">
-                    {occurrence.ccoOperator || "—"}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-gray-500">Data Origem</div>
-                  <div className="font-medium text-gray-900">
-                    {occurrence.dataEvento}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-gray-500">Horário</div>
-                  <div className="font-medium text-gray-900">
-                    {occurrence.horarioInicial}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-gray-500">Prefixo do Veículo</div>
-                  <div className="font-medium text-gray-900">
-                    {getViagemPrefixo(occurrence.viagem)}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-gray-500">Itinerário</div>
-                  <div className="font-medium text-gray-900">
-                    {getViagemLinha(occurrence.viagem)}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-gray-500">Local</div>
-                  <div className="font-medium text-gray-900">
-                    {occurrence.localParada || "—"}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-gray-500">KM do Veículo</div>
-                  <div className="font-medium text-gray-900">
-                    {occurrence.vehicleKm ?? "—"}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-gray-500">Qtd. Passageiros</div>
-                  <div className="font-medium text-gray-900">
-                    {occurrence.passengerCount ?? "—"}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-gray-500">Passageiros Conexão</div>
-                  <div className="font-medium text-gray-900">
-                    {occurrence.passengerConnection || "—"}
-                  </div>
-                </div>
+                {occurrence.showSectionDados !== false && (
+                  <>
+                    <div>
+                      <div className="text-gray-500">Operador CCO</div>
+                      <div className="font-medium text-gray-900">
+                        {occurrence.ccoOperator || "—"}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-gray-500">Data Origem</div>
+                      <div className="font-medium text-gray-900">
+                        {occurrence.dataEvento}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-gray-500">Horário</div>
+                      <div className="font-medium text-gray-900">
+                        {occurrence.horarioInicial}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-gray-500">Prefixo do Veículo</div>
+                      <div className="font-medium text-gray-900">
+                        {getViagemPrefixo(occurrence.viagem)}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-gray-500">Itinerário</div>
+                      <div className="font-medium text-gray-900">
+                        {getViagemLinha(occurrence.viagem)}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-gray-500">Local</div>
+                      <div className="font-medium text-gray-900">
+                        {occurrence.localParada || "—"}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-gray-500">KM do Veículo</div>
+                      <div className="font-medium text-gray-900">
+                        {occurrence.vehicleKm ?? "—"}
+                      </div>
+                    </div>
+                  </>
+                )}
+                {occurrence.showSectionPassageiros !== false && (
+                  <>
+                    <div>
+                      <div className="text-gray-500">Qtd. Passageiros</div>
+                      <div className="font-medium text-gray-900">
+                        {occurrence.passengerCount ?? "—"}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-gray-500">Passageiros Conexão</div>
+                      <div className="font-medium text-gray-900">
+                        {occurrence.passengerConnection || "—"}
+                      </div>
+                    </div>
+                  </>
+                )}
               </>
             ) : (
               // Layout padrão (DESCUMP e EXCESSO)

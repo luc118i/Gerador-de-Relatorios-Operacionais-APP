@@ -437,6 +437,12 @@ function dtoToOcorrencia(
     relatoHtml: dto.relatoHtml ?? null,
     devolutivaHtml: dto.devolutivaHtml ?? null,
     devolutivaStatus: dto.devolutivaStatus ?? null,
+    showSectionViagem: dto.showSectionViagem ?? true,
+    showSectionIdentificacao: dto.showSectionIdentificacao ?? true,
+    showSectionDados: dto.showSectionDados ?? true,
+    showSectionTripulacao: dto.showSectionTripulacao ?? true,
+    showSectionPassageiros: dto.showSectionPassageiros ?? true,
+    devolutivaBeforeEvidences: dto.devolutivaBeforeEvidences ?? false,
 
     createdAt: dto.createdAt ?? "",
   };

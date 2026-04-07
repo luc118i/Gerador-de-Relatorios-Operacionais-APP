@@ -14,6 +14,7 @@ export function buildOccurrencePayload(args: {
   vehicleNumber: string;
   typeCode?: string;
   tripId?: string | null;
+  tripTime?: string | null;
   lineLabel?: string | null;
   speedKmh?: number | null;
 
@@ -26,6 +27,12 @@ export function buildOccurrencePayload(args: {
   relatoHtml?: string | null;
   devolutivaHtml?: string | null;
   devolutivaStatus?: string | null;
+  showSectionViagem?: boolean;
+  showSectionIdentificacao?: boolean;
+  showSectionDados?: boolean;
+  showSectionTripulacao?: boolean;
+  showSectionPassageiros?: boolean;
+  devolutivaBeforeEvidences?: boolean;
 }): CreateOccurrenceInput {
   if (!args.driver1Id) throw new Error("Motorista 01 é obrigatório.");
 
@@ -54,6 +61,7 @@ export function buildOccurrencePayload(args: {
     vehicleNumber: args.vehicleNumber.trim(),
     place: args.place?.trim() ?? "",
     tripId: args.tripId ?? undefined,
+    tripTime: args.tripTime ?? null,
     lineLabel: args.lineLabel ?? null,
     speedKmh: args.speedKmh ?? null,
     // Campos GENERICO
@@ -65,6 +73,12 @@ export function buildOccurrencePayload(args: {
     relatoHtml: args.relatoHtml ?? null,
     devolutivaHtml: args.devolutivaHtml ?? null,
     devolutivaStatus: args.devolutivaStatus ?? null,
+    showSectionViagem: args.showSectionViagem ?? true,
+    showSectionIdentificacao: args.showSectionIdentificacao ?? true,
+    showSectionDados: args.showSectionDados ?? true,
+    showSectionTripulacao: args.showSectionTripulacao ?? true,
+    showSectionPassageiros: args.showSectionPassageiros ?? true,
+    devolutivaBeforeEvidences: args.devolutivaBeforeEvidences ?? false,
     drivers,
     // baseCode: não manda (backend deriva)
   };

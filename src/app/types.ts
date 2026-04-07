@@ -51,6 +51,12 @@ export interface Ocorrencia {
   relatoHtml?: string | null;         // HTML do relato (rich text)
   devolutivaHtml?: string | null;     // HTML da devolutiva (opcional)
   devolutivaStatus?: string | null;   // Status: "EM_ANDAMENTO" | "RESOLVIDO" | null
+  showSectionViagem?: boolean;        // Exibir seção "Dados da Viagem" no PDF
+  showSectionIdentificacao?: boolean; // Exibir seção "Identificação do Relatório" no PDF
+  showSectionDados?: boolean;         // Exibir seção "Dados da Ocorrência" no PDF
+  showSectionTripulacao?: boolean;    // Exibir seção "Tripulação" no PDF
+  showSectionPassageiros?: boolean;   // Exibir seção "Passageiros" no PDF
+  devolutivaBeforeEvidences?: boolean; // Devolutiva antes das evidências no PDF
 }
 
 export type ApiError = {

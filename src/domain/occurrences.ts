@@ -25,6 +25,7 @@ export type CreateOccurrenceInput = {
 
   vehicleNumber: string; // ✅ obrigatório no backend
   place?: string; // opcional — alguns tipos não têm local
+  tripTime?: string | null; // horário de partida da viagem (HH:mm)
 
   tripId?: string; // opcional no backend
   lineLabel?: string | null;
@@ -40,6 +41,12 @@ export type CreateOccurrenceInput = {
   relatoHtml?: string | null;
   devolutivaHtml?: string | null;
   devolutivaStatus?: string | null;
+  showSectionViagem?: boolean | null;
+  showSectionIdentificacao?: boolean | null;
+  showSectionDados?: boolean | null;
+  showSectionTripulacao?: boolean | null;
+  showSectionPassageiros?: boolean | null;
+  devolutivaBeforeEvidences?: boolean | null;
 
   drivers: OccurrenceDriverInput[];
 };
@@ -73,6 +80,7 @@ export type OccurrenceDTO = {
   lineLabel: string | null;
   place: string;
   speedKmh?: number | null;
+  tripTime?: string | null; // horário de partida da viagem (HH:mm)
   createdAt: string; // ISO
   drivers: OccurrenceDriverDTO[];
   evidenceCount: number;
@@ -86,6 +94,12 @@ export type OccurrenceDTO = {
   relatoHtml?: string | null;
   devolutivaHtml?: string | null;
   devolutivaStatus?: string | null;
+  showSectionViagem?: boolean | null;
+  showSectionIdentificacao?: boolean | null;
+  showSectionDados?: boolean | null;
+  showSectionTripulacao?: boolean | null;
+  showSectionPassageiros?: boolean | null;
+  devolutivaBeforeEvidences?: boolean | null;
 };
 
 export type CreateOccurrenceFormInput = {

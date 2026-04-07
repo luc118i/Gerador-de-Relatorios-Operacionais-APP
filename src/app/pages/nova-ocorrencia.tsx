@@ -3,6 +3,7 @@ import {
   ArrowLeft,
   Save,
   CheckCircle2,
+  Check,
   Plus,
   X,
   AlertCircle,
@@ -69,6 +70,12 @@ export function NovaOcorrencia({
   const [relatoHtml, setRelatoHtml] = useState("");
   const [devolutivaHtml, setDevolutivaHtml] = useState("");
   const [devolutivaStatus, setDevolutivaStatus] = useState<string>("EM_ANDAMENTO");
+  const [devolutivaBeforeEvidences, setDevolutivaBeforeEvidences] = useState(false);
+  const [showSectionViagem, setShowSectionViagem] = useState(true);
+  const [showSectionIdentificacao, setShowSectionIdentificacao] = useState(true);
+  const [showSectionDados, setShowSectionDados] = useState(true);
+  const [showSectionTripulacao, setShowSectionTripulacao] = useState(true);
+  const [showSectionPassageiros, setShowSectionPassageiros] = useState(true);
   const [motorista2Ativo, setMotorista2Ativo] = useState(false);
   const [dataEvento, setDataEvento] = useState(
     new Date().toISOString().split("T")[0],
@@ -108,24 +115,44 @@ export function NovaOcorrencia({
     useState<ViagemCatalog | null>(null);
 
   const isFormValido = () => {
-    const driversOk = !!driver1 && (!driver2Id || driver2Id !== driver1Id);
     const typeConfig = getOccurrenceTypeConfig(typeCode);
-    const localOk = typeConfig.showPlace ? !!localParada : true;
+
+    // Para GENERICO, seções ocultas dispensam seus campos da validação
+    const sectionViagemAtiva  = !typeConfig.isGeneric || showSectionViagem;
+    const sectionIdAtiva      = !typeConfig.isGeneric || showSectionIdentificacao;
+    const sectionDadosAtiva   = !typeConfig.isGeneric || showSectionDados;
+    const sectionTripAtiva    = !typeConfig.isGeneric || showSectionTripulacao;
+
+    const driversOk = sectionTripAtiva
+      ? !!driver1 && (!driver2Id || driver2Id !== driver1Id)
+      : true;
+
+    const localOk = sectionDadosAtiva && typeConfig.showPlace ? !!localParada : true;
     const speedOk = typeConfig.showSpeed ? speedKmh != null && speedKmh > 0 : true;
-    const horarioOk = typeConfig.singleTime
-      ? !!horarioInicial
-      : !!horarioInicial && !!horarioFinal && isHorarioValido();
+    const horarioOk = sectionDadosAtiva
+      ? typeConfig.singleTime
+        ? !!horarioInicial
+        : !!horarioInicial && !!horarioFinal && isHorarioValido()
+      : true;
+
+    // reportTitle sempre obrigatório para GENERICO (campo independente de qualquer seção)
     const genericOk = typeConfig.isGeneric
       ? !!reportTitle.trim() && !!relatoHtml.trim()
       : true;
 
+    const viagemOk = typeConfig.isGeneric
+      ? !sectionViagemAtiva || !!viagemSelecionada
+      : !!viagemSelecionada;
+
+    const dataOk = sectionDadosAtiva ? !!(dataEvento && dataViagem) : true;
+    const prefixoOk = sectionDadosAtiva ? !!vehicleNumber.trim() : true;
+
     return (
-      viagemSelecionada &&
-      dataEvento &&
-      dataViagem &&
+      viagemOk &&
+      dataOk &&
       horarioOk &&
       localOk &&
-      vehicleNumber.trim() &&
+      prefixoOk &&
       driversOk &&
       speedOk &&
       genericOk
@@ -161,6 +188,12 @@ export function NovaOcorrencia({
       setRelatoHtml(edicao.relatoHtml ?? "");
       setDevolutivaHtml(edicao.devolutivaHtml ?? "");
       setDevolutivaStatus(edicao.devolutivaStatus ?? "EM_ANDAMENTO");
+      setDevolutivaBeforeEvidences(edicao.devolutivaBeforeEvidences ?? false);
+      setShowSectionViagem(edicao.showSectionViagem ?? true);
+      setShowSectionIdentificacao(edicao.showSectionIdentificacao ?? true);
+      setShowSectionDados(edicao.showSectionDados ?? true);
+      setShowSectionTripulacao(edicao.showSectionTripulacao ?? true);
+      setShowSectionPassageiros(edicao.showSectionPassageiros ?? true);
 
       // 2. Viagem (Recuperando do Catálogo para o Autocomplete)
       const viagemNoCatalogo = viagensCatalog.rows.find(
@@ -312,28 +345,35 @@ export function NovaOcorrencia({
   }, [saveStatus]);
 
   const handleSalvar = async () => {
-    if (!isFormValido() || !viagemSelecionada) return;
+    if (!isFormValido()) return;
+
+    const typeConfig = getOccurrenceTypeConfig(typeCode);
+
+    // Para GENERICO sem seção de viagem, viagem não é obrigatória
+    if (!typeConfig.isGeneric && !viagemSelecionada) return;
 
     // FORÇA O STATUS DE SAVING NO INÍCIO
     setSaveStatus("saving");
 
     await new Promise((resolve) => setTimeout(resolve, 500));
 
-    const lineLabel = `${viagemSelecionada.codigoLinha} - ${viagemSelecionada.nomeLinha}`;
+    const lineLabel = viagemSelecionada
+      ? `${viagemSelecionada.codigoLinha} - ${viagemSelecionada.nomeLinha}`
+      : "";
 
     try {
-      const typeConfig = getOccurrenceTypeConfig(typeCode);
       const payload = buildOccurrencePayload({
         driver1Id,
         driver2Id,
         motorista2Ativo,
-        eventDate: dataEvento,
-        tripDate: dataViagem,
-        startTime: horarioInicial,
-        endTime: horarioFinal,
+        eventDate: dataEvento || new Date().toISOString().split("T")[0],
+        tripDate: dataViagem || dataEvento || new Date().toISOString().split("T")[0],
+        startTime: horarioInicial || "00:00",
+        endTime: horarioFinal || horarioInicial || "00:00",
         place: localParada?.nome ?? "",
-        vehicleNumber,
-        tripId: viagemSelecionada.id,
+        vehicleNumber: vehicleNumber || "0",
+        tripId: viagemSelecionada?.id,
+        tripTime: viagemSelecionada?.horaPartida ?? null,
         lineLabel,
         typeCode,
         speedKmh,
@@ -346,6 +386,12 @@ export function NovaOcorrencia({
         relatoHtml: typeConfig.isGeneric ? relatoHtml : null,
         devolutivaHtml: typeConfig.isGeneric ? devolutivaHtml || null : null,
         devolutivaStatus: typeConfig.isGeneric ? devolutivaStatus : null,
+        showSectionViagem: typeConfig.isGeneric ? showSectionViagem : true,
+        showSectionIdentificacao: typeConfig.isGeneric ? showSectionIdentificacao : true,
+        showSectionDados: typeConfig.isGeneric ? showSectionDados : true,
+        showSectionTripulacao: typeConfig.isGeneric ? showSectionTripulacao : true,
+        showSectionPassageiros: typeConfig.isGeneric ? showSectionPassageiros : true,
+        devolutivaBeforeEvidences: typeConfig.isGeneric ? devolutivaBeforeEvidences : false,
       });
 
       let resultId: string;
@@ -386,7 +432,7 @@ export function NovaOcorrencia({
         id: resultId,
         typeCode,
         typeTitle: typeConfig.title,
-        viagem: toViagemView(viagemSelecionada),
+        viagem: viagemSelecionada ? toViagemView(viagemSelecionada) : { id: "", linha: "", prefixo: vehicleNumber || "0", horario: "" },
         motorista1: toMotoristaView(driver1)!,
         motorista2: motorista2Ativo ? toMotoristaView(driver2) : undefined,
         dataEvento,
@@ -406,6 +452,12 @@ export function NovaOcorrencia({
         relatoHtml: typeConfig.isGeneric ? relatoHtml : null,
         devolutivaHtml: typeConfig.isGeneric ? devolutivaHtml || null : null,
         devolutivaStatus: typeConfig.isGeneric ? devolutivaStatus : null,
+        showSectionViagem: typeConfig.isGeneric ? showSectionViagem : true,
+        showSectionIdentificacao: typeConfig.isGeneric ? showSectionIdentificacao : true,
+        showSectionDados: typeConfig.isGeneric ? showSectionDados : true,
+        showSectionTripulacao: typeConfig.isGeneric ? showSectionTripulacao : true,
+        showSectionPassageiros: typeConfig.isGeneric ? showSectionPassageiros : true,
+        devolutivaBeforeEvidences: typeConfig.isGeneric ? devolutivaBeforeEvidences : false,
       };
 
       // TRANSIÇÃO PARA SUCESSO
@@ -424,6 +476,26 @@ export function NovaOcorrencia({
 
   const createOccurrence = useCreateOccurrence();
   const updateOccurrence = useUpdateOccurrence();
+
+  function handleTypeChange(code: string) {
+    setTypeCode(code);
+    setSpeedKmh(null);
+    setLocalParada(null);
+    setReportTitle("");
+    setCcoOperator("");
+    setVehicleKm(null);
+    setPassengerCount(null);
+    setPassengerConnection("");
+    setRelatoHtml("");
+    setDevolutivaHtml("");
+    setDevolutivaStatus("EM_ANDAMENTO");
+    setDevolutivaBeforeEvidences(false);
+    setShowSectionViagem(true);
+    setShowSectionIdentificacao(true);
+    setShowSectionDados(true);
+    setShowSectionTripulacao(true);
+    setShowSectionPassageiros(true);
+  }
 
   function toViagemView(v: ViagemCatalog): Viagem {
     const parts = (v.nomeLinha ?? "").split(" - ").map((s) => s.trim());
@@ -452,14 +524,25 @@ export function NovaOcorrencia({
             >
               <ArrowLeft className="w-5 h-5 text-gray-600" />
             </button>
-            <div>
+            <div className="flex-1 min-w-0">
               <h1 className="text-2xl font-semibold text-gray-900">
                 {edicao ? "Editar Ocorrência" : "Nova Ocorrência"}
               </h1>
-              <p className="text-sm text-gray-600 mt-0.5">
-                Descumprimento Operacional /{" "}
-                {getOccurrenceTypeConfig(typeCode).title}
-              </p>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-xs text-gray-400">Modo ativo:</span>
+                <span
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold transition-all duration-300 ${
+                    getOccurrenceTypeConfig(typeCode).isGeneric
+                      ? "bg-orange-100 text-orange-700 border border-orange-200"
+                      : typeCode === "EXCESSO_VELOCIDADE"
+                        ? "bg-red-100 text-red-700 border border-red-200"
+                        : "bg-gray-100 text-gray-600 border border-gray-200"
+                  }`}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                  {getOccurrenceTypeConfig(typeCode).title}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -467,9 +550,154 @@ export function NovaOcorrencia({
 
       {/* Main Content */}
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-8">
-          {/* Bloco 1 - Dados da Viagem */}
+        <div className="bg-white border border-gray-200 rounded-lg">
+
+          <div className="p-6 space-y-8">
+
+          {/* ── Bloco 0 — Tipo de Ocorrência ── */}
           <section>
+            <h2 className="text-base font-semibold text-gray-900 mb-1">
+              Tipo de Ocorrência
+            </h2>
+            <p className="text-xs text-gray-500 mb-3">
+              Selecione o tipo antes de preencher os dados — o formulário se adapta automaticamente.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {OCCURRENCE_TYPES.map((t) => {
+                const selected = typeCode === t.code;
+                return (
+                  <button
+                    key={t.code}
+                    type="button"
+                    onClick={() => handleTypeChange(t.code)}
+                    className={`cursor-pointer flex flex-col items-start gap-1 p-4 rounded-lg border-2 text-left w-full transition-all duration-200 ${
+                      selected
+                        ? t.isGeneric
+                          ? "border-orange-500 bg-orange-50 shadow-sm"
+                          : t.code === "EXCESSO_VELOCIDADE"
+                            ? "border-red-500 bg-red-50 shadow-sm"
+                            : "border-blue-600 bg-blue-50 shadow-sm"
+                        : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
+                    }`}
+                  >
+                    <span
+                      className={`text-sm font-semibold leading-tight ${
+                        selected
+                          ? t.isGeneric
+                            ? "text-orange-700"
+                            : t.code === "EXCESSO_VELOCIDADE"
+                              ? "text-red-700"
+                              : "text-blue-700"
+                          : "text-gray-800"
+                      }`}
+                    >
+                      {t.title}
+                    </span>
+                    <span className="text-xs text-gray-500 leading-snug">
+                      {t.description}
+                    </span>
+                    {selected && (
+                      <span
+                        className={`mt-1.5 inline-flex items-center gap-1 text-xs font-medium ${
+                          t.isGeneric
+                            ? "text-orange-600"
+                            : t.code === "EXCESSO_VELOCIDADE"
+                              ? "text-red-600"
+                              : "text-blue-600"
+                        }`}
+                      >
+                        <Check className="w-3 h-3" />
+                        Selecionado
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* ── Bloco 0b — Composição do Relatório (só GENERICO, animado) ── */}
+          {getOccurrenceTypeConfig(typeCode).isGeneric && (
+            <section
+              className="animate-in fade-in slide-in-from-top-2 duration-300"
+            >
+              <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-200">
+                <div>
+                  <h2 className="text-base font-semibold text-gray-900">
+                    Composição do Relatório
+                  </h2>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Defina quais blocos aparecerão no PDF gerado
+                  </p>
+                </div>
+                <span className="text-xs text-gray-400 font-medium tabular-nums">
+                  {[showSectionViagem, showSectionIdentificacao, showSectionDados, showSectionTripulacao, showSectionPassageiros].filter(Boolean).length}
+                  {" / 5 seções ativas"}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 gap-2">
+                {[
+                  {
+                    label: "Dados da Viagem",
+                    sub: "Linha, itinerário e horário da viagem",
+                    value: showSectionViagem,
+                    setter: setShowSectionViagem,
+                  },
+                  {
+                    label: "Identificação do Relatório",
+                    sub: "Nome do relatório, operador CCO e KM",
+                    value: showSectionIdentificacao,
+                    setter: setShowSectionIdentificacao,
+                  },
+                  {
+                    label: "Dados da Ocorrência",
+                    sub: "Data, horário, local e prefixo",
+                    value: showSectionDados,
+                    setter: setShowSectionDados,
+                  },
+                  {
+                    label: "Tripulação",
+                    sub: "Motoristas vinculados à ocorrência",
+                    value: showSectionTripulacao,
+                    setter: setShowSectionTripulacao,
+                  },
+                  {
+                    label: "Passageiros",
+                    sub: "Quantidade e passageiros em conexão",
+                    value: showSectionPassageiros,
+                    setter: setShowSectionPassageiros,
+                  },
+                ].map(({ label, sub, value, setter }) => (
+                  <label
+                    key={label}
+                    className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all duration-200 ${
+                      value
+                        ? "border-orange-200 bg-orange-50/50"
+                        : "border-gray-200 bg-gray-50 opacity-60"
+                    }`}
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-gray-800">{label}</p>
+                      <p className="text-xs text-gray-500">{sub}</p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={value}
+                      onChange={(e) => setter(e.target.checked)}
+                      className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-400 cursor-pointer ml-4 flex-shrink-0"
+                    />
+                  </label>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Bloco 1 - Dados da Viagem
+               • Para GENERICO: visível apenas se showSectionViagem
+               • Para outros tipos: sempre visível
+          */}
+          {(!getOccurrenceTypeConfig(typeCode).isGeneric || showSectionViagem) && (
+          <section className={getOccurrenceTypeConfig(typeCode).isGeneric ? "animate-in fade-in slide-in-from-top-2 duration-300" : ""}>
             <h2 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
               Dados da Viagem
             </h2>
@@ -518,12 +746,19 @@ export function NovaOcorrencia({
               )}
             </div>
           </section>
+          )}{/* /showSectionViagem condicional */}
 
-          {/* Bloco 2 - Motoristas */}
-          {viagemSelecionada && (
-            <section>
+          {/* Bloco 2 - Motoristas
+               • Tipos normais: aparece apenas após viagem selecionada
+               • GENERICO: aparece sempre (independe de viagem), controlado por showSectionTripulacao
+          */}
+          {(getOccurrenceTypeConfig(typeCode).isGeneric
+            ? showSectionTripulacao
+            : !!viagemSelecionada
+          ) && (
+            <section className={getOccurrenceTypeConfig(typeCode).isGeneric ? "animate-in fade-in slide-in-from-top-2 duration-300" : ""}>
               <h2 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
-                Motoristas
+                Tripulação
               </h2>
 
               <div className="space-y-4">
@@ -646,42 +881,16 @@ export function NovaOcorrencia({
             </section>
           )}
 
-          {/* Bloco 3 - Dados da Ocorrência */}
-          <section>
+          {/* Bloco 3 - Dados do Evento
+               • Para GENERICO: visível apenas se showSectionDados estiver ativo
+               • Para outros tipos: sempre visível
+          */}
+          {(!getOccurrenceTypeConfig(typeCode).isGeneric || showSectionDados) && (
+          <section className={getOccurrenceTypeConfig(typeCode).isGeneric ? "animate-in fade-in slide-in-from-top-2 duration-300" : ""}>
             <h2 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
-              Dados da Ocorrência
+              Dados do Evento
             </h2>
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Tipo de Ocorrência *
-                </label>
-                <select
-                  value={typeCode}
-                  onChange={(e) => {
-                    setTypeCode(e.target.value);
-                    setSpeedKmh(null);
-                    setLocalParada(null);
-                    // Resetar campos GENERICO ao trocar tipo
-                    setReportTitle("");
-                    setCcoOperator("");
-                    setVehicleKm(null);
-                    setPassengerCount(null);
-                    setPassengerConnection("");
-                    setRelatoHtml("");
-                    setDevolutivaHtml("");
-                    setDevolutivaStatus("EM_ANDAMENTO");
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                >
-                  {OCCURRENCE_TYPES.map((t) => (
-                    <option key={t.code} value={t.code}>
-                      {t.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
               {getOccurrenceTypeConfig(typeCode).singleTime ? (
                 <div className="grid grid-cols-3 gap-4">
                   <div>
@@ -857,28 +1066,38 @@ export function NovaOcorrencia({
               )}
             </div>
           </section>
+          )}{/* /showSectionDados condicional */}
 
           {/* Bloco 4 - Campos GENERICO */}
           {getOccurrenceTypeConfig(typeCode).isGeneric && (
-            <>
-              {/* Identificação do Relatório */}
+            <div className="space-y-8 animate-in fade-in slide-in-from-top-2 duration-300">
+
+              {/* Nome do Relatório — SEMPRE visível, independente de qualquer seção */}
               <section>
                 <h2 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
-                  📋 Identificação do Relatório
+                  Nome do Relatório
+                </h2>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Nome do Relatório *
+                  </label>
+                  <input
+                    type="text"
+                    value={reportTitle}
+                    onChange={(e) => setReportTitle(e.target.value)}
+                    placeholder="Ex: Atendimento Especial, Acidente, Pane Mecânica..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </section>
+
+              {/* Identificação do Relatório — visível apenas se showSectionIdentificacao */}
+              {showSectionIdentificacao && (
+              <section className="animate-in fade-in slide-in-from-top-2 duration-300">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                  Identificação do Relatório
                 </h2>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Nome do Relatório *
-                    </label>
-                    <input
-                      type="text"
-                      value={reportTitle}
-                      onChange={(e) => setReportTitle(e.target.value)}
-                      placeholder="Ex: Atendimento Especial, Acidente, Pane Mecânica..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Operador CCO
@@ -908,11 +1127,13 @@ export function NovaOcorrencia({
                   </div>
                 </div>
               </section>
+              )}{/* /showSectionIdentificacao */}
 
-              {/* Passageiros */}
-              <section>
+              {/* Passageiros — visível apenas se showSectionPassageiros */}
+              {showSectionPassageiros && (
+              <section className="animate-in fade-in slide-in-from-top-2 duration-300">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
-                  👥 Passageiros
+                  Passageiros
                 </h2>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -946,11 +1167,13 @@ export function NovaOcorrencia({
                   </div>
                 </div>
               </section>
+              )}{/* /showSectionPassageiros */}
 
               {/* Relato da Ocorrência */}
               <section>
                 <h2 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
-                  📝 Relato da Ocorrência *
+                  Relato da Ocorrência
+                  <span className="text-red-500 ml-1">*</span>
                 </h2>
                 <RichTextEditor
                   value={relatoHtml}
@@ -962,12 +1185,38 @@ export function NovaOcorrencia({
 
               {/* Devolutiva / Solução Adotada */}
               <section>
-                <h2 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
-                  ✅ Devolutiva / Solução Adotada
-                  <span className="text-sm font-normal text-gray-500 ml-2">
-                    (opcional)
-                  </span>
-                </h2>
+                <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-200">
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    Devolutiva / Solução Adotada
+                    <span className="text-sm font-normal text-gray-400 ml-2">
+                      (opcional)
+                    </span>
+                  </h2>
+                  {/* Toggle posição no PDF */}
+                  <div className="flex items-center gap-1.5 text-xs text-gray-500 select-none">
+                    <span className={devolutivaBeforeEvidences ? "text-gray-400" : "font-medium text-gray-700"}>
+                      Após evidências
+                    </span>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={devolutivaBeforeEvidences}
+                      onClick={() => setDevolutivaBeforeEvidences((v) => !v)}
+                      className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${
+                        devolutivaBeforeEvidences ? "bg-blue-500" : "bg-gray-300"
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow transition duration-200 ${
+                          devolutivaBeforeEvidences ? "translate-x-4" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
+                    <span className={devolutivaBeforeEvidences ? "font-medium text-gray-700" : "text-gray-400"}>
+                      Antes das evidências
+                    </span>
+                  </div>
+                </div>
                 <div className="space-y-3">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -990,7 +1239,7 @@ export function NovaOcorrencia({
                   />
                 </div>
               </section>
-            </>
+            </div>
           )}
 
           {/* Bloco 5 - Evidências */}
@@ -1003,15 +1252,15 @@ export function NovaOcorrencia({
 
           {/* Bloco 5 - Ações */}
           <section className="pt-4 border-t border-gray-200">
-            <div className="flex gap-3">
+            <div className="flex items-center justify-between gap-4">
               <button
                 onClick={handleSalvar}
                 disabled={!isFormValido() || saveStatus !== "idle"}
-                className="inline-flex items-center gap-2 px-5 py-2.5 
-             bg-blue-600 text-white rounded-md
-             hover:bg-blue-700 
-             disabled:bg-gray-300 disabled:cursor-not-allowed 
-             transition-colors font-medium"
+                className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 ${
+                  isFormValido() && saveStatus === "idle"
+                    ? "bg-blue-600 text-white hover:bg-blue-700 shadow-sm hover:shadow"
+                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                }`}
               >
                 {saveStatus === "saving" ? (
                   <>
@@ -1021,13 +1270,23 @@ export function NovaOcorrencia({
                 ) : (
                   <>
                     <Save className="w-4 h-4" />
-                    Salvar Ocorrência
+                    {edicao ? "Salvar Alterações" : "Salvar Ocorrência"}
                   </>
                 )}
               </button>
+
+              {/* Feedback de validação inline */}
+              {!isFormValido() && saveStatus === "idle" && (
+                <p className="text-xs text-gray-400 flex items-center gap-1.5">
+                  <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                  Preencha os campos obrigatórios para continuar
+                </p>
+              )}
             </div>
           </section>
-        </div>
+
+          </div>{/* /p-6 space-y-8 */}
+        </div>{/* /bg-white rounded-lg */}
       </main>
 
       {/* Preview Modal */}
@@ -1049,7 +1308,7 @@ export function NovaOcorrencia({
               <pre className="text-sm whitespace-pre-wrap font-mono text-gray-800">
                 {gerarTextoRelatorioIndividual({
                   id: "temp",
-                  viagem: toViagemView(viagemSelecionada),
+                  viagem: viagemSelecionada ? toViagemView(viagemSelecionada) : { id: "", linha: "", prefixo: vehicleNumber || "0", horario: "" },
 
                   motorista1: toMotoristaView(driver1)!,
                   motorista2: motorista2Ativo

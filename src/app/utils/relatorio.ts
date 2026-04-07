@@ -30,16 +30,11 @@ export function gerarTextoRelatorioIndividual(ocorrencia: Ocorrencia): string {
     ocorrencia.horarioInicial && ocorrencia.horarioFinal
       ? `${ocorrencia.horarioInicial} às ${ocorrencia.horarioFinal}`
       : "";
-  const evidencias =
-    ocorrencia.evidencias.length > 0
-      ? `\n\nEvidências anexadas: ${ocorrencia.evidencias.length} foto(s).`
-      : "";
-
   switch (ocorrencia.typeCode) {
     case "EXCESSO_VELOCIDADE": {
       const velocidade = ocorrencia.speedKmh ? `${ocorrencia.speedKmh} km/h` : "velocidade não informada";
       const horarioEvento = ocorrencia.horarioInicial || "";
-      return `Em viagem realizada pelo veículo ${prefixo}${linhaInfo} iniciada no dia ${formatarData(ocorrencia.dataViagem)}, identificamos que o motorista excedeu o limite de velocidade pré-estabelecido por diversas vezes. No dia ${data}, às ${horarioEvento} chegou a atingir a velocidade de ${velocidade}, colocando em perigo não somente a própria integridade física, mas também a dos demais passageiros e usuários da rodovia.\n\nEssa conduta irresponsável representou um potencial risco de acidente ou colisão, configurando um flagrante de violação das normas de trânsito do CTB e um sério desrespeito à segurança viária.${evidencias}`;
+      return `Em viagem realizada pelo veículo ${prefixo}${linhaInfo} iniciada no dia ${formatarData(ocorrencia.dataViagem)}, identificamos que o motorista excedeu o limite de velocidade pré-estabelecido por diversas vezes. No dia ${data}, às ${horarioEvento} chegou a atingir a velocidade de ${velocidade}, colocando em perigo não somente a própria integridade física, mas também a dos demais passageiros e usuários da rodovia.\n\nEssa conduta irresponsável representou um potencial risco de acidente ou colisão, configurando um flagrante de violação das normas de trânsito do CTB e um sério desrespeito à segurança viária.`;
     }
 
     case "DESCUMP_OP_PARADA_FORA":
@@ -49,7 +44,7 @@ export function gerarTextoRelatorioIndividual(ocorrencia: Ocorrencia): string {
       const local = ocorrencia.localParada
         ? `, no local ${ocorrencia.localParada}`
         : "";
-      return `Em ${data}, durante a execução da viagem do veículo prefixo ${prefixo}${linhaInfo}, foi constatado que o motorista realizou ${tipo}${local}${horario ? `, no período de ${horario}` : ""}, caracterizando ${caracterizacao}.${evidencias}`;
+      return `Em ${data}, durante a execução da viagem do veículo prefixo ${prefixo}${linhaInfo}, foi constatado que o motorista realizou ${tipo}${local}${horario ? `, no período de ${horario}` : ""}, caracterizando ${caracterizacao}.`;
     }
   }
 }
@@ -83,6 +78,32 @@ export function gerarTextoWhatsApp(ocorrencia: Ocorrencia): string {
 
   const v = ocorrencia.viagem;
 
+  // ── GENERICO (CCO) ──────────────────────────────────────────────────────────
+  if (ocorrencia.typeCode === "GENERICO") {
+    const origem  = getOrigem(v);
+    const destino = getDestino(v);
+    const horario = getHorario(v);
+    const prefixo = getPrefixo(v);
+    const linha   = getLinha(v);
+
+    // "Maceió x São Paulo – 08h" quando há origem/destino, senão usa linha direta
+    const itinerario = origem && destino
+      ? `${origem} x ${destino}${horario ? ` – ${horario}` : ""}`
+      : `${linha}${horario ? ` – ${horario}` : ""}`;
+
+    const local      = ocorrencia.localParada || "—";
+    const nomeRelat  = ocorrencia.reportTitle || ocorrencia.typeTitle || "—";
+
+    return `ITINERÁRIO: ${itinerario}
+PREFIXO: ${prefixo || "—"}
+DATA: ${formatarData(ocorrencia.dataEvento)}
+
+📍 Local: ${local}
+
+⚠️ Ocorrência: ${nomeRelat}`;
+  }
+
+  // ── EXCESSO DE VELOCIDADE ───────────────────────────────────────────────────
   if (ocorrencia.typeCode === "EXCESSO_VELOCIDADE") {
     return `🚨 *EXCESSO DE VELOCIDADE*
 
@@ -99,6 +120,7 @@ ${motoristas}
 🏎️ *VELOCIDADE ATINGIDA:* ${ocorrencia.speedKmh ? `${ocorrencia.speedKmh} km/h` : "—"}`;
   }
 
+  // ── PARADA FORA DO PROGRAMADO (padrão) ─────────────────────────────────────
   return `🚨 *DESCUMPRIMENTO OPERACIONAL*
 
 📋 *LINHA:* ${getLinha(v)}
