@@ -111,6 +111,7 @@ export function NovaOcorrencia({
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "success">(
     "idle",
   );
+  const [triedSave, setTriedSave] = useState(false);
   const [viagemSelecionada, setViagemSelecionada] =
     useState<ViagemCatalog | null>(null);
 
@@ -137,7 +138,7 @@ export function NovaOcorrencia({
 
     // reportTitle sempre obrigatório para GENERICO (campo independente de qualquer seção)
     const genericOk = typeConfig.isGeneric
-      ? !!reportTitle.trim() && !!relatoHtml.trim()
+      ? !!reportTitle.trim() && !!relatoHtml.trim() && !!devolutivaHtml.trim()
       : true;
 
     const viagemOk = typeConfig.isGeneric
@@ -345,6 +346,7 @@ export function NovaOcorrencia({
   }, [saveStatus]);
 
   const handleSalvar = async () => {
+    setTriedSave(true);
     if (!isFormValido()) return;
 
     const typeConfig = getOccurrenceTypeConfig(typeCode);
@@ -479,6 +481,7 @@ export function NovaOcorrencia({
 
   function handleTypeChange(code: string) {
     setTypeCode(code);
+    setTriedSave(false);
     setSpeedKmh(null);
     setLocalParada(null);
     setReportTitle("");
@@ -1086,8 +1089,18 @@ export function NovaOcorrencia({
                     value={reportTitle}
                     onChange={(e) => setReportTitle(e.target.value)}
                     placeholder="Ex: Atendimento Especial, Acidente, Pane Mecânica..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                      triedSave && !reportTitle.trim()
+                        ? "border-red-400 focus:ring-red-500"
+                        : "border-gray-300 focus:ring-blue-500"
+                    }`}
                   />
+                  {triedSave && !reportTitle.trim() && (
+                    <div className="flex items-center gap-2 text-sm text-red-600 mt-1">
+                      <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                      Campo obrigatório
+                    </div>
+                  )}
                 </div>
               </section>
 
@@ -1181,6 +1194,12 @@ export function NovaOcorrencia({
                   placeholder="Descreva o que ocorreu..."
                   minHeight="150px"
                 />
+                {triedSave && !relatoHtml.trim() && (
+                  <div className="flex items-center gap-2 text-sm text-red-600 mt-2">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    Campo obrigatório
+                  </div>
+                )}
               </section>
 
               {/* Devolutiva / Solução Adotada */}
@@ -1188,9 +1207,7 @@ export function NovaOcorrencia({
                 <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-200">
                   <h2 className="text-lg font-semibold text-gray-900">
                     Devolutiva / Solução Adotada
-                    <span className="text-sm font-normal text-gray-400 ml-2">
-                      (opcional)
-                    </span>
+                    <span className="text-red-500 ml-1">*</span>
                   </h2>
                   {/* Toggle posição no PDF */}
                   <div className="flex items-center gap-1.5 text-xs text-gray-500 select-none">
@@ -1237,6 +1254,12 @@ export function NovaOcorrencia({
                     placeholder="Descreva a solução adotada..."
                     minHeight="100px"
                   />
+                  {triedSave && !devolutivaHtml.trim() && (
+                    <div className="flex items-center gap-2 text-sm text-red-600 mt-2">
+                      <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                      Campo obrigatório
+                    </div>
+                  )}
                 </div>
               </section>
             </div>

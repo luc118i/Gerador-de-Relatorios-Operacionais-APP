@@ -1,4 +1,13 @@
-import { Plus, FileText, ChevronLeft, ChevronRight, Users } from "lucide-react";
+import {
+  Plus,
+  FileText,
+  ChevronLeft,
+  ChevronRight,
+  Users,
+  LayoutGrid,
+  List,
+  Tag,
+} from "lucide-react";
 import { useMemo, useState, useRef, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { occurrencesApi } from "../../api/occurrences.api";
@@ -36,6 +45,8 @@ export function Home({
   const [editando, setEditando] = useState<Ocorrencia | null>(null);
   const [excluindoId, setExcluindoId] = useState<string | null>(null);
   const [excluindo, setExcluindo] = useState(false);
+  const [viewMode, setViewMode] = useState<"cards" | "list">("cards");
+  const [groupBySubject, setGroupBySubject] = useState(false);
 
   const calendarRef = useRef<HTMLDivElement | null>(null);
 
@@ -77,6 +88,20 @@ export function Home({
   });
 
   const ocorrencias: OccurrenceDTO[] = data ?? [];
+
+  const grouped = useMemo(() => {
+    if (!groupBySubject || ocorrencias.length === 0) return null;
+    const map = new Map<string, OccurrenceDTO[]>();
+    for (const occ of ocorrencias) {
+      const subject =
+        occ.typeCode === "GENERICO"
+          ? (occ as any).reportTitle || occ.typeTitle
+          : occ.typeTitle;
+      if (!map.has(subject)) map.set(subject, []);
+      map.get(subject)!.push(occ);
+    }
+    return map;
+  }, [ocorrencias, groupBySubject]);
 
   // ── Efeitos ───────────────────────────────────────────────
   useEffect(() => {
@@ -226,9 +251,52 @@ export function Home({
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-1">
-            Ocorrências do Dia
-          </h2>
+          <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
+            <h2 className="text-lg font-semibold text-gray-900">
+              Ocorrências do Dia
+            </h2>
+            {!isLoading && !isError && ocorrencias.length > 0 && (
+              <div className="flex items-center gap-2">
+                {/* Toggle agrupamento */}
+                <button
+                  onClick={() => setGroupBySubject((v) => !v)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                    groupBySubject
+                      ? "bg-blue-50 border-blue-200 text-blue-700"
+                      : "bg-white border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                  }`}
+                >
+                  <Tag className="w-3.5 h-3.5" />
+                  Agrupar por assunto
+                </button>
+                {/* Toggle visualização */}
+                <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+                  <button
+                    onClick={() => setViewMode("cards")}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                      viewMode === "cards"
+                        ? "bg-white shadow-sm text-gray-800"
+                        : "text-gray-500 hover:text-gray-700"
+                    }`}
+                  >
+                    <LayoutGrid className="w-3.5 h-3.5" />
+                    Cards
+                  </button>
+                  <button
+                    onClick={() => setViewMode("list")}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                      viewMode === "list"
+                        ? "bg-white shadow-sm text-gray-800"
+                        : "text-gray-500 hover:text-gray-700"
+                    }`}
+                  >
+                    <List className="w-3.5 h-3.5" />
+                    Lista
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
           {isLoading ? (
             <p className="text-sm text-gray-600">Carregando…</p>
           ) : isError ? (
@@ -279,7 +347,81 @@ export function Home({
               <Plus className="w-5 h-5" /> Nova Ocorrência
             </button>
           </div>
+        ) : grouped ? (
+          /* ── Agrupado por assunto ─────────────────────────────────── */
+          <div className="space-y-6">
+            {Array.from(grouped.entries()).map(([subject, occs]) => (
+              <div key={subject}>
+                <div className="flex items-center gap-2 mb-2">
+                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                    {subject}
+                  </h3>
+                  <span className="text-xs text-gray-400 font-normal">
+                    ({occs.length})
+                  </span>
+                </div>
+                {viewMode === "list" ? (
+                  <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                    <div className="flex items-center gap-0 bg-gray-50 border-b border-gray-200 text-[11px] font-semibold text-gray-400 uppercase tracking-wide" style={{ borderLeft: "3px solid transparent" }}>
+                      <div className="w-[70px] flex-shrink-0 px-3 py-2">Prefixo</div>
+                      <div className="w-[80px] flex-shrink-0 px-1 py-2 hidden sm:block">Base</div>
+                      <div className="flex-1 px-2 py-2">Ocorrência</div>
+                      <div className="w-[115px] flex-shrink-0 px-2 py-2 hidden sm:block">Horário</div>
+                      <div className="w-[170px] flex-shrink-0 px-2 py-2 hidden lg:block">Motorista</div>
+                      <div className="w-[140px] flex-shrink-0 px-1 py-2">Ações</div>
+                    </div>
+                    {occs.map((occ) => (
+                      <OccurrenceCard
+                        key={occ.id}
+                        compact
+                        occurrence={occ}
+                        onOpen={() => setPreviewId(occ.id)}
+                        onEditar={() => handleEditar(occ)}
+                        onExcluir={() => setExcluindoId(occ.id)}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {occs.map((occ) => (
+                      <OccurrenceCard
+                        key={occ.id}
+                        occurrence={occ}
+                        onOpen={() => setPreviewId(occ.id)}
+                        onEditar={() => handleEditar(occ)}
+                        onExcluir={() => setExcluindoId(occ.id)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : viewMode === "list" ? (
+          /* ── Lista compacta ──────────────────────────────────────── */
+          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+            {/* Cabeçalho da lista */}
+            <div className="flex items-center gap-0 bg-gray-50 border-b border-gray-200 text-[11px] font-semibold text-gray-400 uppercase tracking-wide" style={{ borderLeft: "3px solid transparent" }}>
+              <div className="w-[70px] flex-shrink-0 px-3 py-2">Prefixo</div>
+              <div className="w-[80px] flex-shrink-0 px-1 py-2 hidden sm:block">Base</div>
+              <div className="flex-1 px-2 py-2">Ocorrência</div>
+              <div className="w-[115px] flex-shrink-0 px-2 py-2 hidden sm:block">Horário</div>
+              <div className="w-[170px] flex-shrink-0 px-2 py-2 hidden lg:block">Motorista</div>
+              <div className="w-[140px] flex-shrink-0 px-1 py-2">Ações</div>
+            </div>
+            {ocorrencias.map((occ) => (
+              <OccurrenceCard
+                key={occ.id}
+                compact
+                occurrence={occ}
+                onOpen={() => setPreviewId(occ.id)}
+                onEditar={() => handleEditar(occ)}
+                onExcluir={() => setExcluindoId(occ.id)}
+              />
+            ))}
+          </div>
         ) : (
+          /* ── Grid de cards ───────────────────────────────────────── */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {ocorrencias.map((occ) => (
               <OccurrenceCard
@@ -311,11 +453,48 @@ export function Home({
             <NovaOcorrencia
               edicao={editando}
               onVoltar={() => setEditando(null)}
-              onSaved={() => {
+              onSaved={(args) => {
                 setEditando(null);
                 toast.success("Ocorrência atualizada!");
+
+                // Atualiza o card imediatamente no cache (sem esperar refetch)
+                queryClient.setQueryData<OccurrenceDTO[]>(
+                  ["occurrences", "byCreationDate", selectedDate],
+                  (prev) =>
+                    prev
+                      ? prev.map((o) =>
+                          o.id === args.id
+                            ? {
+                                ...o,
+                                vehicleNumber:
+                                  args.view.viagem &&
+                                  "prefixo" in args.view.viagem
+                                    ? (args.view.viagem as any).prefixo ?? o.vehicleNumber
+                                    : o.vehicleNumber,
+                                lineLabel:
+                                  args.view.viagem &&
+                                  "linha" in args.view.viagem
+                                    ? (args.view.viagem as any).linha ?? o.lineLabel
+                                    : o.lineLabel,
+                                startTime: args.view.horarioInicial ?? o.startTime,
+                                endTime: args.view.horarioFinal ?? o.endTime,
+                                place: args.view.localParada ?? o.place,
+                                speedKmh: args.view.speedKmh ?? o.speedKmh,
+                                reportTitle: args.view.reportTitle ?? o.reportTitle,
+                              }
+                            : o,
+                        )
+                      : prev,
+                );
+
+                // Invalida a lista para garantir sincronização com o backend
                 queryClient.invalidateQueries({
                   queryKey: ["occurrences", "byCreationDate", selectedDate],
+                });
+
+                // Invalida o cache da ocorrência individual (usado pelo modal de preview)
+                queryClient.invalidateQueries({
+                  queryKey: ["occurrence", args.id],
                 });
               }}
             />

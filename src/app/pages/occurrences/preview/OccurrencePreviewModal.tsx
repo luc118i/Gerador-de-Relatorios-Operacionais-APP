@@ -30,13 +30,13 @@ export function OccurrencePreviewModal({ occurrenceId, open, onClose }: Props) {
     data: occ,
     isLoading,
     isError,
-    error, // Adicione isso para debugar
+    error,
   } = useQuery<OccurrenceDTO>({
     queryKey: ["occurrence", occurrenceId],
     queryFn: () => occurrencesApi.getOccurrenceById(occurrenceId!),
-    // Só executa se tiver ID, se o modal estiver aberto E se o ID tiver o tamanho de um UUID
     enabled: !!occurrenceId && open && occurrenceId.length > 10,
-    retry: false, // Desativa retentativas para vermos o erro real no console
+    staleTime: 0,      // sempre busca dado fresco ao abrir o modal
+    retry: false,
   });
 
   // Use o useEffect para monitorar erros durante o desenvolvimento
@@ -62,7 +62,7 @@ export function OccurrencePreviewModal({ occurrenceId, open, onClose }: Props) {
       const res = await getPdf.mutateAsync({
         occurrenceId,
         ttlSeconds: 3600,
-        force: false,
+        force: true,
       });
 
       const signedUrl = res.data.pdf.signedUrl;
