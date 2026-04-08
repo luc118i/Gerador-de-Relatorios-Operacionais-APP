@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Copy, Download, Check, Camera } from "lucide-react";
+import { DatePicker } from "../components/ui/date-picker";
 import { getOccurrencesByDay } from "../../api/occurrences.api";
 import type { OccurrenceDTO } from "../../domain/occurrences";
 import { buildDailyReport } from "../utils/relatorio-diario";
@@ -178,11 +179,11 @@ export function RelatorioDiario({ onVoltar }: RelatorioDiarioProps) {
             </label>
 
             <div className="flex items-center gap-3">
-              <input
-                type="date"
+              <DatePicker
                 value={dataSelecionada}
-                onChange={(e) => setDataSelecionada(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onChange={setDataSelecionada}
+                placeholder="Selecione a data"
+                className="w-52"
               />
               {loading && (
                 <span className="text-sm text-gray-500">Carregando…</span>

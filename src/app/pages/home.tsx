@@ -18,9 +18,9 @@ import { OccurrencePreviewModal } from "./occurrences/preview/OccurrencePreviewM
 import { formatToLocalDate } from "../utils/dateUtils";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { NovaOcorrencia } from "./nova-ocorrencia";
-import { DayPicker } from "react-day-picker";
 import { toast } from "sonner";
-import "react-day-picker/dist/style.css";
+import { Calendar } from "../components/ui/calendar";
+import { ptBR } from "date-fns/locale";
 import { viagensCatalog } from "../../catalogs/viagens.catalog";
 
 interface HomeProps {
@@ -210,18 +210,13 @@ export function Home({
                   {dateDiffLabel}
                 </button>
                 {calendarVisible && (
-                  <div className="absolute top-8 left-0 bg-white shadow-lg border rounded-lg p-2 z-50">
-                    <DayPicker
+                  <div className="absolute top-8 left-0 bg-white shadow-lg border border-gray-200 rounded-xl z-50">
+                    <Calendar
                       mode="single"
                       selected={selectedDateObj}
                       onSelect={handleSelect}
-                      className="p-3 bg-white rounded-xl shadow-xl border"
-                      classNames={{
-                        day_selected:
-                          "bg-blue-600 text-white hover:bg-blue-600",
-                        day_today: "border border-blue-500",
-                        nav_button: "hover:bg-gray-100 rounded-md",
-                      }}
+                      locale={ptBR}
+                      initialFocus
                     />
                   </div>
                 )}
