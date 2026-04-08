@@ -45,8 +45,12 @@ export function Home({
   const [editando, setEditando] = useState<Ocorrencia | null>(null);
   const [excluindoId, setExcluindoId] = useState<string | null>(null);
   const [excluindo, setExcluindo] = useState(false);
-  const [viewMode, setViewMode] = useState<"cards" | "list">("cards");
-  const [groupBySubject, setGroupBySubject] = useState(false);
+  const [viewMode, setViewMode] = useState<"cards" | "list">(
+    () => (localStorage.getItem("home_viewMode") as "cards" | "list") ?? "cards",
+  );
+  const [groupBySubject, setGroupBySubject] = useState<boolean>(
+    () => localStorage.getItem("home_groupBySubject") === "true",
+  );
 
   const calendarRef = useRef<HTMLDivElement | null>(null);
 
@@ -259,7 +263,7 @@ export function Home({
               <div className="flex items-center gap-2">
                 {/* Toggle agrupamento */}
                 <button
-                  onClick={() => setGroupBySubject((v) => !v)}
+                  onClick={() => setGroupBySubject((v) => { const next = !v; localStorage.setItem("home_groupBySubject", String(next)); return next; })}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
                     groupBySubject
                       ? "bg-blue-50 border-blue-200 text-blue-700"
@@ -272,7 +276,7 @@ export function Home({
                 {/* Toggle visualização */}
                 <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
                   <button
-                    onClick={() => setViewMode("cards")}
+                    onClick={() => { setViewMode("cards"); localStorage.setItem("home_viewMode", "cards"); }}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
                       viewMode === "cards"
                         ? "bg-white shadow-sm text-gray-800"
@@ -283,7 +287,7 @@ export function Home({
                     Cards
                   </button>
                   <button
-                    onClick={() => setViewMode("list")}
+                    onClick={() => { setViewMode("list"); localStorage.setItem("home_viewMode", "list"); }}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
                       viewMode === "list"
                         ? "bg-white shadow-sm text-gray-800"
