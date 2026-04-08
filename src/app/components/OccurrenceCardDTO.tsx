@@ -15,6 +15,7 @@ import {
   gerarTextoRelatorioIndividual,
   gerarTextoWhatsApp,
 } from "../utils/relatorio";
+import { getBaseCanonicalKey, resolveBaseSigla } from "../utils/base";
 import { BaseChip } from "./base-chip";
 
 interface OccurrenceCardProps {
@@ -100,12 +101,21 @@ export function OccurrenceCard({
   const driver1 = occurrence.drivers?.find((d) => d.position === 1);
   const driver2 = occurrence.drivers?.find((d) => d.position === 2);
 
+  // No card: GENERICO → reportTitle, demais → linha (contexto da viagem)
   const subject =
     occurrence.typeCode === "GENERICO"
       ? (occurrence as any).reportTitle || occurrence.typeTitle
       : occurrence.lineLabel
         ? occurrence.lineLabel
         : occurrence.typeTitle;
+
+  // Na lista: sempre mostra o nome da ocorrência; linha aparece como detalhe
+  const subjectTitle = occurrence.typeCode === "GENERICO"
+    ? (occurrence as any).reportTitle || occurrence.typeTitle
+    : occurrence.typeTitle;
+  const subjectDetail = occurrence.typeCode !== "GENERICO" && occurrence.lineLabel
+    ? occurrence.lineLabel
+    : null;
 
   async function handleEditar() {
     if (!onEditar) return;
@@ -147,8 +157,10 @@ export function OccurrenceCard({
 
   // ── Modo compacto (lista) ──────────────────────────────────────────────────
   if (compact) {
-    const baseKey = (driver1?.baseCode ?? occurrence.baseCode ?? "").trim().toUpperCase();
-    const baseColor = BASE_PALETTE[hashString(baseKey) % BASE_PALETTE.length];
+    const rawBase = driver1?.baseCode ?? occurrence.baseCode ?? "";
+    const canonicalBase = getBaseCanonicalKey(rawBase);
+    const baseSigla = resolveBaseSigla(rawBase) ?? abbreviate(canonicalBase);
+    const baseColor = BASE_PALETTE[hashString(canonicalBase) % BASE_PALETTE.length];
 
     return (
       <div
@@ -168,17 +180,22 @@ export function OccurrenceCard({
           <span
             className="text-[10px] font-medium px-1.5 py-0.5 rounded truncate block max-w-full"
             style={{ background: baseColor + "22", color: baseColor }}
-            title={baseKey}
+            title={rawBase}
           >
-            {abbreviate(baseKey)}
+            {baseSigla}
           </span>
         </div>
 
         {/* Assunto */}
         <div className="flex-1 min-w-0 px-2 py-2.5">
           <span className="text-sm text-gray-800 truncate block leading-tight">
-            {subject}
+            {subjectTitle}
           </span>
+          {subjectDetail && (
+            <span className="text-[11px] text-gray-400 truncate block leading-tight">
+              {subjectDetail}
+            </span>
+          )}
         </div>
 
         {/* Horário */}

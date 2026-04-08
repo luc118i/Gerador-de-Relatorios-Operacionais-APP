@@ -1,3 +1,5 @@
+import { getBaseCanonicalKey, resolveBaseSigla } from "../utils/base";
+
 type BaseChipProps = { base: string };
 
 const PALETTE = [
@@ -18,15 +20,20 @@ function hashString(s: string) {
 }
 
 export function BaseChip({ base }: BaseChipProps) {
-  const key = (base || "").trim().toUpperCase();
-  const idx = key ? hashString(key) % PALETTE.length : 0;
+  const canonicalKey = getBaseCanonicalKey(base || "");
+
+  const baseSigla = resolveBaseSigla(base || "");
+  const fallbackSigla = canonicalKey.slice(0, 5);
+  const sigla = (baseSigla ?? fallbackSigla) || "—";
+  const idx = canonicalKey ? hashString(canonicalKey) % PALETTE.length : 0;
   const colorClass = PALETTE[idx];
 
   return (
     <span
       className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${colorClass}`}
+      title={base}
     >
-      {key || "—"}
+      {sigla || "—"}
     </span>
   );
 }

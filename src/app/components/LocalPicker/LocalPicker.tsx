@@ -42,7 +42,11 @@ export function LocalPicker({
     return Array.isArray(data) ? data : [];
   }, [data]);
 
-  const displayText = value ? value.nome : "Selecione o local...";
+  const displayText = value
+    ? value.sigla
+      ? `[${value.sigla}] ${value.nome}`
+      : value.nome
+    : "Selecione o local...";
 
   return (
     <div className="relative" ref={containerRef}>
@@ -119,10 +123,14 @@ export function LocalPicker({
                 >
                   <div className="flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
-                    <div>
-                      <div className="text-sm text-slate-900">{local.nome}</div>
-                      <div className="text-xs text-slate-400">
-                        ID {local.id}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        {local.sigla && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200 flex-shrink-0 tabular-nums">
+                            {local.sigla}
+                          </span>
+                        )}
+                        <span className="text-sm text-slate-900 truncate">{local.nome}</span>
                       </div>
                     </div>
                   </div>
