@@ -73,7 +73,9 @@ export function OccurrencePreviewModal({ occurrenceId, open, onClose }: Props) {
         registry: d1?.registry,
         name: d1?.name,
         base: d1?.baseCode,
-        occurrenceTitle: occ.typeTitle,
+        occurrenceTitle: (occ.typeCode === "GENERICO" && (occ as any).reportTitle)
+          ? (occ as any).reportTitle
+          : occ.typeTitle,
         eventDate: occ.eventDate,
       });
 

@@ -26,11 +26,17 @@ export function OccurrencePreviewPage(props: {
   const [ttl, setTtl] = useState<number | null>(null);
   const [cached, setCached] = useState<boolean | null>(null);
 
-  // ── IA: resumo ────────────────────────────────────────────────────────────
+  // ── IA: resumo (Relato em Texto Plano) ───────────────────────────────────
   const [aiSummary, setAiSummary] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiCooldown, setAiCooldown] = useState(0); // segundos restantes
-  const [aiCooldownTotal, setAiCooldownTotal] = useState(0); // total inicial
+
+  // ── IA: resumo WhatsApp ───────────────────────────────────────────────────
+  const [wppAiSummary, setWppAiSummary] = useState<string | null>(null);
+  const [wppAiLoading, setWppAiLoading] = useState(false);
+
+  // ── Cooldown compartilhado (mesmo endpoint / mesmo rate-limit) ────────────
+  const [aiCooldown, setAiCooldown] = useState(0);
+  const [aiCooldownTotal, setAiCooldownTotal] = useState(0);
   const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   function startCooldown(seconds: number) {
@@ -75,6 +81,7 @@ export function OccurrencePreviewPage(props: {
   }
 
   function getOccurrenceTitle(o: Ocorrencia): string {
+    if (o.typeCode === "GENERICO" && o.reportTitle) return o.reportTitle;
     return o.typeTitle || o.typeCode || "PARADA FORA DO PROGRAMADO";
   }
 
@@ -123,16 +130,35 @@ export function OccurrencePreviewPage(props: {
       setAiSummary(summary);
     } catch (e) {
       const msg = getApiErrorMessage(e, "Falha ao gerar resumo com IA");
-      // Extrai segundos de "Tente novamente em X segundo(s)"
       const match = msg.match(/em (\d+) segundo/);
-      if (match) {
-        startCooldown(parseInt(match[1], 10));
-      }
+      if (match) startCooldown(parseInt(match[1], 10));
       toast.error(msg);
     } finally {
       setAiLoading(false);
     }
   }
+
+  async function handleWppSummarize() {
+    if (!relatorioTxt.trim() || aiCooldown > 0) return;
+    setWppAiLoading(true);
+    setWppAiSummary(null);
+    try {
+      const { summary } = await aiApi.summarize(relatorioTxt, occurrence.reportTitle ?? undefined);
+      setWppAiSummary(summary);
+    } catch (e) {
+      const msg = getApiErrorMessage(e, "Falha ao gerar resumo com IA");
+      const match = msg.match(/em (\d+) segundo/);
+      if (match) startCooldown(parseInt(match[1], 10));
+      toast.error(msg);
+    } finally {
+      setWppAiLoading(false);
+    }
+  }
+
+  // Texto final do WhatsApp: base + resumo IA (se gerado)
+  const wppDisplayText = wppAiSummary
+    ? `${whatsappTxt}\n\n${wppAiSummary}`
+    : whatsappTxt;
 
   async function handleGenerate(force?: boolean) {
     try {
@@ -458,18 +484,71 @@ export function OccurrencePreviewPage(props: {
           </div>
         )}
 
-        {/* Textos */}
+        {/* Texto WhatsApp */}
         <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">
-              Texto WhatsApp
-            </h2>
-            {/* Novo botão com sensação de clique */}
-            <CopyButton textToCopy={whatsappTxt} />
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">Texto WhatsApp</h2>
+              <p className="text-xs text-gray-400 mt-0.5">Texto informativo para envio ao gestor</p>
+            </div>
+            <div className="flex items-center gap-2">
+              {isGenerico && (
+                <div className="relative flex flex-col items-center gap-1">
+                  <button
+                    onClick={handleWppSummarize}
+                    disabled={wppAiLoading || aiCooldown > 0}
+                    className="cursor-pointer h-9 px-3 rounded-lg border border-violet-200 bg-violet-50 hover:bg-violet-100 text-violet-700 transition-all flex items-center gap-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {wppAiLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Resumindo...
+                      </>
+                    ) : wppAiSummary ? (
+                      <>
+                        <Sparkles className="w-4 h-4" />
+                        Regenerar
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4" />
+                        Resumir com IA
+                      </>
+                    )}
+                  </button>
+                  {aiCooldown > 0 && aiCooldownTotal > 0 && (
+                    <div className="w-full flex flex-col items-center gap-0.5">
+                      <div className="w-full h-1 rounded-full bg-violet-100 overflow-hidden">
+                        <div
+                          className="h-full bg-violet-400 rounded-full transition-all duration-1000 ease-linear"
+                          style={{ width: `${(aiCooldown / aiCooldownTotal) * 100}%` }}
+                        />
+                      </div>
+                      <span className="text-[10px] text-violet-400 tabular-nums">{aiCooldown}s</span>
+                    </div>
+                  )}
+                </div>
+              )}
+              <CopyButton textToCopy={wppDisplayText} />
+            </div>
           </div>
-          <pre className="text-sm whitespace-pre-wrap font-mono text-gray-800 bg-gray-50 border border-gray-200 rounded-lg p-4">
-            {whatsappTxt}
-          </pre>
+
+          {wppAiLoading ? (
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-3 animate-pulse">
+              <div className="h-3 bg-gray-200 rounded-full w-3/4" />
+              <div className="h-3 bg-gray-200 rounded-full w-full" />
+              <div className="h-3 bg-gray-200 rounded-full w-2/3" />
+              <div className="h-3 bg-gray-200 rounded-full w-full" />
+              <div className="h-3 bg-gray-200 rounded-full w-1/2" />
+            </div>
+          ) : (
+            <div className="text-sm whitespace-pre-wrap font-mono text-gray-800 bg-gray-50 border border-gray-200 rounded-lg p-4">
+              {whatsappTxt}
+              {wppAiSummary && (
+                <span className="text-violet-700">{`\n\n${wppAiSummary}`}</span>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-3">
@@ -480,7 +559,7 @@ export function OccurrencePreviewPage(props: {
               </h2>
               {isGenerico && (
                 <p className="text-xs text-gray-400 mt-0.5">
-                  Versão sem formatação para copiar e colar
+                  Texto para advertência ou suspensão
                 </p>
               )}
             </div>
@@ -495,17 +574,20 @@ export function OccurrencePreviewPage(props: {
                     {aiLoading ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        Resumindo...
+                        Gerando...
+                      </>
+                    ) : aiSummary ? (
+                      <>
+                        <Sparkles className="w-4 h-4" />
+                        Regenerar
                       </>
                     ) : (
                       <>
                         <Sparkles className="w-4 h-4" />
-                        Resumir com IA
+                        Gerar com IA
                       </>
                     )}
                   </button>
-
-                  {/* Barra de cooldown */}
                   {aiCooldown > 0 && aiCooldownTotal > 0 && (
                     <div className="w-full flex flex-col items-center gap-0.5">
                       <div className="w-full h-1 rounded-full bg-violet-100 overflow-hidden">
@@ -514,37 +596,33 @@ export function OccurrencePreviewPage(props: {
                           style={{ width: `${(aiCooldown / aiCooldownTotal) * 100}%` }}
                         />
                       </div>
-                      <span className="text-[10px] text-violet-400 tabular-nums">
-                        {aiCooldown}s
-                      </span>
+                      <span className="text-[10px] text-violet-400 tabular-nums">{aiCooldown}s</span>
                     </div>
                   )}
                 </div>
               )}
-              <CopyButton textToCopy={relatorioTxt} />
+              {/* Copia o resultado da IA se disponível, senão o texto bruto */}
+              <CopyButton textToCopy={isGenerico ? (aiSummary ?? relatorioTxt) : relatorioTxt} />
             </div>
           </div>
 
-          {/* Card do resumo IA */}
-          {isGenerico && (
+          {/* GENERICO: apenas card IA (sem pré-texto bruto) */}
+          {isGenerico ? (
             aiSummary ? (
-              /* ── Resumo gerado ── */
+              /* ── Resultado gerado ── */
               <div className="rounded-lg border border-violet-200 bg-violet-50 p-4 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-violet-700">
-                    <Sparkles className="w-4 h-4" />
-                    Resumo gerado por IA
-                  </div>
-                  <CopyButton textToCopy={aiSummary} />
+                <div className="flex items-center gap-2 text-sm font-semibold text-violet-700 mb-1">
+                  <Sparkles className="w-4 h-4" />
+                  Texto gerado por IA
                 </div>
-                <p className="text-sm text-violet-900 leading-relaxed">{aiSummary}</p>
+                <p className="text-sm text-violet-900 leading-relaxed whitespace-pre-wrap">{aiSummary}</p>
               </div>
             ) : aiLoading ? (
               /* ── Gerando: skeleton pulsante ── */
               <div className="rounded-lg border border-violet-200 bg-violet-50 p-4 space-y-3">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-violet-400 animate-pulse" />
-                  <span className="text-sm font-semibold text-violet-400">Gerando resumo...</span>
+                  <span className="text-sm font-semibold text-violet-400">Gerando texto...</span>
                 </div>
                 <div className="space-y-2 animate-pulse">
                   <div className="h-3 bg-violet-200 rounded-full w-full" />
@@ -553,7 +631,7 @@ export function OccurrencePreviewPage(props: {
                 </div>
               </div>
             ) : (
-              /* ── Empty state: convite à ação ── */
+              /* ── Empty state ── */
               <button
                 onClick={handleSummarize}
                 disabled={aiCooldown > 0}
@@ -563,18 +641,19 @@ export function OccurrencePreviewPage(props: {
                   <Sparkles className="w-4 h-4 text-violet-500 group-hover:scale-110 transition-transform" />
                 </div>
                 <div className="text-center">
-                  <p className="text-sm font-medium text-violet-700">Gerar resumo com IA</p>
+                  <p className="text-sm font-medium text-violet-700">Gerar texto com IA</p>
                   <p className="text-xs text-violet-400 mt-0.5">
-                    {aiCooldown > 0 ? `Disponível em ${aiCooldown}s` : "Clique para resumir o relato automaticamente"}
+                    {aiCooldown > 0 ? `Disponível em ${aiCooldown}s` : "Clique para gerar o texto de advertência automaticamente"}
                   </p>
                 </div>
               </button>
             )
+          ) : (
+            /* Outros tipos: exibe texto direto */
+            <pre className="text-sm whitespace-pre-wrap font-mono text-gray-800 bg-gray-50 border border-gray-200 rounded-lg p-4">
+              {relatorioTxt}
+            </pre>
           )}
-
-          <pre className="text-sm whitespace-pre-wrap font-mono text-gray-800 bg-gray-50 border border-gray-200 rounded-lg p-4">
-            {relatorioTxt}
-          </pre>
         </div>
 
         {/* Erro PDF */}

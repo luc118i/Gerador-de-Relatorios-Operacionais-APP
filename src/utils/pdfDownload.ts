@@ -23,17 +23,35 @@ export function formatDateYYYYMMDD(dateLike?: string | Date | null): string {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+const ABBR_STOPWORDS = new Set([
+  "DE", "DA", "DO", "DAS", "DOS", "E", "EM", "POR", "COM",
+  "A", "O", "AO", "NO", "NA", "NOS", "NAS", "OU", "SE", "QUE",
+]);
+
 function abbreviateOccurrenceTitle(title: string): string {
-  const t = title.toUpperCase();
+  const t = (title ?? "").toUpperCase().trim();
+  if (!t) return "OCOR";
 
-  // Se o título contiver esses termos, retorna a sigla curta
-  if (t.includes("PARADA FORA")) return "PARADA_IRREGULAR";
-  if (t.includes("DESCUMPRIMENTO")) return "DESC_OP";
-  if (t.includes("AVARIA")) return "AVARIA";
+  // Mapeamentos conhecidos → siglas fixas
+  if (t.includes("EXCESSO") && t.includes("VELOCIDADE")) return "EXC_VEL";
+  if (t.includes("PARADA FORA"))                          return "PARADA_IRREG";
+  if (t.includes("DESCUMPRIMENTO") && t.includes("EMBARQUE")) return "DESC_EMBARQUE";
+  if (t.includes("DESCUMPRIMENTO"))                       return "DESC_OP";
+  if (t.includes("AVARIA"))                               return "AVARIA";
 
-  // Se for o título genérico "OCORRÊNCIA - 1998...",
-  // ele vai cair aqui e retornar apenas "OCOR"
-  return t.split(" ")[0].substring(0, 4);
+  // Títulos customizados (GENERICO reportTitle ou outros livres)
+  // Remove separadores, filtra stopwords, pega até 2 palavras significativas
+  const words = t
+    .replace(/[\/\-–|]/g, " ")
+    .split(/\s+/)
+    .map((w) => w.replace(/[^A-ZÁÉÍÓÚÃÕÂÊÎÔÛÀÜÇ]/g, ""))
+    .filter((w) => w.length > 1 && !ABBR_STOPWORDS.has(w));
+
+  if (words.length === 0) return t.replace(/\s+/g, "_").substring(0, 8);
+  if (words.length === 1) return words[0].substring(0, 8);
+
+  // Duas palavras significativas, 5 chars cada
+  return `${words[0].substring(0, 5)}_${words[1].substring(0, 5)}`;
 }
 
 function formatDateDDMMAA(dateLike?: string | Date | null): string {
