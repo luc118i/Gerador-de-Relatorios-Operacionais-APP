@@ -405,7 +405,7 @@ export function useNovaOcorrenciaForm({ onSaved, edicao }: NovaOcorrenciaProps) 
         viagem: viagemSelecionada
           ? toViagemView(viagemSelecionada)
           : { id: "", linha: "", prefixo: vehicleNumber || "0", horario: "" },
-        motorista1: toMotoristaView(driver1)!,
+        motorista1: toMotoristaView(driver1) ?? { id: "", matricula: "", nome: "", base: "" },
         motorista2: motorista2Ativo ? toMotoristaView(driver2) : undefined,
         dataEvento,
         dataViagem,

@@ -34,9 +34,12 @@ export function buildOccurrencePayload(args: {
   showSectionPassageiros?: boolean;
   devolutivaBeforeEvidences?: boolean;
 }): CreateOccurrenceInput {
-  if (!args.driver1Id) throw new Error("Motorista 01 é obrigatório.");
+  const tripulacaoAtiva = args.showSectionTripulacao !== false;
+
+  if (tripulacaoAtiva && !args.driver1Id) throw new Error("Motorista 01 é obrigatório.");
 
   if (
+    tripulacaoAtiva &&
     args.motorista2Ativo &&
     args.driver2Id &&
     args.driver2Id === args.driver1Id
@@ -44,11 +47,13 @@ export function buildOccurrencePayload(args: {
     throw new Error("Motorista 01 e 02 não podem ser o mesmo.");
   }
 
-  const drivers: CreateOccurrenceInput["drivers"] = [
-    { position: 1, driverId: args.driver1Id },
-  ];
+  const drivers: CreateOccurrenceInput["drivers"] = [];
 
-  if (args.motorista2Ativo && args.driver2Id) {
+  if (tripulacaoAtiva && args.driver1Id) {
+    drivers.push({ position: 1, driverId: args.driver1Id });
+  }
+
+  if (tripulacaoAtiva && args.motorista2Ativo && args.driver2Id) {
     drivers.push({ position: 2, driverId: args.driver2Id });
   }
 

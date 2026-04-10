@@ -26,6 +26,8 @@ interface RichTextEditorProps {
   placeholder?: string;
   minHeight?: string;
   disabled?: boolean;
+  /** px value, ex: 14 (padrão) ou 18 (modal) */
+  fontSizePx?: number;
 }
 
 export function RichTextEditor({
@@ -34,9 +36,16 @@ export function RichTextEditor({
   placeholder = "Digite aqui...",
   minHeight = "120px",
   disabled = false,
+  fontSizePx = 14,
 }: RichTextEditorProps) {
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
   const colorPickerRef = useRef<HTMLDivElement>(null);
+
+  const editorFontStyle: React.CSSProperties = {
+    fontSize: `${fontSizePx}px`,
+    lineHeight: `${Math.round(fontSizePx * 1.75)}px`,
+    fontFamily: "'Inter', 'Inter Variable', system-ui, sans-serif",
+  };
 
   const editor = useEditor({
     extensions: [StarterKit, Underline, TextStyle, Color],
@@ -58,6 +67,14 @@ export function RichTextEditor({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
+
+  // Força spellcheck direto no DOM — Tiptap sobrescreve o editorProps depois do mount
+  useEffect(() => {
+    if (!editor) return;
+    const dom = editor.view.dom as HTMLElement;
+    dom.setAttribute("spellcheck", "true");
+    dom.setAttribute("lang", "pt-BR");
+  }, [editor]);
 
   // Fecha o color picker ao clicar fora
   useEffect(() => {
@@ -212,16 +229,16 @@ export function RichTextEditor({
       </div>
 
       {/* Editor area */}
-      <div className="relative">
+      <div className="relative" style={editorFontStyle}>
         <EditorContent
           editor={editor}
           style={{ minHeight }}
-          className="px-3 py-2 text-sm text-gray-900 [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-[inherit] [&_.ProseMirror_p]:my-0.5 [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ul]:pl-5 [&_.ProseMirror_ul]:my-1"
+          className="px-3 py-2 text-gray-900 [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-[inherit] [&_.ProseMirror_p]:my-0.5 [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ul]:pl-5 [&_.ProseMirror_ul]:my-1"
         />
 
         {/* Placeholder */}
         {editor.isEmpty && (
-          <div className="absolute top-2 left-3 pointer-events-none text-sm text-gray-400">
+          <div className="absolute top-2 left-3 pointer-events-none text-gray-400">
             {placeholder}
           </div>
         )}

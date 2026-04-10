@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Home, RefreshCw, PencilLine, Check, Copy } from "lucide-react";
+import { useMemo, useState, useEffect, useRef } from "react";
+import { Home, RefreshCw, PencilLine, Check, Copy, Sparkles, Loader2 } from "lucide-react";
 import type { Ocorrencia } from "../../../types";
 import {
   gerarTextoRelatorioIndividual,
@@ -9,6 +9,7 @@ import { useGetOccurrencePdf } from "../../../../features/reportsPdf/queries/rep
 
 import { toast } from "sonner";
 import { getApiErrorMessage } from "../../../../api/http";
+import { aiApi } from "../../../../api/ai.api";
 
 import { DriverPdfCard } from "./components/DriverPdfCard";
 
@@ -24,6 +25,29 @@ export function OccurrencePreviewPage(props: {
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [ttl, setTtl] = useState<number | null>(null);
   const [cached, setCached] = useState<boolean | null>(null);
+
+  // ── IA: resumo ────────────────────────────────────────────────────────────
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiCooldown, setAiCooldown] = useState(0); // segundos restantes
+  const [aiCooldownTotal, setAiCooldownTotal] = useState(0); // total inicial
+  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  function startCooldown(seconds: number) {
+    setAiCooldown(seconds);
+    setAiCooldownTotal(seconds);
+    cooldownRef.current = setInterval(() => {
+      setAiCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(cooldownRef.current!);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }
+
+  useEffect(() => () => { if (cooldownRef.current) clearInterval(cooldownRef.current); }, []);
 
   const relatorioTxt = useMemo(
     () => gerarTextoRelatorioIndividual(occurrence),
@@ -61,18 +85,21 @@ export function OccurrencePreviewPage(props: {
     base?: string | null;
   };
 
+  const isGenerico = occurrence.typeCode === "GENERICO";
+
   const drivers = useMemo(() => {
     const map = (raw: any, position: 1 | 2): DriverSnapshot | null => {
       if (!raw) return null;
 
-      // Se o backend não enviou o nome/matricula, evite usar o ID (UUID)
       const code = raw.code || raw.registry || raw.matricula || "";
       const name = raw.name || raw.nome || "";
       const base = raw.base || "";
 
+      // Ignora motorista "vazio" (quando seção de tripulação foi desabilitada)
+      if (!code && !name) return null;
+
       return {
         position,
-        // Se code ou name forem vazios, passamos string vazia para o Card tratar
         registry: String(code).trim(),
         name: String(name).trim(),
         base: String(base).trim() || null,
@@ -84,6 +111,28 @@ export function OccurrencePreviewPage(props: {
       d2: map(occurrence.motorista2, 2),
     };
   }, [occurrence.motorista1, occurrence.motorista2]);
+
+  const hasDrivers = !!(drivers.d1 || drivers.d2);
+
+  async function handleSummarize() {
+    if (!relatorioTxt.trim() || aiCooldown > 0) return;
+    setAiLoading(true);
+    setAiSummary(null);
+    try {
+      const { summary } = await aiApi.summarize(relatorioTxt, occurrence.reportTitle ?? undefined);
+      setAiSummary(summary);
+    } catch (e) {
+      const msg = getApiErrorMessage(e, "Falha ao gerar resumo com IA");
+      // Extrai segundos de "Tente novamente em X segundo(s)"
+      const match = msg.match(/em (\d+) segundo/);
+      if (match) {
+        startCooldown(parseInt(match[1], 10));
+      }
+      toast.error(msg);
+    } finally {
+      setAiLoading(false);
+    }
+  }
 
   async function handleGenerate(force?: boolean) {
     try {
@@ -196,36 +245,38 @@ export function OccurrencePreviewPage(props: {
             )}
           </div>
         </div>
-        {/* PDF por motorista */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">
-              PDF por motorista
-            </h2>
-          </div>
+        {/* PDF por motorista — só exibe quando há motoristas vinculados */}
+        {hasDrivers && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">
+                PDF por motorista
+              </h2>
+            </div>
 
-          <div className="flex flex-col gap-4">
-            {drivers.d1 ? (
-              <DriverPdfCard
-                occurrenceId={occurrenceId}
-                occurrenceTitle={getOccurrenceTitle(occurrence)}
-                eventDate={occurrence.dataEvento}
-                driver={drivers.d1}
-                getOrCreateSignedUrl={getOrCreateSignedUrl}
-              />
-            ) : null}
+            <div className="flex flex-col gap-4">
+              {drivers.d1 ? (
+                <DriverPdfCard
+                  occurrenceId={occurrenceId}
+                  occurrenceTitle={getOccurrenceTitle(occurrence)}
+                  eventDate={occurrence.dataEvento}
+                  driver={drivers.d1}
+                  getOrCreateSignedUrl={getOrCreateSignedUrl}
+                />
+              ) : null}
 
-            {drivers.d2 ? (
-              <DriverPdfCard
-                occurrenceId={occurrenceId}
-                occurrenceTitle={getOccurrenceTitle(occurrence)}
-                eventDate={occurrence.dataEvento}
-                driver={drivers.d2}
-                getOrCreateSignedUrl={getOrCreateSignedUrl}
-              />
-            ) : null}
+              {drivers.d2 ? (
+                <DriverPdfCard
+                  occurrenceId={occurrenceId}
+                  occurrenceTitle={getOccurrenceTitle(occurrence)}
+                  eventDate={occurrence.dataEvento}
+                  driver={drivers.d2}
+                  getOrCreateSignedUrl={getOrCreateSignedUrl}
+                />
+              ) : null}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Resumo */}
         <div className="bg-white border border-gray-200 rounded-lg p-6">
@@ -422,13 +473,105 @@ export function OccurrencePreviewPage(props: {
         </div>
 
         <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">
-              Relatório Individual
-            </h2>
-            {/* Novo botão com sensação de clique */}
-            <CopyButton textToCopy={relatorioTxt} />
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">
+                {isGenerico ? "Relato em Texto Plano" : "Relatório Individual"}
+              </h2>
+              {isGenerico && (
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Versão sem formatação para copiar e colar
+                </p>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {isGenerico && (
+                <div className="relative flex flex-col items-center gap-1">
+                  <button
+                    onClick={handleSummarize}
+                    disabled={aiLoading || aiCooldown > 0}
+                    className="cursor-pointer h-9 px-3 rounded-lg border border-violet-200 bg-violet-50 hover:bg-violet-100 text-violet-700 transition-all flex items-center gap-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {aiLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Resumindo...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4" />
+                        Resumir com IA
+                      </>
+                    )}
+                  </button>
+
+                  {/* Barra de cooldown */}
+                  {aiCooldown > 0 && aiCooldownTotal > 0 && (
+                    <div className="w-full flex flex-col items-center gap-0.5">
+                      <div className="w-full h-1 rounded-full bg-violet-100 overflow-hidden">
+                        <div
+                          className="h-full bg-violet-400 rounded-full transition-all duration-1000 ease-linear"
+                          style={{ width: `${(aiCooldown / aiCooldownTotal) * 100}%` }}
+                        />
+                      </div>
+                      <span className="text-[10px] text-violet-400 tabular-nums">
+                        {aiCooldown}s
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+              <CopyButton textToCopy={relatorioTxt} />
+            </div>
           </div>
+
+          {/* Card do resumo IA */}
+          {isGenerico && (
+            aiSummary ? (
+              /* ── Resumo gerado ── */
+              <div className="rounded-lg border border-violet-200 bg-violet-50 p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-violet-700">
+                    <Sparkles className="w-4 h-4" />
+                    Resumo gerado por IA
+                  </div>
+                  <CopyButton textToCopy={aiSummary} />
+                </div>
+                <p className="text-sm text-violet-900 leading-relaxed">{aiSummary}</p>
+              </div>
+            ) : aiLoading ? (
+              /* ── Gerando: skeleton pulsante ── */
+              <div className="rounded-lg border border-violet-200 bg-violet-50 p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-violet-400 animate-pulse" />
+                  <span className="text-sm font-semibold text-violet-400">Gerando resumo...</span>
+                </div>
+                <div className="space-y-2 animate-pulse">
+                  <div className="h-3 bg-violet-200 rounded-full w-full" />
+                  <div className="h-3 bg-violet-200 rounded-full w-5/6" />
+                  <div className="h-3 bg-violet-200 rounded-full w-4/6" />
+                </div>
+              </div>
+            ) : (
+              /* ── Empty state: convite à ação ── */
+              <button
+                onClick={handleSummarize}
+                disabled={aiCooldown > 0}
+                className="group w-full rounded-lg border border-dashed border-violet-200 bg-violet-50/50 hover:bg-violet-50 hover:border-violet-300 transition-all duration-200 p-5 flex flex-col items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              >
+                <div className="w-8 h-8 rounded-full bg-violet-100 group-hover:bg-violet-200 transition-colors flex items-center justify-center">
+                  <Sparkles className="w-4 h-4 text-violet-500 group-hover:scale-110 transition-transform" />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-medium text-violet-700">Gerar resumo com IA</p>
+                  <p className="text-xs text-violet-400 mt-0.5">
+                    {aiCooldown > 0 ? `Disponível em ${aiCooldown}s` : "Clique para resumir o relato automaticamente"}
+                  </p>
+                </div>
+              </button>
+            )
+          )}
+
           <pre className="text-sm whitespace-pre-wrap font-mono text-gray-800 bg-gray-50 border border-gray-200 rounded-lg p-4">
             {relatorioTxt}
           </pre>

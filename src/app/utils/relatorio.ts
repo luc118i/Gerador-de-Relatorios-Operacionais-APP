@@ -20,6 +20,23 @@ function getDestino(v: Ocorrencia["viagem"]): string {
   return "destino" in v ? String(v.destino ?? "") : "";
 }
 
+/** Remove tags HTML e decodifica entidades básicas para texto plano. */
+function htmlParaTexto(html: string): string {
+  return html
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n\n")
+    .replace(/<\/li>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 export function gerarTextoRelatorioIndividual(ocorrencia: Ocorrencia): string {
   const data = formatarData(ocorrencia.dataEvento);
   const v = ocorrencia.viagem;
@@ -30,7 +47,22 @@ export function gerarTextoRelatorioIndividual(ocorrencia: Ocorrencia): string {
     ocorrencia.horarioInicial && ocorrencia.horarioFinal
       ? `${ocorrencia.horarioInicial} às ${ocorrencia.horarioFinal}`
       : "";
+
   switch (ocorrencia.typeCode) {
+    case "GENERICO": {
+      // Para relatórios genéricos, o "texto individual" É o relato registrado.
+      if (ocorrencia.relatoHtml?.trim()) {
+        const relatoPlano = htmlParaTexto(ocorrencia.relatoHtml);
+        const devolutivaPlano = ocorrencia.devolutivaHtml?.trim()
+          ? "\n\n— DEVOLUTIVA —\n\n" + htmlParaTexto(ocorrencia.devolutivaHtml)
+          : "";
+        return relatoPlano + devolutivaPlano;
+      }
+      // Fallback sem relato
+      const titulo = ocorrencia.reportTitle?.trim() || "Relatório Genérico";
+      return `${titulo}\n\nData: ${data}${linhaInfo ? `\nLinha: ${linha}` : ""}${prefixo ? `\nPrefixo: ${prefixo}` : ""}\n\n(Sem relato registrado)`;
+    }
+
     case "EXCESSO_VELOCIDADE": {
       const velocidade = ocorrencia.speedKmh ? `${ocorrencia.speedKmh} km/h` : "velocidade não informada";
       const horarioEvento = ocorrencia.horarioInicial || "";
