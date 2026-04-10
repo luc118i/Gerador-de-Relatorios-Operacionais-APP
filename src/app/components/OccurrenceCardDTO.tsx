@@ -113,9 +113,7 @@ export function OccurrenceCard({
   const subjectTitle = occurrence.typeCode === "GENERICO"
     ? (occurrence as any).reportTitle || occurrence.typeTitle
     : occurrence.typeTitle;
-  const subjectDetail = occurrence.typeCode !== "GENERICO" && occurrence.lineLabel
-    ? occurrence.lineLabel
-    : null;
+  const subjectDetail = occurrence.lineLabel || null;
 
   async function handleEditar() {
     if (!onEditar) return;
@@ -202,7 +200,7 @@ export function OccurrenceCard({
         <div className="w-[115px] flex-shrink-0 px-2 py-2.5 hidden sm:flex items-center gap-1">
           <Clock className="w-3 h-3 text-gray-300 flex-shrink-0" />
           <span className="text-xs text-gray-500 tabular-nums">
-            {occurrence.typeCode === "EXCESSO_VELOCIDADE"
+            {occurrence.typeCode === "EXCESSO_VELOCIDADE" || occurrence.startTime === occurrence.endTime
               ? occurrence.startTime
               : `${occurrence.startTime} – ${occurrence.endTime}`}
           </span>
@@ -290,7 +288,7 @@ export function OccurrenceCard({
       <div className="space-y-2">
         <div className="flex items-center gap-2 text-sm text-gray-700">
           <Clock className="w-4 h-4 text-gray-400" />
-          {occurrence.typeCode === "EXCESSO_VELOCIDADE" ? (
+          {occurrence.typeCode === "EXCESSO_VELOCIDADE" || occurrence.startTime === occurrence.endTime ? (
             <span>{occurrence.startTime}</span>
           ) : (
             <>
