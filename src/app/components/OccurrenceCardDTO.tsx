@@ -1,5 +1,6 @@
 import {
   Camera,
+  Check,
   Clock,
   FileText,
   Loader2,
@@ -18,12 +19,30 @@ import {
 import { getBaseCanonicalKey, resolveBaseSigla } from "../utils/base";
 import { BaseChip } from "./base-chip";
 
+// ── SVG Google Drive (inline, sem dependência externa) ────────────────────────
+function DriveIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
+      <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+      <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0-1.2 4.5h27.5z" fill="#00ac47"/>
+      <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.5l5.85 11.5z" fill="#ea4335"/>
+      <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+      <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+      <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
+    </svg>
+  );
+}
+
+export type DriveStatus = "idle" | "sending" | "sent";
+
 interface OccurrenceCardProps {
   occurrence: OccurrenceDTO;
   onOpen?: () => void;
   onEditar?: () => Promise<void> | void;
   onExcluir?: () => void;
   compact?: boolean;
+  driveStatus?: DriveStatus;
+  onSendToDrive?: () => void;
 }
 
 export type OccurrenceDetailDTO = OccurrenceDTO & {
@@ -89,6 +108,8 @@ export function OccurrenceCard({
   onEditar,
   onExcluir,
   compact = false,
+  driveStatus = "idle",
+  onSendToDrive,
 }: OccurrenceCardProps) {
   const [loadingEdit, setLoadingEdit] = useState(false);
   const [copiedWpp, setCopiedWpp] = useState(false);
@@ -254,6 +275,28 @@ export function OccurrenceCard({
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
+          {onSendToDrive && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onSendToDrive(); }}
+              disabled={driveStatus === "sending" || driveStatus === "sent"}
+              title={driveStatus === "sent" ? "Enviado ao Drive" : "Enviar PDF ao Google Drive"}
+              className={`p-2 rounded transition-colors disabled:cursor-default ${
+                driveStatus === "sent"
+                  ? "text-emerald-500"
+                  : driveStatus === "sending"
+                    ? "text-gray-300"
+                    : "text-gray-400 hover:text-[#0066da] hover:bg-blue-50"
+              }`}
+            >
+              {driveStatus === "sending" ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : driveStatus === "sent" ? (
+                <Check className="w-3.5 h-3.5" />
+              ) : (
+                <DriveIcon className="w-3.5 h-3.5" />
+              )}
+            </button>
+          )}
         </div>
       </div>
     );
@@ -350,7 +393,7 @@ export function OccurrenceCard({
           </button>
         </div>
 
-        {/* Linha 2: Copiar WhatsApp + Copiar Relatório */}
+        {/* Linha 2: WhatsApp + Relatório + Drive */}
         <div className="flex gap-2">
           <button
             onClick={handleCopyWpp}
@@ -374,6 +417,28 @@ export function OccurrenceCard({
             <FileText className="w-3.5 h-3.5" />
             {copiedRelat ? "Copiado!" : "Relatório"}
           </button>
+          {onSendToDrive && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onSendToDrive(); }}
+              disabled={driveStatus === "sending" || driveStatus === "sent"}
+              title={driveStatus === "sent" ? "Arquivo já enviado ao Drive" : "Enviar PDF ao Google Drive"}
+              className={`flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md transition-colors disabled:cursor-default ${
+                driveStatus === "sent"
+                  ? "text-emerald-700 bg-emerald-50"
+                  : driveStatus === "sending"
+                    ? "text-gray-400 bg-gray-50"
+                    : "text-gray-500 hover:bg-gray-50"
+              }`}
+            >
+              {driveStatus === "sending" ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : driveStatus === "sent" ? (
+                <><Check className="w-3.5 h-3.5" /><span>Drive</span></>
+              ) : (
+                <DriveIcon className="w-3.5 h-3.5" />
+              )}
+            </button>
+          )}
         </div>
       </div>
     </div>

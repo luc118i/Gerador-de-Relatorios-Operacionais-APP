@@ -66,7 +66,7 @@ export function buildOccurrencePayload(args: {
     vehicleNumber: args.vehicleNumber.trim(),
     place: args.place?.trim() ?? "",
     tripId: args.tripId ?? undefined,
-    tripTime: args.tripTime ?? null,
+    tripTime: args.tripTime || null,
     lineLabel: args.lineLabel ?? null,
     speedKmh: args.speedKmh ?? null,
     // Campos GENERICO

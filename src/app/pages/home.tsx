@@ -9,20 +9,24 @@ import {
   List,
   Tag,
 } from "lucide-react";
-import { useMemo, useState, useRef, useEffect } from "react";
+import { useMemo, useState, useRef, useEffect, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { occurrencesApi } from "../../api/occurrences.api";
 import type { OccurrenceDTO } from "../../domain/occurrences";
 import type { Ocorrencia } from "../types";
-import { OccurrenceCard } from "../components/OccurrenceCardDTO";
+import { OccurrenceCard, type DriveStatus } from "../components/OccurrenceCardDTO";
 import { OccurrencePreviewModal } from "./occurrences/preview/OccurrencePreviewModal";
+import { DrivePickerModal } from "./occurrences/preview/components/DrivePickerModal";
 import { formatToLocalDate } from "../utils/dateUtils";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { NovaOcorrencia } from "./nova-ocorrencia";
 import { toast } from "sonner";
 import { Calendar } from "../components/ui/calendar";
 import { ptBR } from "date-fns/locale";
-import { viagensCatalog } from "../../catalogs/viagens.catalog";
+import { useDriveFolder } from "../../hooks/useDriveFolder";
+import { requestDriveToken } from "../../utils/googleAuth";
+import { reportsDriveApi } from "../../api/reportsDrive.api";
+import { getApiErrorMessage } from "../../api/http";
 
 interface HomeProps {
   onNovaOcorrencia: () => void;
@@ -54,6 +58,21 @@ export function Home({
   );
 
   const calendarRef = useRef<HTMLDivElement | null>(null);
+
+  // ── Google Drive ──────────────────────────────────────────
+  const driveFolder = useDriveFolder();
+  const [driveToken, setDriveToken] = useState<string | null>(null);
+  const [showDriveModal, setShowDriveModal] = useState(false);
+  /** IDs que já foram enviados ao Drive nesta sessão (persiste no localStorage) */
+  const [driveSentIds, setDriveSentIds] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem("home_drive_sent");
+      return new Set(raw ? JSON.parse(raw) : []);
+    } catch { return new Set(); }
+  });
+  const [driveSendingId, setDriveSendingId] = useState<string | null>(null);
+  /** Ocorrências editadas e ainda não reenviadas (precisam de force=true) */
+  const [driveNeedsUpdateIds, setDriveNeedsUpdateIds] = useState<Set<string>>(new Set());
 
   // ── Derivados ─────────────────────────────────────────────
   const formattedDate = useMemo(
@@ -170,6 +189,69 @@ export function Home({
     } finally {
       setExcluindo(false);
     }
+  }
+
+  function markDriveSent(id: string) {
+    setDriveSentIds((prev) => {
+      const next = new Set(prev).add(id);
+      localStorage.setItem("home_drive_sent", JSON.stringify([...next]));
+      return next;
+    });
+  }
+
+  const handleSendToDrive = useCallback(async (occurrenceId: string) => {
+    if (!driveFolder.config) {
+      setShowDriveModal(true);
+      return;
+    }
+
+    setDriveSendingId(occurrenceId);
+    try {
+      let token = driveToken;
+      if (!token) {
+        const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string;
+        token = await requestDriveToken(clientId);
+        setDriveToken(token);
+      }
+
+      const needsUpdate = driveNeedsUpdateIds.has(occurrenceId);
+      const res = await reportsDriveApi.sendOccurrenceToDrive({
+        occurrenceId,
+        accessToken: token,
+        folderId: driveFolder.config.folderId,
+        force: needsUpdate,
+      });
+
+      markDriveSent(occurrenceId);
+      setDriveNeedsUpdateIds((prev) => { const s = new Set(prev); s.delete(occurrenceId); return s; });
+
+      const { webViewLink } = res.data.drive;
+      toast.success(
+        <span>
+          PDF {needsUpdate ? "atualizado" : "enviado"} no Drive!{" "}
+          <a href={webViewLink} target="_blank" rel="noreferrer" className="underline">
+            Abrir
+          </a>
+        </span>,
+        { duration: 6000 },
+      );
+    } catch (err) {
+      toast.error(`Falha ao enviar ao Drive: ${getApiErrorMessage(err)}`);
+    } finally {
+      setDriveSendingId(null);
+    }
+  }, [driveToken, driveFolder.config, driveNeedsUpdateIds]);
+
+  function handleDriveConfirm(args: { config: { folderId: string; folderName: string }; accessToken: string; saveAsDefault: boolean }) {
+    if (args.saveAsDefault) driveFolder.save(args.config);
+    setDriveToken(args.accessToken);
+    setShowDriveModal(false);
+  }
+
+  function getDriveStatus(id: string): DriveStatus {
+    if (driveSendingId === id) return "sending";
+    if (driveSentIds.has(id) && !driveNeedsUpdateIds.has(id)) return "sent";
+    return "idle";
   }
 
   // ── Render ────────────────────────────────────────────────
@@ -372,6 +454,8 @@ export function Home({
                         onOpen={() => setPreviewId(occ.id)}
                         onEditar={() => handleEditar(occ)}
                         onExcluir={() => setExcluindoId(occ.id)}
+                        driveStatus={getDriveStatus(occ.id)}
+                        onSendToDrive={() => handleSendToDrive(occ.id)}
                       />
                     ))}
                   </div>
@@ -384,6 +468,8 @@ export function Home({
                         onOpen={() => setPreviewId(occ.id)}
                         onEditar={() => handleEditar(occ)}
                         onExcluir={() => setExcluindoId(occ.id)}
+                        driveStatus={getDriveStatus(occ.id)}
+                        onSendToDrive={() => handleSendToDrive(occ.id)}
                       />
                     ))}
                   </div>
@@ -411,6 +497,8 @@ export function Home({
                 onOpen={() => setPreviewId(occ.id)}
                 onEditar={() => handleEditar(occ)}
                 onExcluir={() => setExcluindoId(occ.id)}
+                driveStatus={getDriveStatus(occ.id)}
+                onSendToDrive={() => handleSendToDrive(occ.id)}
               />
             ))}
           </div>
@@ -424,6 +512,8 @@ export function Home({
                 onOpen={() => setPreviewId(occ.id)}
                 onEditar={() => handleEditar(occ)}
                 onExcluir={() => setExcluindoId(occ.id)}
+                driveStatus={getDriveStatus(occ.id)}
+                onSendToDrive={() => handleSendToDrive(occ.id)}
               />
             ))}
           </div>
@@ -450,6 +540,11 @@ export function Home({
               onSaved={(args) => {
                 setEditando(null);
                 toast.success("Ocorrência atualizada!");
+
+                // Se o arquivo estava no Drive, marca para reenvio (force=true)
+                if (driveSentIds.has(args.id)) {
+                  setDriveNeedsUpdateIds((prev) => new Set(prev).add(args.id));
+                }
 
                 // Atualiza o card imediatamente no cache (sem esperar refetch)
                 queryClient.setQueryData<OccurrenceDTO[]>(
@@ -494,6 +589,15 @@ export function Home({
             />
           </div>
         </div>
+      )}
+
+      {/* Modal de Configuração do Google Drive */}
+      {showDriveModal && (
+        <DrivePickerModal
+          currentConfig={driveFolder.config ?? null}
+          onConfirm={handleDriveConfirm}
+          onClose={() => setShowDriveModal(false)}
+        />
       )}
 
       {/* Modal de Confirmação de Exclusão */}
@@ -549,25 +653,16 @@ function dtoToOcorrencia(
     linkUrl?: string;
   }> = [],
 ): Ocorrencia {
-  const viagemNoCatalogo = dto.tripId
-    ? viagensCatalog.byKey.get(dto.tripId)
-    : viagensCatalog.rows.find(
-        (v) => `${v.codigoLinha} - ${v.nomeLinha}` === dto.lineLabel,
-      );
-
-  console.log("tripId:", dto.tripId);
-  console.log("lineLabel:", dto.lineLabel);
-  console.log("viagemEncontrada:", viagemNoCatalogo);
   return {
     id: dto.id,
     viagem: {
       id: dto.tripId ?? "",
       linha: dto.lineLabel ?? "",
       prefixo: dto.vehicleNumber ?? "",
-      horario: viagemNoCatalogo?.horaPartida ?? "",
-      codigoLinha: viagemNoCatalogo?.codigoLinha ?? "",
-      nomeLinha: viagemNoCatalogo?.nomeLinha ?? "",
-      sentido: viagemNoCatalogo?.sentido ?? "",
+      horario: dto.tripDepartureTime ?? "",
+      codigoLinha: dto.tripLineCode ?? "",
+      nomeLinha: dto.tripLineName ?? "",
+      sentido: dto.tripDirection ?? "",
       origem: "",
       destino: "",
     },

@@ -1,30 +1,40 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Bus, ChevronDown } from "lucide-react";
+import { Bus, ChevronDown, PlusCircle } from "lucide-react";
 import type { ViagemCatalog } from "../types";
+import { useTrips } from "../../features/trips/queries/trips.queries";
+import type { Trip } from "../../domain/trips";
 
 type AutocompleteViagemProps = {
-  viagens: ViagemCatalog[];
   value: ViagemCatalog | null;
   onChange: (v: ViagemCatalog) => void;
+  onCreateRequested?: () => void;
 };
+
+function tripToViagem(t: Trip): ViagemCatalog {
+  return {
+    id: t.id,
+    codigoLinha: t.lineCode,
+    nomeLinha: t.lineName,
+    horaPartida: t.departureTime,
+    sentido: t.direction,
+  };
+}
 
 function normalize(s: string) {
   return (s ?? "")
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") // remove acentos
+    .replace(/[\u0300-\u036f]/g, "")
     .trim();
 }
 
 function buildHaystack(v: ViagemCatalog) {
-  // tudo pesquisável no mesmo input
   return normalize(
     [
       v.codigoLinha,
       v.nomeLinha,
       v.horaPartida,
       v.sentido,
-      // opcional: também permitir achar por "codigo - nome"
       `${v.codigoLinha} ${v.nomeLinha}`,
     ]
       .filter(Boolean)
@@ -33,14 +43,34 @@ function buildHaystack(v: ViagemCatalog) {
 }
 
 export function AutocompleteViagem({
-  viagens,
   value,
   onChange,
+  onCreateRequested,
 }: AutocompleteViagemProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const { data: trips = [], isLoading } = useTrips();
+
+  const viagens = useMemo(() => trips.map(tripToViagem), [trips]);
+
+  const indexed = useMemo(
+    () => viagens.map((v) => ({ v, hay: buildHaystack(v) })),
+    [viagens],
+  );
+
+  const filteredViagens = useMemo(() => {
+    const q = normalize(search);
+    if (!q) return viagens;
+
+    const tokens = q.split(/\s+/).filter(Boolean);
+    return indexed
+      .filter(({ hay }) => tokens.every((t) => hay.includes(t)))
+      .map(({ v }) => v);
+  }, [indexed, viagens, search]);
+
+  // fechar ao clicar fora
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -53,22 +83,6 @@ export function AutocompleteViagem({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  // Pré-indexa para filtrar mais rápido
-  const indexed = useMemo(() => {
-    return viagens.map((v) => ({ v, hay: buildHaystack(v) }));
-  }, [viagens]);
-
-  const filteredViagens = useMemo(() => {
-    const q = normalize(search);
-    if (!q) return viagens;
-
-    const tokens = q.split(/\s+/).filter(Boolean);
-
-    return indexed
-      .filter(({ hay }) => tokens.every((t) => hay.includes(t)))
-      .map(({ v }) => v);
-  }, [indexed, viagens, search]);
 
   const displayText = value
     ? [
@@ -103,20 +117,38 @@ export function AutocompleteViagem({
 
       {isOpen && (
         <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-80 overflow-hidden">
-          <div className="p-2 border-b border-gray-200">
+          <div className="p-2 border-b border-gray-200 space-y-2">
             <input
               type="text"
-              placeholder="Buscar por código, nome, horário ou sentido... Ex: 330 brasilia 21:00 ida"
+              placeholder="Buscar por código, nome, horário ou sentido..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               autoFocus
             />
+
+            {onCreateRequested ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpen(false);
+                  onCreateRequested();
+                }}
+                className="cursor-pointer w-full h-9 px-3 rounded-md flex items-center justify-center gap-2 bg-gray-50 border border-gray-200 hover:bg-gray-100 text-gray-700 text-sm font-medium"
+              >
+                <PlusCircle className="w-4 h-4" />
+                Cadastrar linha
+              </button>
+            ) : null}
           </div>
 
-          <div className="overflow-y-auto max-h-64">
-            {filteredViagens.length === 0 ? (
-              <div className="p-4 text-center text-gray-500">
+          <div className="overflow-y-auto max-h-60">
+            {isLoading ? (
+              <div className="p-4 text-center text-gray-500 text-sm">
+                Carregando viagens...
+              </div>
+            ) : filteredViagens.length === 0 ? (
+              <div className="p-4 text-center text-gray-500 text-sm">
                 Nenhuma viagem encontrada
               </div>
             ) : (
@@ -142,11 +174,9 @@ export function AutocompleteViagem({
                           {viagem.sentido}
                         </span>
                       </div>
-
                       <div className="text-sm text-gray-600">
                         {viagem.nomeLinha}
                       </div>
-
                       <div className="text-xs text-gray-500 mt-1">
                         Horário: {viagem.horaPartida}
                       </div>

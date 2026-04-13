@@ -8,6 +8,7 @@ import {
   downloadBlob,
   fetchBlobFromUrl,
 } from "../../../../../utils/pdfDownload";
+import { requestDriveToken } from "../../../../../utils/googleAuth";
 import type { DriveFolderConfig } from "../../../../../hooks/useDriveFolder";
 
 type Status = "idle" | "generating" | "ready" | "error";
@@ -23,6 +24,8 @@ type DriveContext = {
   config: DriveFolderConfig | null;
   token: string | null;
   onNeedConnect: () => void;
+  onTokenRefreshed: (token: string) => void;
+  clientId: string | null;
 };
 
 // ── SVG do Google Drive ───────────────────────────────────────────────────────
@@ -58,6 +61,7 @@ export function DriverPdfCard(props: {
 
   const [status, setStatus] = useState<Status>("idle");
   const [driveLoading, setDriveLoading] = useState(false);
+  const [driveSent, setDriveSent] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -116,21 +120,34 @@ export function DriverPdfCard(props: {
   const handleSendToDrive = useCallback(async () => {
     if (driveLoading) return;
 
-    if (!driveContext.config || !driveContext.token) {
+    // Sem pasta configurada → abrir modal de configuração
+    if (!driveContext.config) {
       driveContext.onNeedConnect();
-      toast.info("Conecte sua conta Google Drive para enviar arquivos.");
       return;
     }
 
     setDriveLoading(true);
     try {
+      // Token ausente (expirou ou página foi recarregada) → reautenticar silenciosamente
+      let token = driveContext.token;
+      if (!token) {
+        if (!driveContext.clientId) {
+          toast.error("Google Client ID não configurado.");
+          setDriveLoading(false);
+          return;
+        }
+        token = await requestDriveToken(driveContext.clientId);
+        driveContext.onTokenRefreshed(token);
+      }
+
       const res = await reportsDriveApi.sendOccurrenceToDrive({
         occurrenceId,
-        accessToken: driveContext.token,
+        accessToken: token,
         folderId: driveContext.config.folderId,
         fileName,
       });
       const { webViewLink } = res.data.drive;
+      setDriveSent(true);
       toast.success(
         <span>
           <strong>{fileName}</strong> enviado!{" "}
@@ -192,14 +209,31 @@ export function DriverPdfCard(props: {
           <button
             type="button"
             onClick={handleSendToDrive}
-            disabled={driveLoading}
-            title={driveContext.config ? `Enviar para "${driveContext.config.folderName}"` : "Conecte o Drive para enviar"}
-            className="cursor-pointer h-10 w-10 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50 flex items-center justify-center transition-colors"
-          >
-            {driveLoading
-              ? <Loader2 className="w-4 h-4 animate-spin text-gray-500" />
-              : <DriveIcon className="w-5 h-5" />
+            disabled={driveLoading || driveSent}
+            title={
+              driveSent
+                ? "Arquivo já enviado ao Drive"
+                : driveContext.config
+                  ? `Enviar para "${driveContext.config.folderName}"`
+                  : "Conecte o Drive para enviar"
             }
+            className={[
+              "h-10 rounded-lg border flex items-center justify-center transition-colors",
+              driveSent
+                ? "px-3 gap-1.5 border-emerald-200 bg-emerald-50 text-emerald-700 cursor-default"
+                : "cursor-pointer w-10 border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50",
+            ].join(" ")}
+          >
+            {driveLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin text-gray-500" />
+            ) : driveSent ? (
+              <>
+                <Check className="w-4 h-4" />
+                <span className="text-xs font-medium">Enviado</span>
+              </>
+            ) : (
+              <DriveIcon className="w-5 h-5" />
+            )}
           </button>
 
           {/* Baixar PDF */}

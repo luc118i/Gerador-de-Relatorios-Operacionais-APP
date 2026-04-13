@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { FolderOpen, Loader2, X, Check, FolderUp } from "lucide-react";
 import type { DriveFolderConfig } from "../../../../../hooks/useDriveFolder";
+import { loadScript, requestDriveToken } from "../../../../../utils/googleAuth";
 
 // ── Tipos mínimos para as APIs do Google injetadas via script ─────────────────
 declare global {
@@ -22,21 +23,6 @@ interface Props {
 
 type Step = "connect" | "picking" | "selected";
 
-function loadScript(src: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (document.querySelector(`script[src="${src}"]`)) {
-      resolve();
-      return;
-    }
-    const s = document.createElement("script");
-    s.src = src;
-    s.async = true;
-    s.onload = () => resolve();
-    s.onerror = () => reject(new Error(`Falha ao carregar script: ${src}`));
-    document.head.appendChild(s);
-  });
-}
-
 export function DrivePickerModal({ onConfirm, onClose, currentConfig }: Props) {
   const [step, setStep] = useState<Step>(currentConfig ? "selected" : "connect");
   const [selectedFolder, setSelectedFolder] = useState<DriveFolderConfig | null>(
@@ -55,7 +41,7 @@ export function DrivePickerModal({ onConfirm, onClose, currentConfig }: Props) {
     Promise.all([
       loadScript("https://accounts.google.com/gsi/client"),
       loadScript("https://apis.google.com/js/api.js"),
-    ]).catch(() => {/* ignora — erro só aparece ao clicar */});
+    ]).catch(() => { /* ignora — erro só aparece ao clicar */ });
   }, []);
 
   async function handleConnect() {
@@ -68,32 +54,15 @@ export function DrivePickerModal({ onConfirm, onClose, currentConfig }: Props) {
     setError(null);
 
     try {
-      await Promise.all([
-        loadScript("https://accounts.google.com/gsi/client"),
-        loadScript("https://apis.google.com/js/api.js"),
-      ]);
-
-      // Solicita access token via GIS
-      await new Promise<void>((resolve, reject) => {
-        const tokenClient = window.google.accounts.oauth2.initTokenClient({
-          client_id: clientId,
-          scope: "https://www.googleapis.com/auth/drive",
-          callback: (resp: any) => {
-            if (resp.error) {
-              reject(new Error(resp.error));
-              return;
-            }
-            tokenRef.current = resp.access_token;
-            resolve();
-          },
-        });
-        tokenClient.requestAccessToken({ prompt: "" });
-      });
+      // Solicita access token via utilitário compartilhado
+      const token = await requestDriveToken(clientId);
+      tokenRef.current = token;
 
       // Carrega o módulo picker do GAPI
+      await loadScript("https://apis.google.com/js/api.js");
       await new Promise<void>((resolve) => window.gapi.load("picker", resolve));
 
-      openPicker(tokenRef.current!, apiKey ?? "");
+      openPicker(token, apiKey ?? "");
     } catch (e: any) {
       setError(e?.message ?? "Falha ao conectar com o Google");
       setLoading(false);
@@ -133,11 +102,34 @@ export function DrivePickerModal({ onConfirm, onClose, currentConfig }: Props) {
     picker.setVisible(true);
   }
 
-  function handleConfirm() {
-    if (!selectedFolder || !tokenRef.current) return;
+  async function reauthenticate(): Promise<string> {
+    if (!clientId) throw new Error("VITE_GOOGLE_CLIENT_ID não configurado");
+    return requestDriveToken(clientId);
+  }
+
+  async function handleConfirm() {
+    if (!selectedFolder) return;
+
+    let token = tokenRef.current;
+
+    // Token expirou ou página foi recarregada — pede novo sem abrir o picker
+    if (!token) {
+      setLoading(true);
+      setError(null);
+      try {
+        token = await reauthenticate();
+        tokenRef.current = token;
+      } catch (e: any) {
+        setError(e?.message ?? "Falha ao autenticar com o Google");
+        setLoading(false);
+        return;
+      }
+      setLoading(false);
+    }
+
     onConfirm({
       config: selectedFolder,
-      accessToken: tokenRef.current,
+      accessToken: token,
       saveAsDefault,
     });
   }
@@ -268,10 +260,15 @@ export function DrivePickerModal({ onConfirm, onClose, currentConfig }: Props) {
           ) : selectedFolder ? (
             <button
               onClick={handleConfirm}
-              className="cursor-pointer h-9 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm flex items-center gap-2"
+              disabled={loading}
+              className="cursor-pointer h-9 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm flex items-center gap-2 disabled:opacity-60"
             >
-              <Check className="w-4 h-4" />
-              Enviar PDF
+              {loading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Check className="w-4 h-4" />
+              )}
+              {loading ? "Autenticando..." : "Enviar PDF"}
             </button>
           ) : null}
         </div>

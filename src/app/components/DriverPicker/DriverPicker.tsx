@@ -47,14 +47,13 @@ export function DriverPicker({
   }, []);
 
   useEffect(() => {
-    if (initialDriver && value === initialDriver.id && !selectedDriver) {
+    if (initialDriver && value === initialDriver.id) {
       setSelectedDriver({
         id: initialDriver.id,
         code: initialDriver.code,
         name: initialDriver.name,
-        base: initialDriver.base ?? "",
-        active: true,
-      } as Driver);
+        base: initialDriver.base ?? null,
+      });
     }
   }, [initialDriver, value]);
 

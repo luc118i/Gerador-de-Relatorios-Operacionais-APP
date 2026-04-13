@@ -16,7 +16,6 @@ import {
 } from "../../../features/occurrences/queries/occurrences.queries";
 import { buildOccurrencePayload } from "../../../features/occurrences/buildOccurrencePayload";
 import { getApiErrorMessage } from "../../../api/http";
-import { viagensCatalog } from "../../../catalogs/viagens.catalog";
 import { occurrencesApi } from "../../../api/occurrences.api";
 import { getOccurrenceTypeConfig } from "../../config/occurrenceTypes";
 
@@ -173,19 +172,14 @@ export function useNovaOcorrenciaForm({ onSaved, edicao }: NovaOcorrenciaProps) 
     setShowSectionTripulacao(edicao.showSectionTripulacao ?? true);
     setShowSectionPassageiros(edicao.showSectionPassageiros ?? true);
 
-    const viagemNoCatalogo = viagensCatalog.rows.find((v) => v.id === viagemSalva.id);
-    if (viagemNoCatalogo) {
-      setViagemSelecionada(viagemNoCatalogo);
-    } else {
-      const [codigo, ...resto] = (viagemSalva.linha || "").split(" - ");
-      setViagemSelecionada({
-        id: viagemSalva.id,
-        codigoLinha: codigo || "",
-        nomeLinha: resto.join(" - ") || "",
-        horaPartida: viagemSalva.horario,
-        sentido: "",
-      } as ViagemCatalog);
-    }
+    const [codigo, ...resto] = (viagemSalva.linha || "").split(" - ");
+    setViagemSelecionada({
+      id: viagemSalva.id,
+      codigoLinha: codigo || "",
+      nomeLinha: resto.join(" - ") || "",
+      horaPartida: viagemSalva.horario,
+      sentido: "",
+    } as ViagemCatalog);
 
     if (edicao.motorista1) {
       setDriver1Id(edicao.motorista1.id);

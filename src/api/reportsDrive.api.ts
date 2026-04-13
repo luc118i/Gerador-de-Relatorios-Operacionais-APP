@@ -7,6 +7,8 @@ export const reportsDriveApi = {
     accessToken?: string;
     folderId?: string;
     fileName?: string;
+    /** Se true, substitui o arquivo existente no Drive em vez de criar um novo */
+    force?: boolean;
   }) {
     return request<OccurrenceDriveResponse>({
       method: "POST",
@@ -15,6 +17,7 @@ export const reportsDriveApi = {
         ...(args.accessToken ? { accessToken: args.accessToken } : {}),
         ...(args.folderId    ? { folderId: args.folderId }       : {}),
         ...(args.fileName    ? { fileName: args.fileName }       : {}),
+        ...(args.force       ? { force: true }                   : {}),
       },
     });
   },

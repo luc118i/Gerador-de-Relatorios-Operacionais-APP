@@ -320,7 +320,9 @@ export function OccurrencePreviewPage(props: {
                   driveContext={{
                     config: driveFolder.config,
                     token: driveToken,
+                    clientId: (import.meta.env.VITE_GOOGLE_CLIENT_ID as string) || null,
                     onNeedConnect: () => setShowDriveModal(true),
+                    onTokenRefreshed: setDriveToken,
                   }}
                 />
               ) : null}
@@ -334,7 +336,9 @@ export function OccurrencePreviewPage(props: {
                   driveContext={{
                     config: driveFolder.config,
                     token: driveToken,
+                    clientId: (import.meta.env.VITE_GOOGLE_CLIENT_ID as string) || null,
                     onNeedConnect: () => setShowDriveModal(true),
+                    onTokenRefreshed: setDriveToken,
                   }}
                 />
               ) : null}
