@@ -97,10 +97,12 @@ export function Home({
     if (!groupBySubject || ocorrencias.length === 0) return null;
     const map = new Map<string, OccurrenceDTO[]>();
     for (const occ of ocorrencias) {
-      const subject =
+      const raw =
         occ.typeCode === "GENERICO"
           ? (occ as any).reportTitle || occ.typeTitle
           : occ.typeTitle;
+      // Normaliza: remove espaços e padroniza caixa para evitar grupos duplicados
+      const subject = String(raw ?? "").trim().toUpperCase();
       if (!map.has(subject)) map.set(subject, []);
       map.get(subject)!.push(occ);
     }

@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useRef } from "react";
-import { Home, RefreshCw, PencilLine, Check, Copy, Sparkles, Loader2 } from "lucide-react";
+import { Home, PencilLine, Check, Copy, Sparkles, Loader2, X } from "lucide-react";
 import type { Ocorrencia } from "../../../types";
 import {
   gerarTextoRelatorioIndividual,
@@ -40,51 +40,17 @@ export function OccurrencePreviewPage(props: {
 
   // ── Google Drive ─────────────────────────────────────────────────────────
   const driveFolder = useDriveFolder();
-  const [driveLoading, setDriveLoading] = useState(false);
+  const [driveToken, setDriveToken] = useState<string | null>(null);
   const [showDriveModal, setShowDriveModal] = useState(false);
-
-  async function handleSendToDrive() {
-    if (driveLoading) return;
-    // Se não há pasta configurada, abre o modal para o usuário escolher
-    if (!driveFolder.config) {
-      setShowDriveModal(true);
-      return;
-    }
-    // Pasta já salva → pede token silencioso e faz upload
-    setShowDriveModal(true);
-  }
 
   async function handleDriveConfirm(args: {
     config: { folderId: string; folderName: string };
     accessToken: string;
     saveAsDefault: boolean;
   }) {
-    if (args.saveAsDefault) {
-      driveFolder.save(args.config);
-    }
+    if (args.saveAsDefault) driveFolder.save(args.config);
+    setDriveToken(args.accessToken);
     setShowDriveModal(false);
-    setDriveLoading(true);
-    try {
-      const res = await reportsDriveApi.sendOccurrenceToDrive({
-        occurrenceId,
-        accessToken: args.accessToken,
-        folderId: args.config.folderId,
-      });
-      const { fileName, webViewLink } = res.data.drive;
-      toast.success(
-        <span>
-          <strong>{fileName}</strong> enviado ao Drive!{" "}
-          <a href={webViewLink} target="_blank" rel="noreferrer" className="underline">
-            Abrir
-          </a>
-        </span>,
-        { duration: 8000 },
-      );
-    } catch (err) {
-      toast.error(`Falha ao enviar ao Drive: ${getApiErrorMessage(err)}`);
-    } finally {
-      setDriveLoading(false);
-    }
   }
 
   // ── Cooldown compartilhado (mesmo endpoint / mesmo rate-limit) ────────────
@@ -268,122 +234,81 @@ export function OccurrencePreviewPage(props: {
   return (
     <div className="min-h-screen bg-gray-50 print:bg-white print:min-h-0">
       <header className="screen-only bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3">
+          {/* Esquerda: Home + título */}
+          <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={onBack}
-              className="cursor-pointer p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="cursor-pointer p-2 hover:bg-gray-100 rounded-lg transition-colors shrink-0"
             >
               <Home className="w-5 h-5 text-gray-600" />
             </button>
-            <div>
-              <h1 className="text-2xl font-semibold text-gray-900">
-                Preview da Ocorrência
-              </h1>
-              <p className="text-sm text-gray-600 mt-0.5">ID: {occurrenceId}</p>
-            </div>
+            <h1 className="text-base font-semibold text-gray-900 truncate">
+              Preview da Ocorrência
+            </h1>
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* Direita: Editar + Drive */}
+          <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={onEdit}
-              className="cursor-pointer h-10 px-4 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 flex items-center gap-2"
+              className="cursor-pointer h-9 px-3 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 flex items-center gap-2 text-sm"
             >
               <PencilLine className="w-4 h-4" />
               Editar
             </button>
 
-            <button
-              onClick={() => window.print()}
-              className="cursor-pointer h-10 px-4 rounded-lg bg-slate-900 text-white hover:bg-slate-800 flex items-center gap-2"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Imprimir / Salvar PDF
-            </button>
+            {/* Botão de conexão Drive */}
+            {driveFolder.config ? (
+              <div className="flex items-center gap-1 h-9 pl-3 pr-1 rounded-lg border border-green-200 bg-green-50 text-sm">
+                <svg className="w-4 h-4 shrink-0" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
+                  <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+                  <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0-1.2 4.5h27.5z" fill="#00ac47"/>
+                  <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.5l5.85 11.5z" fill="#ea4335"/>
+                  <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+                  <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+                  <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
+                </svg>
+                <span
+                  className="text-green-800 font-medium max-w-[120px] truncate cursor-pointer hover:underline"
+                  onClick={() => setShowDriveModal(true)}
+                  title={driveFolder.config.folderName}
+                >
+                  {driveFolder.config.folderName}
+                </span>
+                <button
+                  onClick={() => { driveFolder.clear(); setDriveToken(null); }}
+                  className="cursor-pointer p-1 ml-0.5 hover:bg-green-100 rounded transition-colors"
+                  title="Desconectar pasta"
+                >
+                  <X className="w-3.5 h-3.5 text-green-600" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowDriveModal(true)}
+                className="cursor-pointer h-9 px-3 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-600"
+              >
+                <svg className="w-4 h-4 shrink-0 opacity-50" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
+                  <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+                  <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0-1.2 4.5h27.5z" fill="#00ac47"/>
+                  <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.5l5.85 11.5z" fill="#ea4335"/>
+                  <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+                  <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+                  <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
+                </svg>
+                Conectar Drive
+              </button>
+            )}
           </div>
         </div>
       </header>
 
       <main className="screen-only max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-        {/* Ações rápidas */}
-        <div className="flex gap-3 flex-wrap">
-          {/* Status PDF */}
-          <div className="flex-1 min-w-[220px] bg-white border border-gray-200 rounded-lg p-4 flex items-center gap-3">
-            <RefreshCw className="w-4 h-4 text-gray-400 shrink-0" />
-            <div className="text-sm text-gray-700">
-              {signedUrl ? (
-                <>
-                  PDF pronto{" "}
-                  {cached != null ? (cached ? "(cache)" : "(gerado agora)") : null}
-                  {ttl ? ` • expira em ~${Math.round(ttl / 60)} min` : null}
-                </>
-              ) : (
-                "Use Imprimir / Salvar PDF para gerar."
-              )}
-            </div>
-          </div>
-
-          {/* Enviar ao Drive */}
-          <div className="bg-white border border-gray-200 rounded-lg p-4 flex items-center gap-4">
-            <div className="flex items-center gap-2.5">
-              {/* Google Drive logo */}
-              <svg className="w-5 h-5 shrink-0" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
-                <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
-                <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0-1.2 4.5h27.5z" fill="#00ac47"/>
-                <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.5l5.85 11.5z" fill="#ea4335"/>
-                <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
-                <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
-                <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
-              </svg>
-              <div>
-                <p className="text-sm font-medium text-gray-800">Google Drive</p>
-                {driveFolder.config ? (
-                  <p className="text-xs text-gray-500 truncate max-w-[180px]">
-                    {driveFolder.config.folderName}
-                  </p>
-                ) : (
-                  <p className="text-xs text-gray-400">Pasta não configurada</p>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {driveFolder.config && (
-                <button
-                  onClick={() => { driveFolder.clear(); }}
-                  className="cursor-pointer h-8 px-3 rounded-lg border border-gray-200 hover:bg-gray-50 text-xs text-gray-500 hover:text-red-600 transition-colors"
-                  title="Desconectar pasta padrão"
-                >
-                  Desconectar
-                </button>
-              )}
-              <button
-                onClick={handleSendToDrive}
-                disabled={driveLoading}
-                className="cursor-pointer h-9 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {driveLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                    <polyline points="17 8 12 3 7 8"/>
-                    <line x1="12" y1="3" x2="12" y2="15"/>
-                  </svg>
-                )}
-                Enviar ao Drive
-              </button>
-            </div>
-          </div>
-        </div>
         {/* PDF por motorista — só exibe quando há motoristas vinculados */}
         {hasDrivers && (
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">
-                PDF por motorista
-              </h2>
-            </div>
-
+            <h2 className="text-lg font-semibold text-gray-900">PDF por motorista</h2>
             <div className="flex flex-col gap-4">
               {drivers.d1 ? (
                 <DriverPdfCard
@@ -392,9 +317,13 @@ export function OccurrencePreviewPage(props: {
                   eventDate={occurrence.dataEvento}
                   driver={drivers.d1}
                   getOrCreateSignedUrl={getOrCreateSignedUrl}
+                  driveContext={{
+                    config: driveFolder.config,
+                    token: driveToken,
+                    onNeedConnect: () => setShowDriveModal(true),
+                  }}
                 />
               ) : null}
-
               {drivers.d2 ? (
                 <DriverPdfCard
                   occurrenceId={occurrenceId}
@@ -402,6 +331,11 @@ export function OccurrencePreviewPage(props: {
                   eventDate={occurrence.dataEvento}
                   driver={drivers.d2}
                   getOrCreateSignedUrl={getOrCreateSignedUrl}
+                  driveContext={{
+                    config: driveFolder.config,
+                    token: driveToken,
+                    onNeedConnect: () => setShowDriveModal(true),
+                  }}
                 />
               ) : null}
             </div>
