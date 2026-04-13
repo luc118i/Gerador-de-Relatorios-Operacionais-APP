@@ -7,6 +7,7 @@ import {
   MessageCircle,
   Pencil,
   Trash2,
+  Zap,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -207,9 +208,17 @@ export function OccurrenceCard({
 
         {/* Assunto */}
         <div className="flex-1 min-w-0 px-2 py-2.5">
-          <span className="text-sm text-gray-800 truncate block leading-tight">
-            {subjectTitle}
-          </span>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-sm text-gray-800 truncate leading-tight">
+              {subjectTitle}
+            </span>
+            {occurrence.typeCode === "EXCESSO_VELOCIDADE" && occurrence.speedKmh != null && (
+              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-bold text-[10px] leading-none whitespace-nowrap flex-shrink-0">
+                <Zap className="w-2.5 h-2.5" />
+                {occurrence.speedKmh} km/h
+              </span>
+            )}
+          </div>
           {subjectDetail && (
             <span className="text-[11px] text-gray-400 truncate block leading-tight">
               {subjectDetail}
@@ -344,12 +353,12 @@ export function OccurrenceCard({
         </div>
 
         {occurrence.typeCode === "EXCESSO_VELOCIDADE" ? (
-          <p className="text-sm text-gray-600">
-            🏎️{" "}
-            <span className="font-semibold text-gray-800">
-              {occurrence.speedKmh ? `${occurrence.speedKmh} km/h` : "—"}
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 border border-red-200 text-red-700 font-bold text-base leading-none">
+              <Zap className="w-4 h-4 fill-red-200" />
+              {occurrence.speedKmh != null ? `${occurrence.speedKmh} km/h` : "—"}
             </span>
-          </p>
+          </div>
         ) : occurrence.typeCode === "GENERICO" ? (
           <p className="text-sm text-gray-600">📋 {occurrence.place || "—"}</p>
         ) : (
