@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import {
   Plus,
   FileText,
@@ -178,41 +179,41 @@ export function Home({
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <div className="relative">
-              <h1 className="text-2xl font-semibold text-gray-900">
-                Gerador de Relatórios Operacionais
-              </h1>
+            <div className="relative flex items-center gap-3">
+
+              <img src="/favicon.svg" alt="Logo" className="w-10 h-10 rounded-xl shrink-0 block" />
+
+              <div>
+                <h1 className="text-2xl font-semibold text-gray-900">
+                  Gerador de Relatórios Operacionais
+                </h1>
+              </div>
+              {/* Navegação de datas */}
               <div
                 ref={calendarRef}
-                className="relative text-sm text-gray-600 mt-1 capitalize flex items-center gap-2"
+                className="relative flex items-center gap-1 ml-2"
               >
-                <button
-                  onClick={() => setCalendarVisible((v) => !v)}
-                  className="p-1 rounded hover:bg-gray-100 hover:text-blue-600 transition"
-                >
-                  <CalendarIcon className="cursor-pointer w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => changeDay(-1)}
-                  className="cursor-pointer p-1 rounded hover:bg-gray-100 hover:text-blue-600 transition"
-                >
+                <NavBtn onClick={() => setCalendarVisible((v) => !v)} tooltip="Abrir calendário">
+                  <CalendarIcon className="w-4 h-4" />
+                </NavBtn>
+                <NavBtn onClick={() => changeDay(-1)} tooltip="Dia anterior">
                   <ChevronLeft className="w-4 h-4" />
-                </button>
-                {formattedDate}
-                <button
-                  onClick={() => changeDay(1)}
-                  className="cursor-pointer p-1 rounded hover:bg-gray-100 hover:text-blue-600 transition"
-                >
+                </NavBtn>
+                <span className="text-sm text-gray-700 font-medium px-1 select-none capitalize whitespace-nowrap">
+                  {formattedDate}
+                </span>
+                <NavBtn onClick={() => changeDay(1)} tooltip="Próximo dia">
                   <ChevronRight className="w-4 h-4" />
-                </button>
+                </NavBtn>
                 <button
                   onClick={goToday}
-                  className="cursor-pointer ml-2 text-xs px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 transition"
+                  className="cursor-pointer ml-1 text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700 transition font-medium"
+                  title={dateDiffLabel}
                 >
                   {dateDiffLabel}
                 </button>
                 {calendarVisible && (
-                  <div className="absolute top-8 left-0 bg-white shadow-lg border border-gray-200 rounded-xl z-50">
+                  <div className="absolute top-9 left-0 bg-white shadow-lg border border-gray-200 rounded-xl z-50">
                     <Calendar
                       mode="single"
                       selected={selectedDateObj}
@@ -225,25 +226,17 @@ export function Home({
               </div>
             </div>
 
-            <div className="flex gap-3">
-              <button
-                onClick={onGerarRelatorio}
-                className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
-              >
-                <FileText className="w-5 h-5" /> Ocorrências da Data
-              </button>
-              <button
-                onClick={onGerenciarMotoristas}
-                className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
-              >
-                <Users className="w-5 h-5" /> Motoristas
-              </button>
-              <button
-                onClick={onNovaOcorrencia}
-                className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-              >
-                <Plus className="w-5 h-5" /> Nova Ocorrência
-              </button>
+            {/* Ações — icon-only com tooltip */}
+            <div className="flex items-center gap-1.5">
+              <ActionBtn onClick={onGerarRelatorio} tooltip="Ocorrências da Data">
+                <FileText className="w-4 h-4" />
+              </ActionBtn>
+              <ActionBtn onClick={onGerenciarMotoristas} tooltip="Motoristas">
+                <Users className="w-4 h-4" />
+              </ActionBtn>
+              <ActionBtn onClick={onNovaOcorrencia} tooltip="Nova Ocorrência" primary>
+                <Plus className="w-4 h-4" />
+              </ActionBtn>
             </div>
           </div>
         </div>
@@ -635,6 +628,62 @@ function SkeletonCard() {
       <div className="h-4 w-44 bg-gray-100 rounded mb-2" />
       <div className="h-4 w-36 bg-gray-100 rounded mb-4" />
       <div className="h-3 w-52 bg-gray-100 rounded" />
+    </div>
+  );
+}
+
+// ── Botões compactos com tooltip ──────────────────────────────────────────────
+
+function NavBtn({
+  onClick,
+  tooltip,
+  children,
+}: {
+  onClick: () => void;
+  tooltip: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="relative group">
+      <button
+        onClick={onClick}
+        className="cursor-pointer p-1.5 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition-colors"
+      >
+        {children}
+      </button>
+      <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 text-xs bg-gray-900 text-white rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-50">
+        {tooltip}
+      </span>
+    </div>
+  );
+}
+
+function ActionBtn({
+  onClick,
+  tooltip,
+  primary,
+  children,
+}: {
+  onClick: () => void;
+  tooltip: string;
+  primary?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <div className="relative group">
+      <button
+        onClick={onClick}
+        className={`cursor-pointer p-2 rounded-lg transition-colors ${
+          primary
+            ? "bg-blue-600 text-white hover:bg-blue-700"
+            : "bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800"
+        }`}
+      >
+        {children}
+      </button>
+      <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 text-xs bg-gray-900 text-white rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-50">
+        {tooltip}
+      </span>
     </div>
   );
 }
