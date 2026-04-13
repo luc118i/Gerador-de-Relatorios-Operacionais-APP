@@ -1,3 +1,32 @@
 @import './fonts.css';
 @import './tailwind.css';
 @import './theme.css';
+
+/* ── Impressão ────────────────────────────────────────────────────────────── */
+@media print {
+  @page {
+    size: A4;
+    margin: 18mm 16mm 22mm 16mm;
+  }
+
+  /* Oculta todo conteúdo de tela durante a impressão */
+  .screen-only {
+    display: none !important;
+  }
+
+  /* Exibe o layout de impressão */
+  .print-only {
+    display: block !important;
+  }
+
+  body {
+    background: white !important;
+  }
+}
+
+@media screen {
+  /* Oculta o layout de impressão na tela */
+  .print-only {
+    display: none !important;
+  }
+}

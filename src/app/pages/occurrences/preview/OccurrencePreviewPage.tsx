@@ -10,8 +10,12 @@ import { useGetOccurrencePdf } from "../../../../features/reportsPdf/queries/rep
 import { toast } from "sonner";
 import { getApiErrorMessage } from "../../../../api/http";
 import { aiApi } from "../../../../api/ai.api";
+import { reportsDriveApi } from "../../../../api/reportsDrive.api";
 
 import { DriverPdfCard } from "./components/DriverPdfCard";
+import { DrivePickerModal } from "./components/DrivePickerModal";
+import { OccurrencePrintView } from "./OccurrencePrintView";
+import { useDriveFolder } from "../../../../hooks/useDriveFolder";
 
 export function OccurrencePreviewPage(props: {
   occurrenceId: string;
@@ -33,6 +37,55 @@ export function OccurrencePreviewPage(props: {
   // ── IA: resumo WhatsApp ───────────────────────────────────────────────────
   const [wppAiSummary, setWppAiSummary] = useState<string | null>(null);
   const [wppAiLoading, setWppAiLoading] = useState(false);
+
+  // ── Google Drive ─────────────────────────────────────────────────────────
+  const driveFolder = useDriveFolder();
+  const [driveLoading, setDriveLoading] = useState(false);
+  const [showDriveModal, setShowDriveModal] = useState(false);
+
+  async function handleSendToDrive() {
+    if (driveLoading) return;
+    // Se não há pasta configurada, abre o modal para o usuário escolher
+    if (!driveFolder.config) {
+      setShowDriveModal(true);
+      return;
+    }
+    // Pasta já salva → pede token silencioso e faz upload
+    setShowDriveModal(true);
+  }
+
+  async function handleDriveConfirm(args: {
+    config: { folderId: string; folderName: string };
+    accessToken: string;
+    saveAsDefault: boolean;
+  }) {
+    if (args.saveAsDefault) {
+      driveFolder.save(args.config);
+    }
+    setShowDriveModal(false);
+    setDriveLoading(true);
+    try {
+      const res = await reportsDriveApi.sendOccurrenceToDrive({
+        occurrenceId,
+        accessToken: args.accessToken,
+        folderId: args.config.folderId,
+      });
+      const { fileName, webViewLink } = res.data.drive;
+      toast.success(
+        <span>
+          <strong>{fileName}</strong> enviado ao Drive!{" "}
+          <a href={webViewLink} target="_blank" rel="noreferrer" className="underline">
+            Abrir
+          </a>
+        </span>,
+        { duration: 8000 },
+      );
+    } catch (err) {
+      toast.error(`Falha ao enviar ao Drive: ${getApiErrorMessage(err)}`);
+    } finally {
+      setDriveLoading(false);
+    }
+  }
 
   // ── Cooldown compartilhado (mesmo endpoint / mesmo rate-limit) ────────────
   const [aiCooldown, setAiCooldown] = useState(0);
@@ -213,8 +266,8 @@ export function OccurrencePreviewPage(props: {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+    <div className="min-h-screen bg-gray-50 print:bg-white print:min-h-0">
+      <header className="screen-only bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <button
@@ -241,34 +294,85 @@ export function OccurrencePreviewPage(props: {
             </button>
 
             <button
-              onClick={() => handleGenerate(false)}
-              disabled={getPdf.isPending}
-              className="cursor-pointer h-10 px-4 rounded-lg bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 flex items-center gap-2"
+              onClick={() => window.print()}
+              className="cursor-pointer h-10 px-4 rounded-lg bg-slate-900 text-white hover:bg-slate-800 flex items-center gap-2"
             >
               <RefreshCw className="w-4 h-4" />
-              {getPdf.isPending ? "Gerando..." : "Gerar PDF"}
+              Imprimir / Salvar PDF
             </button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-        {/* Status PDF */}
-        <div className="bg-white border border-gray-200 rounded-lg p-4 flex items-center justify-between">
-          <div className="text-sm text-gray-700">
-            {signedUrl ? (
-              <>
-                PDF pronto{" "}
-                {cached != null
-                  ? cached
-                    ? "(cache)"
-                    : "(gerado agora)"
-                  : null}
-                {ttl ? ` • expira em ~${Math.round(ttl / 60)} min` : null}
-              </>
-            ) : (
-              "Gere o PDF para habilitar o download."
-            )}
+      <main className="screen-only max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        {/* Ações rápidas */}
+        <div className="flex gap-3 flex-wrap">
+          {/* Status PDF */}
+          <div className="flex-1 min-w-[220px] bg-white border border-gray-200 rounded-lg p-4 flex items-center gap-3">
+            <RefreshCw className="w-4 h-4 text-gray-400 shrink-0" />
+            <div className="text-sm text-gray-700">
+              {signedUrl ? (
+                <>
+                  PDF pronto{" "}
+                  {cached != null ? (cached ? "(cache)" : "(gerado agora)") : null}
+                  {ttl ? ` • expira em ~${Math.round(ttl / 60)} min` : null}
+                </>
+              ) : (
+                "Use Imprimir / Salvar PDF para gerar."
+              )}
+            </div>
+          </div>
+
+          {/* Enviar ao Drive */}
+          <div className="bg-white border border-gray-200 rounded-lg p-4 flex items-center gap-4">
+            <div className="flex items-center gap-2.5">
+              {/* Google Drive logo */}
+              <svg className="w-5 h-5 shrink-0" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
+                <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+                <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0-1.2 4.5h27.5z" fill="#00ac47"/>
+                <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.5l5.85 11.5z" fill="#ea4335"/>
+                <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+                <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+                <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
+              </svg>
+              <div>
+                <p className="text-sm font-medium text-gray-800">Google Drive</p>
+                {driveFolder.config ? (
+                  <p className="text-xs text-gray-500 truncate max-w-[180px]">
+                    {driveFolder.config.folderName}
+                  </p>
+                ) : (
+                  <p className="text-xs text-gray-400">Pasta não configurada</p>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {driveFolder.config && (
+                <button
+                  onClick={() => { driveFolder.clear(); }}
+                  className="cursor-pointer h-8 px-3 rounded-lg border border-gray-200 hover:bg-gray-50 text-xs text-gray-500 hover:text-red-600 transition-colors"
+                  title="Desconectar pasta padrão"
+                >
+                  Desconectar
+                </button>
+              )}
+              <button
+                onClick={handleSendToDrive}
+                disabled={driveLoading}
+                className="cursor-pointer h-9 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {driveLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                  </svg>
+                )}
+                Enviar ao Drive
+              </button>
+            </div>
           </div>
         </div>
         {/* PDF por motorista — só exibe quando há motoristas vinculados */}
@@ -663,6 +767,18 @@ export function OccurrencePreviewPage(props: {
           </div>
         ) : null}
       </main>
+
+      {/* Modal de configuração do Drive */}
+      {showDriveModal && (
+        <DrivePickerModal
+          currentConfig={driveFolder.config}
+          onConfirm={handleDriveConfirm}
+          onClose={() => setShowDriveModal(false)}
+        />
+      )}
+
+      {/* Vista de impressão — visível apenas no print */}
+      <OccurrencePrintView occurrence={occurrence} drivers={drivers} />
     </div>
   );
 }
