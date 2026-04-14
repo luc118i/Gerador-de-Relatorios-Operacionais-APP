@@ -28,6 +28,30 @@ function normalize(s: string) {
     .trim();
 }
 
+/**
+ * Torna o input de busca inteligente para horários:
+ *   "2100"  → "21:00"
+ *   "730"   → "07:30"
+ *   "21h00" → "21:00"
+ * Qualquer outro texto passa sem alteração.
+ */
+function normalizeTimeQuery(s: string): string {
+  // "21h00" / "21H00" → "21:00"
+  s = s.replace(/\b(\d{1,2})[hH](\d{2})\b/g, "$1:$2");
+  // "2100" → "21:00"  |  "730" → "07:30"
+  s = s.replace(/\b(\d{3,4})\b/g, (match) => {
+    if (match.length === 4) {
+      const h = match.slice(0, 2), m = match.slice(2);
+      if (+h <= 23 && +m <= 59) return `${h}:${m}`;
+    } else {
+      const h = `0${match[0]}`, m = match.slice(1);
+      if (+h <= 23 && +m <= 59) return `${h}:${m}`;
+    }
+    return match;
+  });
+  return s;
+}
+
 function buildHaystack(v: ViagemCatalog) {
   return normalize(
     [
@@ -61,7 +85,7 @@ export function AutocompleteViagem({
   );
 
   const filteredViagens = useMemo(() => {
-    const q = normalize(search);
+    const q = normalize(normalizeTimeQuery(search));
     if (!q) return viagens;
 
     const tokens = q.split(/\s+/).filter(Boolean);
