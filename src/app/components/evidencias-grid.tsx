@@ -1,8 +1,10 @@
 import { useState, useRef } from "react";
-import { Upload, X, GripVertical, Image as ImageIcon } from "lucide-react";
+import { Upload, X, GripVertical, Image as ImageIcon, AlertCircle } from "lucide-react";
 import { Evidencia } from "../types";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
+
+const MAX_EVIDENCIAS = 30;
 
 interface EvidenciasGridProps {
   evidencias: Evidencia[];
@@ -16,7 +18,13 @@ export function EvidenciasGrid({ evidencias, onChange }: EvidenciasGridProps) {
   const handleFileChange = (files: FileList | null) => {
     if (!files) return;
 
-    const newEvidencias: Evidencia[] = Array.from(files).map((file) => ({
+    const slots = MAX_EVIDENCIAS - evidencias.length;
+    if (slots <= 0) return;
+
+    const selected = Array.from(files).slice(0, slots);
+    const blocked = files.length - selected.length;
+
+    const newEvidencias: Evidencia[] = selected.map((file) => ({
       id: `${Date.now()}-${Math.random()}`,
       url: URL.createObjectURL(file),
       file,
@@ -26,6 +34,10 @@ export function EvidenciasGrid({ evidencias, onChange }: EvidenciasGridProps) {
     }));
 
     onChange([...evidencias, ...newEvidencias]);
+
+    if (blocked > 0) {
+      alert(`Limite de ${MAX_EVIDENCIAS} fotos atingido. ${blocked} foto${blocked !== 1 ? "s" : ""} não ${blocked !== 1 ? "foram adicionadas" : "foi adicionada"}.`);
+    }
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -66,6 +78,9 @@ export function EvidenciasGrid({ evidencias, onChange }: EvidenciasGridProps) {
     onChange(evidencias.map((e) => (e.id === id ? { ...e, linkUrl } : e)));
   };
 
+  const atLimit = evidencias.length >= MAX_EVIDENCIAS;
+  const nearLimit = evidencias.length >= MAX_EVIDENCIAS - 5;
+
   return (
     <DndProvider backend={HTML5Backend}>
       <div>
@@ -74,31 +89,47 @@ export function EvidenciasGrid({ evidencias, onChange }: EvidenciasGridProps) {
             Evidências (Fotos)
           </label>
           {evidencias.length > 0 && (
-            <span className="text-sm text-gray-500">
-              {evidencias.length} foto{evidencias.length !== 1 ? "s" : ""}
+            <span className={`text-sm font-medium ${atLimit ? "text-red-600" : nearLimit ? "text-amber-600" : "text-gray-500"}`}>
+              {evidencias.length}/{MAX_EVIDENCIAS} foto{evidencias.length !== 1 ? "s" : ""}
             </span>
           )}
         </div>
 
         {/* Upload Area */}
         <div
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-          className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors mb-4 ${
-            isDragging
-              ? "border-blue-500 bg-blue-50"
-              : "border-gray-300 hover:border-gray-400 hover:bg-gray-50"
+          onDragOver={!atLimit ? handleDragOver : undefined}
+          onDragLeave={!atLimit ? handleDragLeave : undefined}
+          onDrop={!atLimit ? handleDrop : undefined}
+          onClick={!atLimit ? () => fileInputRef.current?.click() : undefined}
+          className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors mb-4 ${
+            atLimit
+              ? "border-red-200 bg-red-50 cursor-not-allowed"
+              : isDragging
+              ? "border-blue-500 bg-blue-50 cursor-pointer"
+              : "border-gray-300 hover:border-gray-400 hover:bg-gray-50 cursor-pointer"
           }`}
         >
-          <Upload className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-          <p className="text-sm text-gray-600 mb-1">
-            Arraste fotos aqui ou clique para selecionar
-          </p>
-          <p className="text-xs text-gray-500">
-            Upload múltiplo permitido • JPG, PNG
-          </p>
+          {atLimit ? (
+            <>
+              <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-3" />
+              <p className="text-sm font-medium text-red-600 mb-1">
+                Limite de {MAX_EVIDENCIAS} fotos atingido
+              </p>
+              <p className="text-xs text-red-400">
+                Remova fotos para adicionar novas
+              </p>
+            </>
+          ) : (
+            <>
+              <Upload className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+              <p className="text-sm text-gray-600 mb-1">
+                Arraste fotos aqui ou clique para selecionar
+              </p>
+              <p className="text-xs text-gray-500">
+                Upload múltiplo permitido • JPG, PNG • máx. {MAX_EVIDENCIAS} fotos
+              </p>
+            </>
+          )}
           <input
             ref={fileInputRef}
             type="file"
@@ -106,8 +137,17 @@ export function EvidenciasGrid({ evidencias, onChange }: EvidenciasGridProps) {
             accept="image/*"
             onChange={(e) => handleFileChange(e.target.files)}
             className="hidden"
+            disabled={atLimit}
           />
         </div>
+
+        {/* Aviso próximo do limite */}
+        {nearLimit && !atLimit && (
+          <div className="flex items-center gap-2 text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-3 text-xs">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>Você está próximo do limite — restam {MAX_EVIDENCIAS - evidencias.length} foto{MAX_EVIDENCIAS - evidencias.length !== 1 ? "s" : ""}.</span>
+          </div>
+        )}
 
         {/* Grid de Evidências */}
         {evidencias.length > 0 && (
