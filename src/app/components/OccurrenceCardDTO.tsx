@@ -10,6 +10,7 @@ import {
   Sparkles,
   Trash2,
   Zap,
+  ShieldAlert,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -22,6 +23,7 @@ import {
 import { getBaseCanonicalKey, resolveBaseSigla } from "../utils/base";
 import { BaseChip } from "./base-chip";
 import { aiApi } from "../../api/ai.api";
+import { SuspensaoModal } from "./SuspensaoModal";
 
 // ── SVG Google Drive (inline, sem dependência externa) ────────────────────────
 function DriveIcon({ className }: { className?: string }) {
@@ -120,6 +122,7 @@ export function OccurrenceCard({
   const [copiedRelat, setCopiedRelat] = useState(false);
   const [loadingAiWpp, setLoadingAiWpp] = useState(false);
   const [loadingAiRelat, setLoadingAiRelat] = useState(false);
+  const [showSuspensaoModal, setShowSuspensaoModal] = useState(false);
 
   const isAnaliseOp = occurrence.typeCode === "ANALISE_OP";
 
@@ -236,6 +239,10 @@ export function OccurrenceCard({
     const baseColor = BASE_PALETTE[hashString(canonicalBase) % BASE_PALETTE.length];
 
     return (
+      <>
+      {showSuspensaoModal && (
+        <SuspensaoModal occurrenceId={occurrence.id} onClose={() => setShowSuspensaoModal(false)} />
+      )}
       <div
         className="group flex items-center gap-0 bg-white border-b border-gray-100 hover:bg-blue-50/40 transition-colors cursor-pointer"
         style={{ borderLeft: `3px solid ${baseColor}` }}
@@ -349,6 +356,13 @@ export function OccurrenceCard({
               : <Pencil className="w-3.5 h-3.5" />}
           </button>
           <button
+            onClick={(e) => { e.stopPropagation(); setShowSuspensaoModal(true); }}
+            title="Gerar Suspensão Disciplinar"
+            className="p-2 rounded text-gray-400 hover:text-red-700 hover:bg-red-50 transition-colors"
+          >
+            <ShieldAlert className="w-3.5 h-3.5" />
+          </button>
+          <button
             onClick={(e) => { e.stopPropagation(); onExcluir?.(); }}
             title="Excluir"
             className="p-2 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
@@ -379,11 +393,16 @@ export function OccurrenceCard({
           )}
         </div>
       </div>
+      </>
     );
   }
 
   // ── Modo card ──────────────────────────────────────────────────────────────
   return (
+    <>
+    {showSuspensaoModal && (
+      <SuspensaoModal occurrenceId={occurrence.id} onClose={() => setShowSuspensaoModal(false)} />
+    )}
     <div
       className="group bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
       onClick={onOpen}
@@ -537,8 +556,20 @@ export function OccurrenceCard({
             </button>
           )}
         </div>
+
+        {/* Linha 3: Gerar Suspensão */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowSuspensaoModal(true)}
+            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs text-gray-500 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors"
+          >
+            <ShieldAlert className="w-3.5 h-3.5" />
+            Gerar Suspensão
+          </button>
+        </div>
       </div>
     </div>
+    </>
   );
 }
 
