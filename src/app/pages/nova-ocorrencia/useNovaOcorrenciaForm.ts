@@ -374,7 +374,9 @@ export function useNovaOcorrenciaForm({ onSaved, edicao }: NovaOcorrenciaProps) 
         passengerCount: typeConfig.isGeneric ? passengerCount : null,
         passengerConnection: typeConfig.isGeneric ? passengerConnection : null,
         relatoHtml: typeConfig.isGeneric ? relatoHtml : null,
-        devolutivaHtml: typeConfig.isGeneric ? devolutivaHtml || null : null,
+        devolutivaHtml: typeConfig.isGeneric
+          ? (devolutivaHtml.replace(/<[^>]+>/g, "").trim() ? devolutivaHtml : null)
+          : null,
         devolutivaStatus: typeConfig.isGeneric ? devolutivaStatus : null,
         showSectionViagem: typeConfig.isGeneric ? showSectionViagem : true,
         showSectionIdentificacao: typeConfig.isGeneric ? showSectionIdentificacao : true,
@@ -429,7 +431,9 @@ export function useNovaOcorrenciaForm({ onSaved, edicao }: NovaOcorrenciaProps) 
         passengerCount: typeConfig.isGeneric ? passengerCount : null,
         passengerConnection: typeConfig.isGeneric ? passengerConnection || null : null,
         relatoHtml: typeConfig.isGeneric ? relatoHtml : null,
-        devolutivaHtml: typeConfig.isGeneric ? devolutivaHtml || null : null,
+        devolutivaHtml: typeConfig.isGeneric
+          ? (devolutivaHtml.replace(/<[^>]+>/g, "").trim() ? devolutivaHtml : null)
+          : null,
         devolutivaStatus: typeConfig.isGeneric ? devolutivaStatus : null,
         showSectionViagem: typeConfig.isGeneric ? showSectionViagem : true,
         showSectionIdentificacao: typeConfig.isGeneric ? showSectionIdentificacao : true,

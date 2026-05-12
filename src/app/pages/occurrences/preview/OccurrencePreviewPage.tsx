@@ -499,7 +499,7 @@ export function OccurrencePreviewPage(props: {
                 dangerouslySetInnerHTML={{ __html: occurrence.relatoHtml }}
               />
             </div>
-            {occurrence.devolutivaHtml && (
+            {!!occurrence.devolutivaHtml?.replace(/<[^>]+>/g, "").trim() && (
               <div className="pt-4 border-t border-gray-100">
                 <h2 className="text-lg font-semibold text-gray-900 mb-2">
                   ✅ Devolutiva / Solução Adotada

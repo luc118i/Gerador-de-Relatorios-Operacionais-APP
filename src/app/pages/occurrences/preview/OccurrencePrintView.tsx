@@ -142,7 +142,7 @@ export function OccurrencePrintView({ occurrence, drivers }: Props) {
         </div>
 
         {/* ── Devolutiva (GENERICO) ────────────────────────────── */}
-        {isGenerico && occurrence.devolutivaHtml && (
+        {isGenerico && !!occurrence.devolutivaHtml?.replace(/<[^>]+>/g, "").trim() && (
           <div style={{ marginBottom: "14px", borderTop: "1px solid #eee", paddingTop: "10px" }}>
             <div style={{ fontWeight: "bold", fontSize: "9.5pt", marginBottom: "6px", textTransform: "uppercase" }}>
               Devolutiva / Solução Adotada
