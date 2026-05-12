@@ -3,6 +3,7 @@ import {
   Check,
   Clock,
   FileText,
+  ImageOff,
   Loader2,
   MessageCircle,
   Pencil,
@@ -218,6 +219,12 @@ export function OccurrenceCard({
                 {occurrence.speedKmh} km/h
               </span>
             )}
+            {occurrence.typeCode === "DESCUMP_OP_PARADA_FORA" && (occurrence.evidenceCount ?? 0) === 0 && (
+              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-orange-100 text-orange-600 font-semibold text-[10px] leading-none whitespace-nowrap flex-shrink-0">
+                <ImageOff className="w-2.5 h-2.5" />
+                Sem evidência
+              </span>
+            )}
           </div>
           {subjectDetail && (
             <span className="text-[11px] text-gray-400 truncate block leading-tight">
@@ -328,12 +335,17 @@ export function OccurrenceCard({
           </div>
           <p className="text-sm text-gray-600">{subject}</p>
         </div>
-        {occurrence.evidenceCount > 0 && (
+        {occurrence.typeCode === "DESCUMP_OP_PARADA_FORA" && (occurrence.evidenceCount ?? 0) === 0 ? (
+          <div className="flex items-center gap-1 bg-orange-50 border border-orange-200 text-orange-600 px-2 py-1 rounded">
+            <ImageOff className="w-3.5 h-3.5" />
+            <span className="text-xs font-semibold">Sem evidência</span>
+          </div>
+        ) : occurrence.evidenceCount > 0 ? (
           <div className="flex items-center gap-1 text-gray-600 bg-gray-50 px-2 py-1 rounded">
             <Camera className="w-4 h-4" />
             <span className="text-sm font-medium">{occurrence.evidenceCount}</span>
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* Corpo */}
