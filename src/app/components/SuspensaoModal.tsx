@@ -2,13 +2,37 @@ import { useState } from "react";
 import { Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { reportsPdfApi } from "../../api/reportsPdf.api";
+import type { OccurrenceDTO } from "../../domain/occurrences";
 
 interface SuspensaoModalProps {
-  occurrenceId: string;
+  occurrence: OccurrenceDTO;
   onClose: () => void;
 }
 
-export function SuspensaoModal({ occurrenceId, onClose }: SuspensaoModalProps) {
+function fmtDdMm(iso: string): string {
+  const [, m, d] = (iso ?? "").split("-");
+  if (!m || !d) return iso;
+  return `${d.padStart(2, "0")}/${m.padStart(2, "0")}`;
+}
+
+function buildWppText(occurrence: OccurrenceDTO, dataInicio: string): string {
+  const d1 = occurrence.drivers?.find((d) => d.position === 1);
+  const motoristaParts: string[] = [];
+  if (d1?.registry) motoristaParts.push(d1.registry);
+  if (d1?.name)     motoristaParts.push(d1.name);
+  if (d1?.baseCode) motoristaParts.push(d1.baseCode);
+  const motorista = motoristaParts.join(" - ") || "—";
+
+  return `Relatório de Suspensão
+
+Motivo: *${occurrence.typeTitle ?? occurrence.typeCode ?? "—"}*
+👨‍✈️ Motorista: \`${motorista}\`
+🗓️ Data da suspensão: *${fmtDdMm(dataInicio)}*
+🗓️ Data da Ocorrência: *${fmtDdMm(occurrence.eventDate)}*
+❗Email enviado`;
+}
+
+export function SuspensaoModal({ occurrence, onClose }: SuspensaoModalProps) {
   const today = new Date().toISOString().slice(0, 10);
   const [dataInicio, setDataInicio] = useState(today);
   const [quantidadeDias, setQuantidadeDias] = useState(1);
@@ -27,11 +51,12 @@ export function SuspensaoModal({ occurrenceId, onClose }: SuspensaoModalProps) {
     setLoading(true);
     try {
       const blob = await reportsPdfApi.getSuspensaoPdf({
-        occurrenceId,
+        occurrenceId: occurrence.id,
         dataInicioSuspensao: dataInicio,
         quantidadeDias,
       });
 
+      // Dispara o download do PDF
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -41,7 +66,11 @@ export function SuspensaoModal({ occurrenceId, onClose }: SuspensaoModalProps) {
       a.remove();
       URL.revokeObjectURL(url);
 
-      toast.success("PDF de suspensão gerado!");
+      // Copia o texto padrão para mensagens
+      const texto = buildWppText(occurrence, dataInicio);
+      await navigator.clipboard.writeText(texto);
+
+      toast.success("PDF gerado e texto copiado!");
       onClose();
     } catch (err: any) {
       toast.error(err?.message ?? "Falha ao gerar PDF de suspensão.");

@@ -241,7 +241,7 @@ export function OccurrenceCard({
     return (
       <>
       {showSuspensaoModal && (
-        <SuspensaoModal occurrenceId={occurrence.id} onClose={() => setShowSuspensaoModal(false)} />
+        <SuspensaoModal occurrence={occurrence} onClose={() => setShowSuspensaoModal(false)} />
       )}
       <div
         className="group flex items-center gap-0 bg-white border-b border-gray-100 hover:bg-blue-50/40 transition-colors cursor-pointer"
@@ -401,7 +401,7 @@ export function OccurrenceCard({
   return (
     <>
     {showSuspensaoModal && (
-      <SuspensaoModal occurrenceId={occurrence.id} onClose={() => setShowSuspensaoModal(false)} />
+      <SuspensaoModal occurrence={occurrence} onClose={() => setShowSuspensaoModal(false)} />
     )}
     <div
       className="group bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
