@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Download, Loader2, X } from "lucide-react";
+import { Check, ClipboardCopy, Download, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { reportsPdfApi } from "../../api/reportsPdf.api";
 import type { OccurrenceDTO, OccurrenceDriverDTO } from "../../domain/occurrences";
@@ -68,6 +68,8 @@ export function SuspensaoModal({ occurrence, onClose, onSuspensaoGerada }: Suspe
   const [quantidadeDias, setQuantidadeDias] = useState(existingSuspensao?.dias ?? 1);
   const [loading, setLoading] = useState(false);
   const [loadingBaixar, setLoadingBaixar] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [geradoInfo, setGeradoInfo] = useState<{ dataInicio: string; dias: number } | null>(null);
 
   const tipoOcorrencia = occurrence.typeCode === "GENERICO"
     ? (occurrence.reportTitle ?? occurrence.typeTitle ?? "Ocorrência")
@@ -113,18 +115,30 @@ export function SuspensaoModal({ occurrence, onClose, onSuspensaoGerada }: Suspe
 
       await downloadFromUrl(signedUrl, filename);
 
-      const texto = buildWppText(occurrence, dataInicioResp, dias);
-      await navigator.clipboard.writeText(texto);
-
-      toast.success("PDF gerado e texto copiado!");
+      toast.success("PDF gerado!");
+      setGeradoInfo({ dataInicio: dataInicioResp, dias });
       onSuspensaoGerada?.({ dataInicio: dataInicioResp, dias });
-      onClose();
     } catch (err: any) {
       toast.error(err?.message ?? "Falha ao gerar PDF de suspensão.");
     } finally {
       setLoading(false);
     }
   }
+
+  async function handleCopiarMensagem() {
+    const info = geradoInfo ?? (existingSuspensao ? { dataInicio: existingSuspensao.dataInicio, dias: existingSuspensao.dias } : null);
+    if (!info) return;
+    try {
+      await navigator.clipboard.writeText(buildWppText(occurrence, info.dataInicio, info.dias));
+      setCopied(true);
+      toast.success("Mensagem copiada!");
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      toast.error("Não foi possível copiar.");
+    }
+  }
+
+  const showCopyButton = geradoInfo !== null || existingSuspensao !== null;
 
   return (
     <div
@@ -142,7 +156,8 @@ export function SuspensaoModal({ occurrence, onClose, onSuspensaoGerada }: Suspe
           </button>
         </div>
 
-        {existingSuspensao && (
+        {/* Aviso: suspensão já registrada (vinda do banco) */}
+        {existingSuspensao && !geradoInfo && (
           <div className="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200">
             <p className="text-xs font-medium text-amber-800 mb-2">
               Suspensão registrada: {existingSuspensao.dias} dia(s) a partir de{" "}
@@ -157,6 +172,49 @@ export function SuspensaoModal({ occurrence, onClose, onSuspensaoGerada }: Suspe
                 <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Baixando...</>
               ) : (
                 <><Download className="w-3.5 h-3.5" /> Baixar PDF salvo</>
+              )}
+            </button>
+          </div>
+        )}
+
+        {/* Aviso: recém gerado — botão de copiar mensagem */}
+        {geradoInfo && (
+          <div className="mb-4 p-3 rounded-lg bg-green-50 border border-green-200">
+            <p className="text-xs font-medium text-green-800 mb-2">
+              PDF gerado: {geradoInfo.dias} dia(s) a partir de {fmtDdMm(geradoInfo.dataInicio)}
+            </p>
+            <button
+              onClick={handleCopiarMensagem}
+              className={`w-full flex items-center justify-center gap-2 py-1.5 text-xs border rounded-md transition-colors ${
+                copied
+                  ? "text-green-700 border-green-400 bg-green-100"
+                  : "text-green-700 border-green-300 bg-white hover:bg-green-50"
+              }`}
+            >
+              {copied ? (
+                <><Check className="w-3.5 h-3.5" /> Copiado!</>
+              ) : (
+                <><ClipboardCopy className="w-3.5 h-3.5" /> Copiar mensagem WhatsApp</>
+              )}
+            </button>
+          </div>
+        )}
+
+        {/* Botão copiar mensagem quando suspensão existe mas ainda não re-gerou */}
+        {showCopyButton && !geradoInfo && (
+          <div className="mb-4">
+            <button
+              onClick={handleCopiarMensagem}
+              className={`w-full flex items-center justify-center gap-2 py-1.5 text-xs border rounded-md transition-colors ${
+                copied
+                  ? "text-green-700 border-green-300 bg-green-50"
+                  : "text-gray-500 border-gray-200 hover:text-green-700 hover:border-green-300 hover:bg-green-50"
+              }`}
+            >
+              {copied ? (
+                <><Check className="w-3.5 h-3.5" /> Copiado!</>
+              ) : (
+                <><ClipboardCopy className="w-3.5 h-3.5" /> Copiar mensagem WhatsApp</>
               )}
             </button>
           </div>
@@ -196,7 +254,7 @@ export function SuspensaoModal({ occurrence, onClose, onSuspensaoGerada }: Suspe
             disabled={loading}
             className="flex-1 py-2 text-sm text-gray-600 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50"
           >
-            Cancelar
+            {geradoInfo ? "Fechar" : "Cancelar"}
           </button>
           <button
             onClick={handleGerar}
@@ -205,7 +263,7 @@ export function SuspensaoModal({ occurrence, onClose, onSuspensaoGerada }: Suspe
           >
             {loading ? (
               <><Loader2 className="w-4 h-4 animate-spin" /> Gerando...</>
-            ) : existingSuspensao ? (
+            ) : existingSuspensao || geradoInfo ? (
               "Re-gerar PDF"
             ) : (
               "Gerar PDF"
