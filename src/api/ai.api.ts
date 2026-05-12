@@ -14,4 +14,15 @@ export const aiApi = {
       path: "/ai/correct",
       body: { html, plainText },
     }),
+
+  summarizeAnaliseOp: (
+    html: string,
+    reportTitle: string,
+    mode: "whatsapp" | "email",
+  ): Promise<{ summary: string }> =>
+    request({
+      method: "POST",
+      path: "/ai/summarize-analise-op",
+      body: { html, reportTitle, mode },
+    }),
 };

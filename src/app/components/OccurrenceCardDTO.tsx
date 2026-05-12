@@ -7,6 +7,7 @@ import {
   Loader2,
   MessageCircle,
   Pencil,
+  Sparkles,
   Trash2,
   Zap,
 } from "lucide-react";
@@ -20,6 +21,7 @@ import {
 } from "../utils/relatorio";
 import { getBaseCanonicalKey, resolveBaseSigla } from "../utils/base";
 import { BaseChip } from "./base-chip";
+import { aiApi } from "../../api/ai.api";
 
 // ── SVG Google Drive (inline, sem dependência externa) ────────────────────────
 function DriveIcon({ className }: { className?: string }) {
@@ -116,6 +118,10 @@ export function OccurrenceCard({
   const [loadingEdit, setLoadingEdit] = useState(false);
   const [copiedWpp, setCopiedWpp] = useState(false);
   const [copiedRelat, setCopiedRelat] = useState(false);
+  const [loadingAiWpp, setLoadingAiWpp] = useState(false);
+  const [loadingAiRelat, setLoadingAiRelat] = useState(false);
+
+  const isAnaliseOp = occurrence.typeCode === "ANALISE_OP";
 
   const tempoParada = calcularTempoParada(
     occurrence.startTime,
@@ -150,6 +156,29 @@ export function OccurrenceCard({
 
   async function handleCopyWpp(e: React.MouseEvent) {
     e.stopPropagation();
+    if (isAnaliseOp) {
+      if (!occurrence.relatoHtml) {
+        toast.error("Sem dados de análise disponíveis.");
+        return;
+      }
+      setLoadingAiWpp(true);
+      try {
+        const { summary } = await aiApi.summarizeAnaliseOp(
+          occurrence.relatoHtml,
+          occurrence.reportTitle ?? "",
+          "whatsapp",
+        );
+        await navigator.clipboard.writeText(summary);
+        setCopiedWpp(true);
+        toast.success("Resumo WhatsApp copiado!");
+        setTimeout(() => setCopiedWpp(false), 2500);
+      } catch {
+        toast.error("Falha ao gerar resumo com IA.");
+      } finally {
+        setLoadingAiWpp(false);
+      }
+      return;
+    }
     try {
       const text = gerarTextoWhatsApp(dtoToMinimalOcorrencia(occurrence));
       await navigator.clipboard.writeText(text);
@@ -163,6 +192,29 @@ export function OccurrenceCard({
 
   async function handleCopyRelat(e: React.MouseEvent) {
     e.stopPropagation();
+    if (isAnaliseOp) {
+      if (!occurrence.relatoHtml) {
+        toast.error("Sem dados de análise disponíveis.");
+        return;
+      }
+      setLoadingAiRelat(true);
+      try {
+        const { summary } = await aiApi.summarizeAnaliseOp(
+          occurrence.relatoHtml,
+          occurrence.reportTitle ?? "",
+          "email",
+        );
+        await navigator.clipboard.writeText(summary);
+        setCopiedRelat(true);
+        toast.success("Resumo para e-mail copiado!");
+        setTimeout(() => setCopiedRelat(false), 2500);
+      } catch {
+        toast.error("Falha ao gerar resumo com IA.");
+      } finally {
+        setLoadingAiRelat(false);
+      }
+      return;
+    }
     try {
       const text = gerarTextoRelatorioIndividual(
         dtoToMinimalOcorrencia(occurrence),
@@ -258,21 +310,33 @@ export function OccurrenceCard({
         >
           <button
             onClick={handleCopyWpp}
-            title="Copiar WhatsApp"
-            className={`p-2 rounded transition-colors ${
+            disabled={loadingAiWpp}
+            title={isAnaliseOp ? "Gerar resumo WhatsApp com IA" : "Copiar WhatsApp"}
+            className={`p-2 rounded transition-colors disabled:opacity-50 ${
               copiedWpp ? "text-green-600" : "text-gray-400 hover:text-green-600 hover:bg-green-50"
             }`}
           >
-            <MessageCircle className="w-3.5 h-3.5" />
+            {loadingAiWpp ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : isAnaliseOp ? (
+              <Sparkles className="w-3.5 h-3.5" />
+            ) : (
+              <MessageCircle className="w-3.5 h-3.5" />
+            )}
           </button>
           <button
             onClick={handleCopyRelat}
-            title="Copiar Relatório Individual"
-            className={`p-2 rounded transition-colors ${
+            disabled={loadingAiRelat}
+            title={isAnaliseOp ? "Gerar resumo e-mail com IA" : "Copiar Relatório Individual"}
+            className={`p-2 rounded transition-colors disabled:opacity-50 ${
               copiedRelat ? "text-green-600" : "text-gray-400 hover:text-blue-600 hover:bg-blue-50"
             }`}
           >
-            <FileText className="w-3.5 h-3.5" />
+            {loadingAiRelat ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <FileText className="w-3.5 h-3.5" />
+            )}
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); handleEditar(); }}
@@ -418,25 +482,37 @@ export function OccurrenceCard({
         <div className="flex gap-2">
           <button
             onClick={handleCopyWpp}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs rounded-md transition-colors ${
+            disabled={loadingAiWpp}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs rounded-md transition-colors disabled:opacity-50 ${
               copiedWpp
                 ? "text-green-700 bg-green-50"
                 : "text-gray-500 hover:text-green-700 hover:bg-green-50"
             }`}
           >
-            <MessageCircle className="w-3.5 h-3.5" />
-            {copiedWpp ? "Copiado!" : "WhatsApp"}
+            {loadingAiWpp ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : isAnaliseOp ? (
+              <Sparkles className="w-3.5 h-3.5" />
+            ) : (
+              <MessageCircle className="w-3.5 h-3.5" />
+            )}
+            {loadingAiWpp ? "Gerando..." : copiedWpp ? "Copiado!" : isAnaliseOp ? "WhatsApp IA" : "WhatsApp"}
           </button>
           <button
             onClick={handleCopyRelat}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs rounded-md transition-colors ${
+            disabled={loadingAiRelat}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs rounded-md transition-colors disabled:opacity-50 ${
               copiedRelat
                 ? "text-green-700 bg-green-50"
                 : "text-gray-500 hover:text-blue-700 hover:bg-blue-50"
             }`}
           >
-            <FileText className="w-3.5 h-3.5" />
-            {copiedRelat ? "Copiado!" : "Relatório"}
+            {loadingAiRelat ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <FileText className="w-3.5 h-3.5" />
+            )}
+            {loadingAiRelat ? "Gerando..." : copiedRelat ? "Copiado!" : isAnaliseOp ? "E-mail IA" : "Relatório"}
           </button>
           {onSendToDrive && (
             <button
