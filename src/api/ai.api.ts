@@ -19,10 +19,11 @@ export const aiApi = {
     html: string,
     reportTitle: string,
     mode: "whatsapp" | "email",
+    motorista?: string,
   ): Promise<{ summary: string }> =>
     request({
       method: "POST",
       path: "/ai/summarize-analise-op",
-      body: { html, reportTitle, mode },
+      body: { html, reportTitle, mode, ...(motorista ? { motorista } : {}) },
     }),
 };

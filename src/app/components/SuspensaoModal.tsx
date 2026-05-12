@@ -16,7 +16,7 @@ function fmtDdMm(iso: string): string {
   return `${d.padStart(2, "0")}/${m.padStart(2, "0")}`;
 }
 
-function buildWppText(occurrence: OccurrenceDTO, dataInicio: string): string {
+function buildWppText(occurrence: OccurrenceDTO, dataInicio: string, dias: number): string {
   const d1 = occurrence.drivers?.find((d) => d.position === 1);
   const motoristaParts: string[] = [];
   if (d1?.registry) motoristaParts.push(d1.registry);
@@ -28,7 +28,7 @@ function buildWppText(occurrence: OccurrenceDTO, dataInicio: string): string {
 
 Motivo: *${occurrence.typeTitle ?? occurrence.typeCode ?? "—"}*
 👨‍✈️ Motorista: \`${motorista}\`
-🗓️ Data da suspensão: *${fmtDdMm(dataInicio)}*
+🗓️ Data da suspensão: *${fmtDdMm(dataInicio)}* (${dias} ${dias === 1 ? "dia" : "dias"})
 🗓️ Data da Ocorrência: *${fmtDdMm(occurrence.eventDate)}*
 ❗Email enviado`;
 }
@@ -113,7 +113,7 @@ export function SuspensaoModal({ occurrence, onClose, onSuspensaoGerada }: Suspe
 
       await downloadFromUrl(signedUrl, filename);
 
-      const texto = buildWppText(occurrence, dataInicioResp);
+      const texto = buildWppText(occurrence, dataInicioResp, dias);
       await navigator.clipboard.writeText(texto);
 
       toast.success("PDF gerado e texto copiado!");

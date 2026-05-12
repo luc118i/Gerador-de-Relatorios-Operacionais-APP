@@ -158,6 +158,14 @@ export function OccurrenceCard({
     }
   }
 
+  function buildMotoristaStr() {
+    const parts: string[] = [];
+    if (driver1?.registry) parts.push(driver1.registry);
+    if (driver1?.name)     parts.push(driver1.name);
+    if (driver1?.baseCode) parts.push(driver1.baseCode);
+    return parts.join(" – ") || undefined;
+  }
+
   async function handleCopyWpp(e: React.MouseEvent) {
     e.stopPropagation();
     if (isAnaliseOp) {
@@ -171,6 +179,7 @@ export function OccurrenceCard({
           occurrence.relatoHtml,
           occurrence.reportTitle ?? "",
           "whatsapp",
+          buildMotoristaStr(),
         );
         await navigator.clipboard.writeText(summary);
         setCopiedWpp(true);
@@ -207,6 +216,7 @@ export function OccurrenceCard({
           occurrence.relatoHtml,
           occurrence.reportTitle ?? "",
           "email",
+          buildMotoristaStr(),
         );
         await navigator.clipboard.writeText(summary);
         setCopiedRelat(true);
