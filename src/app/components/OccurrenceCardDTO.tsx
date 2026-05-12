@@ -123,6 +123,7 @@ export function OccurrenceCard({
   const [loadingAiWpp, setLoadingAiWpp] = useState(false);
   const [loadingAiRelat, setLoadingAiRelat] = useState(false);
   const [showSuspensaoModal, setShowSuspensaoModal] = useState(false);
+  const [localSuspensao, setLocalSuspensao] = useState(occurrence.suspensao ?? null);
 
   const isAnaliseOp = occurrence.typeCode === "ANALISE_OP";
 
@@ -241,7 +242,11 @@ export function OccurrenceCard({
     return (
       <>
       {showSuspensaoModal && (
-        <SuspensaoModal occurrence={occurrence} onClose={() => setShowSuspensaoModal(false)} />
+        <SuspensaoModal
+          occurrence={{ ...occurrence, suspensao: localSuspensao }}
+          onClose={() => setShowSuspensaoModal(false)}
+          onSuspensaoGerada={(s) => setLocalSuspensao(s)}
+        />
       )}
       <div
         className="group flex items-center gap-0 bg-white border-b border-gray-100 hover:bg-blue-50/40 transition-colors cursor-pointer"
@@ -357,8 +362,8 @@ export function OccurrenceCard({
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); setShowSuspensaoModal(true); }}
-            title="Gerar Suspensão Disciplinar"
-            className="p-2 rounded text-gray-400 hover:text-red-700 hover:bg-red-50 transition-colors"
+            title={localSuspensao ? `Suspensão: ${localSuspensao.dias}d a partir de ${fmtDdMmCompact(localSuspensao.dataInicio)}` : "Gerar Suspensão Disciplinar"}
+            className={`p-2 rounded transition-colors ${localSuspensao ? "text-amber-500 hover:text-amber-700 hover:bg-amber-50" : "text-gray-400 hover:text-red-700 hover:bg-red-50"}`}
           >
             <ShieldAlert className="w-3.5 h-3.5" />
           </button>
@@ -557,14 +562,18 @@ export function OccurrenceCard({
           )}
         </div>
 
-        {/* Linha 3: Gerar Suspensão */}
+        {/* Linha 3: Suspensão */}
         <div className="flex gap-2">
           <button
             onClick={() => setShowSuspensaoModal(true)}
-            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs text-gray-500 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors"
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs rounded-md transition-colors ${
+              localSuspensao
+                ? "text-amber-600 bg-amber-50 hover:bg-amber-100"
+                : "text-gray-500 hover:text-red-700 hover:bg-red-50"
+            }`}
           >
             <ShieldAlert className="w-3.5 h-3.5" />
-            Gerar Suspensão
+            {localSuspensao ? "Ver Suspensão" : "Gerar Suspensão"}
           </button>
         </div>
       </div>
@@ -602,6 +611,12 @@ function abbreviate(name: string): string {
     .map((w) => w[0])
     .join("")
     .slice(0, 5);
+}
+
+function fmtDdMmCompact(iso: string): string {
+  const [, m, d] = (iso ?? "").split("-");
+  if (!m || !d) return iso;
+  return `${d.padStart(2, "0")}/${m.padStart(2, "0")}`;
 }
 
 function calcularTempoParada(inicio: string, fim: string): string {

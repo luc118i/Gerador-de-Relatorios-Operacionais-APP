@@ -3,6 +3,21 @@ import type { OccurrencePdfResponse } from "../domain/pdf";
 
 const BASE_URL = import.meta.env.VITE_API_URL as string;
 
+export type SuspensaoPdfResponse = {
+  signedUrl: string;
+  dataInicio: string;
+  dias: number;
+  filename: string;
+};
+
+export type SuspensaoInfoResponse = {
+  suspensao: {
+    dataInicio: string;
+    dias: number;
+    signedUrl: string;
+  } | null;
+};
+
 export const reportsPdfApi = {
   getOccurrencePdf(args: {
     occurrenceId: string;
@@ -23,7 +38,7 @@ export const reportsPdfApi = {
     occurrenceId: string;
     dataInicioSuspensao: string;
     quantidadeDias: number;
-  }): Promise<Blob> {
+  }): Promise<SuspensaoPdfResponse> {
     const res = await fetch(
       `${BASE_URL}/reports/occurrences/${args.occurrenceId}/suspensao-pdf`,
       {
@@ -39,6 +54,17 @@ export const reportsPdfApi = {
       const text = await res.text().catch(() => "");
       throw new Error(text || `Erro ${res.status} ao gerar suspensão`);
     }
-    return res.blob();
+    return res.json() as Promise<SuspensaoPdfResponse>;
+  },
+
+  async getSuspensaoInfo(occurrenceId: string): Promise<SuspensaoInfoResponse> {
+    const res = await fetch(
+      `${BASE_URL}/reports/occurrences/${occurrenceId}/suspensao-info`,
+    );
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(text || `Erro ${res.status} ao buscar suspensão`);
+    }
+    return res.json() as Promise<SuspensaoInfoResponse>;
   },
 };

@@ -1,12 +1,13 @@
 import { useState } from "react";
-import { Loader2, X } from "lucide-react";
+import { Download, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { reportsPdfApi } from "../../api/reportsPdf.api";
-import type { OccurrenceDTO } from "../../domain/occurrences";
+import type { OccurrenceDTO, OccurrenceDriverDTO } from "../../domain/occurrences";
 
 interface SuspensaoModalProps {
   occurrence: OccurrenceDTO;
   onClose: () => void;
+  onSuspensaoGerada?: (suspensao: { dataInicio: string; dias: number }) => void;
 }
 
 function fmtDdMm(iso: string): string {
@@ -32,11 +33,64 @@ Motivo: *${occurrence.typeTitle ?? occurrence.typeCode ?? "—"}*
 ❗Email enviado`;
 }
 
-export function SuspensaoModal({ occurrence, onClose }: SuspensaoModalProps) {
+function buildFilename(
+  occurrence: OccurrenceDTO,
+  d1: OccurrenceDriverDTO | undefined,
+  tipoOcorrencia: string,
+): string {
+  const matricula = d1?.registry ?? "";
+  const nome = d1?.name?.split(" ").slice(0, 2).join(" ") ?? "";
+  const base = d1?.baseCode ?? "";
+  const date = (occurrence.tripDate ?? occurrence.eventDate ?? "").replace(/-/g, ".");
+  return [matricula, nome, base, tipoOcorrencia, date, "SUSPENSAO"]
+    .filter(Boolean)
+    .join(" - ") + ".pdf";
+}
+
+async function downloadFromUrl(signedUrl: string, filename: string) {
+  const res = await fetch(signedUrl);
+  if (!res.ok) throw new Error("Falha ao baixar PDF");
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+export function SuspensaoModal({ occurrence, onClose, onSuspensaoGerada }: SuspensaoModalProps) {
+  const existingSuspensao = occurrence.suspensao ?? null;
   const today = new Date().toISOString().slice(0, 10);
-  const [dataInicio, setDataInicio] = useState(today);
-  const [quantidadeDias, setQuantidadeDias] = useState(1);
+  const [dataInicio, setDataInicio] = useState(existingSuspensao?.dataInicio ?? today);
+  const [quantidadeDias, setQuantidadeDias] = useState(existingSuspensao?.dias ?? 1);
   const [loading, setLoading] = useState(false);
+  const [loadingBaixar, setLoadingBaixar] = useState(false);
+
+  const tipoOcorrencia = occurrence.typeCode === "GENERICO"
+    ? (occurrence.reportTitle ?? occurrence.typeTitle ?? "Ocorrência")
+    : (occurrence.typeTitle ?? occurrence.typeCode ?? "Ocorrência");
+
+  async function handleBaixarSalvo() {
+    setLoadingBaixar(true);
+    try {
+      const { suspensao } = await reportsPdfApi.getSuspensaoInfo(occurrence.id);
+      if (!suspensao) {
+        toast.error("Suspensão não encontrada.");
+        return;
+      }
+      const d1 = occurrence.drivers?.find((d) => d.position === 1);
+      const filename = buildFilename(occurrence, d1, tipoOcorrencia);
+      await downloadFromUrl(suspensao.signedUrl, filename);
+      toast.success("PDF baixado!");
+    } catch (err: any) {
+      toast.error(err?.message ?? "Falha ao baixar PDF.");
+    } finally {
+      setLoadingBaixar(false);
+    }
+  }
 
   async function handleGerar() {
     if (!dataInicio) {
@@ -50,27 +104,20 @@ export function SuspensaoModal({ occurrence, onClose }: SuspensaoModalProps) {
 
     setLoading(true);
     try {
-      const blob = await reportsPdfApi.getSuspensaoPdf({
-        occurrenceId: occurrence.id,
-        dataInicioSuspensao: dataInicio,
-        quantidadeDias,
-      });
+      const { signedUrl, dataInicio: dataInicioResp, dias, filename } =
+        await reportsPdfApi.getSuspensaoPdf({
+          occurrenceId: occurrence.id,
+          dataInicioSuspensao: dataInicio,
+          quantidadeDias,
+        });
 
-      // Dispara o download do PDF
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `suspensao-${dataInicio}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
+      await downloadFromUrl(signedUrl, filename);
 
-      // Copia o texto padrão para mensagens
-      const texto = buildWppText(occurrence, dataInicio);
+      const texto = buildWppText(occurrence, dataInicioResp);
       await navigator.clipboard.writeText(texto);
 
       toast.success("PDF gerado e texto copiado!");
+      onSuspensaoGerada?.({ dataInicio: dataInicioResp, dias });
       onClose();
     } catch (err: any) {
       toast.error(err?.message ?? "Falha ao gerar PDF de suspensão.");
@@ -94,6 +141,26 @@ export function SuspensaoModal({ occurrence, onClose }: SuspensaoModalProps) {
             <X className="w-4 h-4" />
           </button>
         </div>
+
+        {existingSuspensao && (
+          <div className="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200">
+            <p className="text-xs font-medium text-amber-800 mb-2">
+              Suspensão registrada: {existingSuspensao.dias} dia(s) a partir de{" "}
+              {fmtDdMm(existingSuspensao.dataInicio)}
+            </p>
+            <button
+              onClick={handleBaixarSalvo}
+              disabled={loadingBaixar}
+              className="w-full flex items-center justify-center gap-2 py-1.5 text-xs text-amber-700 border border-amber-300 bg-white rounded-md hover:bg-amber-50 transition-colors disabled:opacity-50"
+            >
+              {loadingBaixar ? (
+                <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Baixando...</>
+              ) : (
+                <><Download className="w-3.5 h-3.5" /> Baixar PDF salvo</>
+              )}
+            </button>
+          </div>
+        )}
 
         <div className="space-y-4">
           <div>
@@ -137,10 +204,9 @@ export function SuspensaoModal({ occurrence, onClose }: SuspensaoModalProps) {
             className="flex-1 flex items-center justify-center gap-2 py-2 text-sm text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors disabled:opacity-50"
           >
             {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Gerando...
-              </>
+              <><Loader2 className="w-4 h-4 animate-spin" /> Gerando...</>
+            ) : existingSuspensao ? (
+              "Re-gerar PDF"
             ) : (
               "Gerar PDF"
             )}
