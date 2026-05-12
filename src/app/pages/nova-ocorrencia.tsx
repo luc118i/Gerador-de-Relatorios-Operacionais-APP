@@ -26,6 +26,40 @@ export function NovaOcorrencia({ onVoltar, onSaved, edicao }: NovaOcorrenciaProp
     ? form.showSectionTripulacao
     : !!form.viagemSelecionada;
 
+  const validationErrors = form.getValidationErrors();
+
+  function scrollToField(id: string) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    const focusable = el.querySelector<HTMLElement>("input, select, textarea, [role='combobox']");
+    focusable?.focus();
+  }
+
+  function focusNextFormField(current: HTMLElement) {
+    const container = document.getElementById("nova-ocorrencia-form");
+    if (!container) return;
+    const selector =
+      "input[data-form-nav]:not([disabled]), input[readonly]:not([disabled]), select[data-form-nav]:not([disabled])";
+    const fields = Array.from(container.querySelectorAll<HTMLElement>(selector)).filter(
+      (el) => el.offsetParent !== null,
+    );
+    const idx = fields.indexOf(current);
+    if (idx < 0 || idx >= fields.length - 1) return;
+    const next = fields[idx + 1];
+    next.scrollIntoView({ behavior: "smooth", block: "center" });
+    next.focus({ preventScroll: true });
+  }
+
+  function handleFormKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    if (e.key !== "Enter") return;
+    const target = e.target as HTMLInputElement;
+    if (target.tagName !== "INPUT" && target.tagName !== "SELECT") return;
+    if (!target.readOnly && !target.hasAttribute("data-form-nav")) return;
+    e.preventDefault();
+    focusNextFormField(target);
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -65,7 +99,7 @@ export function NovaOcorrencia({ onVoltar, onSaved, edicao }: NovaOcorrenciaProp
       {/* Main */}
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white border border-gray-200 rounded-lg">
-          <div className="p-6 space-y-8">
+          <div id="nova-ocorrencia-form" className="p-6 space-y-8" onKeyDown={handleFormKeyDown}>
 
             {/* 0 — Tipo */}
             <TipoSelector value={form.typeCode} onChange={form.handleTypeChange} />
@@ -88,15 +122,18 @@ export function NovaOcorrencia({ onVoltar, onSaved, edicao }: NovaOcorrenciaProp
 
             {/* 1 — Dados da Viagem */}
             {(!typeConfig.isGeneric || form.showSectionViagem) && (
-              <SecaoDadosViagem
-                viagemSelecionada={form.viagemSelecionada}
-                onViagemChange={form.handleViagemChange}
-                isGeneric={typeConfig.isGeneric}
-              />
+              <div id="section-viagem">
+                <SecaoDadosViagem
+                  viagemSelecionada={form.viagemSelecionada}
+                  onViagemChange={form.handleViagemChange}
+                  isGeneric={typeConfig.isGeneric}
+                />
+              </div>
             )}
 
             {/* 2 — Tripulação */}
             {showTripulacao && (
+              <div id="section-tripulacao">
               <SecaoTripulacao
                 driver1Id={form.driver1Id}
                 driver1={form.driver1}
@@ -116,6 +153,7 @@ export function NovaOcorrencia({ onVoltar, onSaved, edicao }: NovaOcorrenciaProp
                 onCreateTargetChange={form.setCreateTarget}
                 onDriverCreated={form.handleDriverCreated}
               />
+              </div>
             )}
 
             {/* 3 — Dados do Evento */}
@@ -177,12 +215,12 @@ export function NovaOcorrencia({ onVoltar, onSaved, edicao }: NovaOcorrenciaProp
 
             {/* 6 — Ações */}
             <section className="pt-4 border-t border-gray-200">
-              <div className="flex items-center justify-between gap-4">
+              <div className="flex items-start justify-between gap-4">
                 <button
                   onClick={form.handleSalvar}
-                  disabled={!form.isFormValido() || form.saveStatus !== "idle"}
+                  disabled={validationErrors.length > 0 || form.saveStatus !== "idle"}
                   className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 ${
-                    form.isFormValido() && form.saveStatus === "idle"
+                    validationErrors.length === 0 && form.saveStatus === "idle"
                       ? "bg-blue-600 text-white hover:bg-blue-700 shadow-sm hover:shadow"
                       : "bg-gray-200 text-gray-400 cursor-not-allowed"
                   }`}
@@ -199,11 +237,27 @@ export function NovaOcorrencia({ onVoltar, onSaved, edicao }: NovaOcorrenciaProp
                     </>
                   )}
                 </button>
-                {!form.isFormValido() && form.saveStatus === "idle" && (
-                  <p className="text-xs text-gray-400 flex items-center gap-1.5">
-                    <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-                    Preencha os campos obrigatórios para continuar
-                  </p>
+                {validationErrors.length > 0 && form.saveStatus === "idle" && (
+                  <div className="flex flex-col gap-1.5">
+                    <p className="text-xs text-gray-500 flex items-center gap-1.5">
+                      <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 text-amber-500" />
+                      Campos obrigatórios pendentes:
+                    </p>
+                    <ul className="space-y-0.5">
+                      {validationErrors.map((err) => (
+                        <li key={`${err.id}-${err.label}`}>
+                          <button
+                            type="button"
+                            onClick={() => scrollToField(err.id)}
+                            className="cursor-pointer text-xs text-red-500 hover:text-red-700 hover:underline flex items-center gap-1 text-left"
+                          >
+                            <span aria-hidden>•</span>
+                            {err.label}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
               </div>
             </section>

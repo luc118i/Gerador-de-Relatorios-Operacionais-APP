@@ -88,41 +88,55 @@ export function useNovaOcorrenciaForm({ onSaved, edicao }: NovaOcorrenciaProps) 
     return hF * 60 + mF > hI * 60 + mI;
   }
 
-  function isFormValido(): boolean {
+  function getValidationErrors(): { id: string; label: string }[] {
+    const errors: { id: string; label: string }[] = [];
     const typeConfig = getOccurrenceTypeConfig(typeCode);
 
     const sectionViagemAtiva = !typeConfig.isGeneric || showSectionViagem;
-    const sectionIdAtiva     = !typeConfig.isGeneric || showSectionIdentificacao;
     const sectionDadosAtiva  = !typeConfig.isGeneric || showSectionDados;
     const sectionTripAtiva   = !typeConfig.isGeneric || showSectionTripulacao;
-
-    // suppress unused warning
-    void sectionIdAtiva;
-
-    const driversOk = sectionTripAtiva
-      ? !!driver1 && (!driver2Id || driver2Id !== driver1Id)
-      : true;
-
-    const localOk   = sectionDadosAtiva && typeConfig.showPlace ? !!localParada : true;
-    const speedOk   = typeConfig.showSpeed ? speedKmh != null && speedKmh > 0 : true;
-    const horarioOk = sectionDadosAtiva
-      ? typeConfig.singleTime
-        ? !!horarioInicial
-        : !!horarioInicial && !!horarioFinal && isHorarioValido()
-      : true;
-
-    const genericOk = typeConfig.isGeneric
-      ? !!reportTitle.trim() && !!relatoHtml.trim() && !!devolutivaHtml.trim()
-      : true;
 
     const viagemOk = typeConfig.isGeneric
       ? !sectionViagemAtiva || !!viagemSelecionada
       : !!viagemSelecionada;
+    if (!viagemOk) errors.push({ id: "section-viagem", label: "Viagem" });
 
-    const dataOk    = sectionDadosAtiva ? !!(dataEvento && dataViagem) : true;
-    const prefixoOk = sectionDadosAtiva ? !!vehicleNumber.trim() : true;
+    if (sectionTripAtiva) {
+      if (!driver1) errors.push({ id: "section-tripulacao", label: "Motorista 01" });
+      if (driver1Id && driver2Id && driver1Id === driver2Id)
+        errors.push({ id: "section-tripulacao", label: "Motoristas 01 e 02 duplicados" });
+    }
 
-    return viagemOk && dataOk && horarioOk && localOk && prefixoOk && driversOk && speedOk && genericOk;
+    if (sectionDadosAtiva) {
+      if (!dataEvento) errors.push({ id: "field-data-evento", label: "Data do Evento" });
+      if (!dataViagem) errors.push({ id: "field-data-viagem", label: "Data da Viagem" });
+
+      if (typeConfig.singleTime) {
+        if (!horarioInicial) errors.push({ id: "field-horario-inicial", label: "Horário do Evento" });
+      } else {
+        if (!horarioInicial) errors.push({ id: "field-horario-inicial", label: "Horário Inicial" });
+        if (!horarioFinal) errors.push({ id: "field-horario-final", label: "Horário Final" });
+        if (horarioInicial && horarioFinal && !isHorarioValido())
+          errors.push({ id: "field-horario-final", label: "Horário final deve ser posterior ao inicial" });
+      }
+
+      if (!vehicleNumber.trim()) errors.push({ id: "field-prefixo", label: "Prefixo do Veículo" });
+      if (typeConfig.showPlace && !localParada)
+        errors.push({ id: "field-local", label: "Local da Parada" });
+      if (typeConfig.showSpeed && (speedKmh == null || speedKmh <= 0))
+        errors.push({ id: "field-velocidade", label: "Velocidade Atingida (km/h)" });
+    }
+
+    if (typeConfig.isGeneric) {
+      if (!reportTitle.trim()) errors.push({ id: "field-report-title", label: "Nome do Relatório" });
+      if (!relatoHtml.trim()) errors.push({ id: "field-relato", label: "Relato da Ocorrência" });
+    }
+
+    return errors;
+  }
+
+  function isFormValido(): boolean {
+    return getValidationErrors().length === 0;
   }
 
   function toViagemView(v: ViagemCatalog): Viagem {
@@ -477,7 +491,7 @@ export function useNovaOcorrenciaForm({ onSaved, edicao }: NovaOcorrenciaProps) 
     showPreview, setShowPreview,
     saveStatus, triedSave,
     // funções de validação e save
-    isHorarioValido, isFormValido, handleSalvar,
+    isHorarioValido, isFormValido, getValidationErrors, handleSalvar,
     // helpers de view (usados no preview modal)
     toViagemView, toMotoristaView,
   };

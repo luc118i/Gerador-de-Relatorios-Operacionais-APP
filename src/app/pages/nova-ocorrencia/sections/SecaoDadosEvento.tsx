@@ -45,15 +45,15 @@ export function SecaoDadosEvento({
       <div className="space-y-4">
         {typeConfig.singleTime ? (
           <div className="grid grid-cols-3 gap-4">
-            <div>
+            <div id="field-data-evento">
               <label className="block text-sm font-medium text-gray-700 mb-1">Data do Evento *</label>
               <DatePicker value={dataEvento} onChange={onDataEventoChange} placeholder="Data do evento" />
             </div>
-            <div>
+            <div id="field-data-viagem">
               <label className="block text-sm font-medium text-gray-700 mb-1">Data da Viagem *</label>
               <DatePicker value={dataViagem} onChange={onDataViagemChange} placeholder="Data da viagem" />
             </div>
-            <div>
+            <div id="field-horario-inicial">
               <label className="block text-sm font-medium text-gray-700 mb-1">Horário do Evento *</label>
               <TimePicker
                 value={horarioInicial}
@@ -68,19 +68,19 @@ export function SecaoDadosEvento({
         ) : (
           <>
             <div className="grid grid-cols-4 gap-4">
-              <div>
+              <div id="field-data-evento">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Data do Evento *</label>
                 <DatePicker value={dataEvento} onChange={onDataEventoChange} placeholder="Data do evento" />
               </div>
-              <div>
+              <div id="field-data-viagem">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Data da Viagem *</label>
                 <DatePicker value={dataViagem} onChange={onDataViagemChange} placeholder="Data da viagem" />
               </div>
-              <div>
+              <div id="field-horario-inicial">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Horário Inicial *</label>
                 <TimePicker value={horarioInicial} onChange={onHorarioInicialChange} placeholder="HH:MM" />
               </div>
-              <div>
+              <div id="field-horario-final">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Horário Final *</label>
                 <TimePicker
                   value={horarioFinal}
@@ -99,7 +99,7 @@ export function SecaoDadosEvento({
           </>
         )}
 
-        <div>
+        <div id="field-prefixo">
           <label className="block text-sm font-medium text-gray-700 mb-1">Prefixo do Veículo *</label>
           <input
             type="text"
@@ -108,11 +108,12 @@ export function SecaoDadosEvento({
             onChange={(e) => onVehicleNumberChange(e.target.value)}
             placeholder="Ex: 24615"
             className={inputBase}
+            data-form-nav
           />
         </div>
 
         {typeConfig.showPlace && (
-          <div>
+          <div id="field-local">
             {typeConfig.isGeneric ? (
               <>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -126,6 +127,7 @@ export function SecaoDadosEvento({
                   }
                   placeholder="Ex: Campinas – SP, Rodoviária de Curitiba..."
                   className={inputBase}
+                  data-form-nav
                 />
               </>
             ) : (
@@ -135,7 +137,7 @@ export function SecaoDadosEvento({
         )}
 
         {typeConfig.showSpeed && (
-          <div>
+          <div id="field-velocidade">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Velocidade Atingida (km/h) *
             </label>
@@ -147,6 +149,7 @@ export function SecaoDadosEvento({
               onChange={(e) => onSpeedKmhChange(e.target.value ? Number(e.target.value) : null)}
               placeholder="Ex: 92"
               className={inputBase}
+              data-form-nav
             />
           </div>
         )}

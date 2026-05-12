@@ -45,7 +45,7 @@ export function SecaoGenerico({
     <div className="space-y-8 animate-in fade-in slide-in-from-top-2 duration-300">
 
       {/* Nome do Relatório */}
-      <section>
+      <section id="field-report-title">
         <h2 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
           Nome do Relatório
         </h2>
@@ -61,6 +61,7 @@ export function SecaoGenerico({
                 ? "border-red-400 focus:ring-red-500"
                 : "border-gray-300 focus:ring-blue-500"
             }`}
+            data-form-nav
           />
           {triedSave && !reportTitle.trim() && (
             <div className="flex items-center gap-2 text-sm text-red-600 mt-1">
@@ -80,11 +81,11 @@ export function SecaoGenerico({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Operador CCO</label>
-              <input type="text" value={ccoOperator} onChange={(e) => onCcoOperatorChange(e.target.value)} placeholder="Ex: Paulo Cesar" className={inputBase} />
+              <input type="text" value={ccoOperator} onChange={(e) => onCcoOperatorChange(e.target.value)} placeholder="Ex: Paulo Cesar" className={inputBase} data-form-nav />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">KM do Veículo</label>
-              <input type="number" min={0} value={vehicleKm ?? ""} onChange={(e) => onVehicleKmChange(e.target.value ? Number(e.target.value) : null)} placeholder="Ex: 526178" className={inputBase} />
+              <input type="number" min={0} value={vehicleKm ?? ""} onChange={(e) => onVehicleKmChange(e.target.value ? Number(e.target.value) : null)} placeholder="Ex: 526178" className={inputBase} data-form-nav />
             </div>
           </div>
         </section>
@@ -99,18 +100,18 @@ export function SecaoGenerico({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Qtd. Passageiros</label>
-              <input type="number" min={0} value={passengerCount ?? ""} onChange={(e) => onPassengerCountChange(e.target.value ? Number(e.target.value) : null)} placeholder="Ex: 15" className={inputBase} />
+              <input type="number" min={0} value={passengerCount ?? ""} onChange={(e) => onPassengerCountChange(e.target.value ? Number(e.target.value) : null)} placeholder="Ex: 15" className={inputBase} data-form-nav />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Passageiros Conexão</label>
-              <input type="text" value={passengerConnection} onChange={(e) => onPassengerConnectionChange(e.target.value)} placeholder="Ex: 3 ou —" className={inputBase} />
+              <input type="text" value={passengerConnection} onChange={(e) => onPassengerConnectionChange(e.target.value)} placeholder="Ex: 3 ou —" className={inputBase} data-form-nav />
             </div>
           </div>
         </section>
       )}
 
       {/* Relato */}
-      <section>
+      <section id="field-relato">
         <h2 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
           Relato da Ocorrência <span className="text-red-500">*</span>
         </h2>
@@ -130,10 +131,10 @@ export function SecaoGenerico({
       </section>
 
       {/* Devolutiva */}
-      <section>
+      <section id="field-devolutiva">
         <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900">
-            Devolutiva / Solução Adotada <span className="text-red-500">*</span>
+            Devolutiva / Solução Adotada
           </h2>
           <div className="flex items-center gap-1.5 text-xs text-gray-500 select-none">
             <span className={devolutivaBeforeEvidences ? "text-gray-400" : "font-medium text-gray-700"}>Após evidências</span>
@@ -164,12 +165,6 @@ export function SecaoGenerico({
             placeholder="Descreva a solução adotada..."
             minHeight="100px"
           />
-          {triedSave && !devolutivaHtml.trim() && (
-            <div className="flex items-center gap-2 text-sm text-red-600 mt-2">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              Campo obrigatório
-            </div>
-          )}
         </div>
       </section>
     </div>
