@@ -1,5 +1,6 @@
 import { AlertCircle } from "lucide-react";
 import { ExpandableRichTextEditor } from "../../../components/ExpandableRichTextEditor";
+import { ReportTitleInput } from "./ReportTitleInput";
 
 interface SecaoGenericoProps {
   reportTitle: string;
@@ -53,26 +54,12 @@ export function SecaoGenerico({
         </h2>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Nome do Relatório *</label>
-          <input
-            type="text"
-            list="report-title-suggestions"
+          <ReportTitleInput
             value={reportTitle}
-            onChange={(e) => onReportTitleChange(e.target.value.toUpperCase())}
-            placeholder="Ex: Atendimento Especial, Acidente, Pane Mecânica..."
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-              triedSave && !reportTitle.trim()
-                ? "border-red-400 focus:ring-red-500"
-                : "border-gray-300 focus:ring-blue-500"
-            }`}
-            data-form-nav
+            onChange={onReportTitleChange}
+            suggestions={reportTitleSuggestions}
+            hasError={triedSave && !reportTitle.trim()}
           />
-          {reportTitleSuggestions.length > 0 && (
-            <datalist id="report-title-suggestions">
-              {reportTitleSuggestions.map((s) => (
-                <option key={s} value={s} />
-              ))}
-            </datalist>
-          )}
           {triedSave && !reportTitle.trim() && (
             <div className="flex items-center gap-2 text-sm text-red-600 mt-1">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
