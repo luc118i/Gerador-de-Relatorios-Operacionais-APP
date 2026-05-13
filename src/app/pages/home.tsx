@@ -121,8 +121,13 @@ export function Home({
         occ.typeCode === "GENERICO"
           ? (occ as any).reportTitle || occ.typeTitle
           : occ.typeTitle;
-      // Normaliza: remove espaços e padroniza caixa para evitar grupos duplicados
-      const subject = String(raw ?? "").trim().toUpperCase();
+      // Normaliza: remove acentos, colapsa espaços, padroniza caixa
+      const subject = String(raw ?? "")
+        .normalize("NFD")
+        .replace(/[̀-ͯ]/g, "")
+        .trim()
+        .toUpperCase()
+        .replace(/\s+/g, " ");
       if (!map.has(subject)) map.set(subject, []);
       map.get(subject)!.push(occ);
     }

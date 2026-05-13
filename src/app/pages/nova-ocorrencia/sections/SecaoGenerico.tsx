@@ -4,6 +4,7 @@ import { ExpandableRichTextEditor } from "../../../components/ExpandableRichText
 interface SecaoGenericoProps {
   reportTitle: string;
   onReportTitleChange: (v: string) => void;
+  reportTitleSuggestions?: string[];
   ccoOperator: string;
   onCcoOperatorChange: (v: string) => void;
   vehicleKm: number | null;
@@ -27,6 +28,7 @@ interface SecaoGenericoProps {
 
 export function SecaoGenerico({
   reportTitle, onReportTitleChange,
+  reportTitleSuggestions = [],
   ccoOperator, onCcoOperatorChange,
   vehicleKm, onVehicleKmChange,
   passengerCount, onPassengerCountChange,
@@ -53,6 +55,7 @@ export function SecaoGenerico({
           <label className="block text-sm font-medium text-gray-700 mb-1">Nome do Relatório *</label>
           <input
             type="text"
+            list="report-title-suggestions"
             value={reportTitle}
             onChange={(e) => onReportTitleChange(e.target.value.toUpperCase())}
             placeholder="Ex: Atendimento Especial, Acidente, Pane Mecânica..."
@@ -63,6 +66,13 @@ export function SecaoGenerico({
             }`}
             data-form-nav
           />
+          {reportTitleSuggestions.length > 0 && (
+            <datalist id="report-title-suggestions">
+              {reportTitleSuggestions.map((s) => (
+                <option key={s} value={s} />
+              ))}
+            </datalist>
+          )}
           {triedSave && !reportTitle.trim() && (
             <div className="flex items-center gap-2 text-sm text-red-600 mt-1">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />

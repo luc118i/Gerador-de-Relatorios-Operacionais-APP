@@ -44,6 +44,14 @@ export const occurrencesApi = {
     });
   },
 
+  async getReportTitles(): Promise<string[]> {
+    const json = await request<{ data: string[] }>({
+      method: "GET",
+      path: "/occurrences/report-titles",
+    });
+    return json.data ?? [];
+  },
+
   async getOccurrenceById(id: string): Promise<OccurrenceDTO> {
     const json = await request<ApiData<OccurrenceDTO>>({
       method: "GET",

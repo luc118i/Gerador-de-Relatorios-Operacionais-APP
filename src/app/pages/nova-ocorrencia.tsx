@@ -1,4 +1,5 @@
 import { ArrowLeft, AlertCircle, Save, Loader2, X } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { EvidenciasGrid } from "../components/evidencias-grid";
 import { gerarTextoRelatorioIndividual } from "../utils/relatorio";
 import { getOccurrenceTypeConfig } from "../config/occurrenceTypes";
@@ -11,6 +12,7 @@ import { SecaoTripulacao } from "./nova-ocorrencia/sections/SecaoTripulacao";
 import { SecaoDadosEvento } from "./nova-ocorrencia/sections/SecaoDadosEvento";
 import { SecaoGenerico } from "./nova-ocorrencia/sections/SecaoGenerico";
 import { SaveStatusOverlay } from "./nova-ocorrencia/sections/SaveStatusOverlay";
+import { occurrencesApi } from "../../api/occurrences.api";
 
 interface NovaOcorrenciaProps {
   onVoltar: () => void;
@@ -21,6 +23,13 @@ interface NovaOcorrenciaProps {
 export function NovaOcorrencia({ onVoltar, onSaved, edicao }: NovaOcorrenciaProps) {
   const form = useNovaOcorrenciaForm({ onVoltar, onSaved, edicao });
   const typeConfig = getOccurrenceTypeConfig(form.typeCode);
+
+  const { data: reportTitleSuggestions = [] } = useQuery({
+    queryKey: ["occurrences", "report-titles"],
+    queryFn: () => occurrencesApi.getReportTitles(),
+    staleTime: 5 * 60_000,
+    enabled: typeConfig.isGeneric,
+  });
 
   const showTripulacao = typeConfig.isGeneric
     ? form.showSectionTripulacao
@@ -183,6 +192,7 @@ export function NovaOcorrencia({ onVoltar, onSaved, edicao }: NovaOcorrenciaProp
               <SecaoGenerico
                 reportTitle={form.reportTitle}
                 onReportTitleChange={form.setReportTitle}
+                reportTitleSuggestions={reportTitleSuggestions}
                 ccoOperator={form.ccoOperator}
                 onCcoOperatorChange={form.setCcoOperator}
                 vehicleKm={form.vehicleKm}
