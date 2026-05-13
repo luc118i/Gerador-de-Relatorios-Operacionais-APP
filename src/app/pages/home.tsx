@@ -58,7 +58,12 @@ export function Home({
   const [groupBySubject, setGroupBySubject] = useState<boolean>(
     () => localStorage.getItem("home_groupBySubject") === "true",
   );
-  const [collapsedSubjects, setCollapsedSubjects] = useState<Set<string>>(new Set());
+  const [collapsedSubjects, setCollapsedSubjects] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem("home_collapsedSubjects");
+      return new Set(raw ? JSON.parse(raw) : []);
+    } catch { return new Set(); }
+  });
 
   const calendarRef = useRef<HTMLDivElement | null>(null);
 
@@ -261,6 +266,7 @@ export function Home({
       const next = new Set(prev);
       if (next.has(subject)) next.delete(subject);
       else next.add(subject);
+      localStorage.setItem("home_collapsedSubjects", JSON.stringify([...next]));
       return next;
     });
   }
