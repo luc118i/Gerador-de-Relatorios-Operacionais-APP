@@ -1,4 +1,4 @@
-import { ArrowLeft, AlertCircle, Save, Loader2, X } from "lucide-react";
+import { ArrowLeft, AlertCircle, Save, Loader2, X, CheckCircle2, AlertTriangle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { EvidenciasGrid } from "../components/evidencias-grid";
 import { gerarTextoRelatorioIndividual } from "../utils/relatorio";
@@ -137,6 +137,24 @@ export function NovaOcorrencia({ onVoltar, onSaved, edicao }: NovaOcorrenciaProp
                   onViagemChange={form.handleViagemChange}
                   isGeneric={typeConfig.isGeneric}
                 />
+              </div>
+            )}
+
+            {/* 1b — Status do esquema (só DESCUMP_OP_PARADA_FORA) */}
+            {form.typeCode === "DESCUMP_OP_PARADA_FORA" && form.schemaStatus !== "idle" && (
+              <div className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm ${
+                form.schemaStatus === "loading"   ? "bg-gray-50 text-gray-500 border border-gray-200" :
+                form.schemaStatus === "found"     ? "bg-green-50 text-green-700 border border-green-200" :
+                                                    "bg-amber-50 text-amber-700 border border-amber-200"
+              }`}>
+                {form.schemaStatus === "loading" && <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />}
+                {form.schemaStatus === "found"   && <CheckCircle2 className="w-4 h-4 flex-shrink-0" />}
+                {form.schemaStatus === "not_found" && <AlertTriangle className="w-4 h-4 flex-shrink-0" />}
+                <span>
+                  {form.schemaStatus === "loading"   && "Buscando esquema da viagem..."}
+                  {form.schemaStatus === "found"     && "Esquema da viagem encontrado — será incluído no PDF após as evidências."}
+                  {form.schemaStatus === "not_found" && "Esquema não encontrado para esta viagem. O PDF será gerado sem o esquema de pontos."}
+                </span>
               </div>
             )}
 

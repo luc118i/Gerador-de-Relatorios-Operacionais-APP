@@ -122,6 +122,13 @@ export const occurrencesApi = {
     });
     return json.data;
   },
+
+  async getTripSchema(tripId: string): Promise<{ found: boolean; html?: string }> {
+    return request<{ found: boolean; html?: string }>({
+      method: "GET",
+      path: `/trips/${tripId}/schema`,
+    });
+  },
 };
 
 export async function getOccurrencesByDay(

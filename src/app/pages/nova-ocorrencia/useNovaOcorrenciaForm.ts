@@ -68,6 +68,10 @@ export function useNovaOcorrenciaForm({ onSaved, edicao }: NovaOcorrenciaProps) 
   const [isDriverModalOpen, setIsDriverModalOpen] = useState(false);
   const [createTarget, setCreateTarget] = useState<1 | 2 | null>(null);
 
+  // ── Esquema de viagem (DESCUMP_OP_PARADA_FORA) ───────────────────────────
+  const [schemaHtml, setSchemaHtml] = useState<string | null>(null);
+  const [schemaStatus, setSchemaStatus] = useState<"idle" | "loading" | "found" | "not_found">("idle");
+
   // ── Evidências ───────────────────────────────────────────────────────────
   const [evidencias, setEvidencias] = useState<Evidencia[]>([]);
 
@@ -249,6 +253,35 @@ export function useNovaOcorrenciaForm({ onSaved, edicao }: NovaOcorrenciaProps) 
     return () => window.removeEventListener("paste", onPaste);
   }, []);
 
+  // ── Efeito: busca esquema ao selecionar viagem (DESCUMP_OP_PARADA_FORA) ──
+  useEffect(() => {
+    if (typeCode !== "DESCUMP_OP_PARADA_FORA" || !viagemSelecionada?.id) {
+      setSchemaHtml(null);
+      setSchemaStatus("idle");
+      return;
+    }
+    let cancelled = false;
+    setSchemaStatus("loading");
+    occurrencesApi.getTripSchema(viagemSelecionada.id)
+      .then((result) => {
+        if (cancelled) return;
+        if (result.found && result.html) {
+          setSchemaHtml(result.html);
+          setSchemaStatus("found");
+        } else {
+          setSchemaHtml(null);
+          setSchemaStatus("not_found");
+          toast.warning("Esquema não encontrado para esta viagem. O PDF será gerado sem o esquema de pontos.");
+        }
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setSchemaHtml(null);
+        setSchemaStatus("not_found");
+      });
+    return () => { cancelled = true; };
+  }, [viagemSelecionada?.id, typeCode]);
+
   // ── Efeito: auto-fill motoristas da viagem ───────────────────────────────
   useEffect(() => {
     if (!viagemSelecionada || edicao) return;
@@ -373,7 +406,7 @@ export function useNovaOcorrenciaForm({ onSaved, edicao }: NovaOcorrenciaProps) 
         vehicleKm: typeConfig.isGeneric ? vehicleKm : null,
         passengerCount: typeConfig.isGeneric ? passengerCount : null,
         passengerConnection: typeConfig.isGeneric ? passengerConnection : null,
-        relatoHtml: typeConfig.isGeneric ? relatoHtml : null,
+        relatoHtml: typeConfig.isGeneric ? relatoHtml : (typeCode === "DESCUMP_OP_PARADA_FORA" ? schemaHtml : null),
         devolutivaHtml: typeConfig.isGeneric
           ? (devolutivaHtml.replace(/<[^>]+>/g, "").trim() ? devolutivaHtml : null)
           : null,
@@ -489,6 +522,8 @@ export function useNovaOcorrenciaForm({ onSaved, edicao }: NovaOcorrenciaProps) 
     isDriverModalOpen, setIsDriverModalOpen,
     createTarget, setCreateTarget,
     handleDriverCreated,
+    // esquema (DESCUMP_OP_PARADA_FORA)
+    schemaStatus,
     // evidências
     evidencias, setEvidencias,
     // ui
