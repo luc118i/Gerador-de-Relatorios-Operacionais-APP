@@ -54,7 +54,7 @@ export function SecaoGenerico({
           <input
             type="text"
             value={reportTitle}
-            onChange={(e) => onReportTitleChange(e.target.value)}
+            onChange={(e) => onReportTitleChange(e.target.value.toUpperCase())}
             placeholder="Ex: Atendimento Especial, Acidente, Pane Mecânica..."
             className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
               triedSave && !reportTitle.trim()
