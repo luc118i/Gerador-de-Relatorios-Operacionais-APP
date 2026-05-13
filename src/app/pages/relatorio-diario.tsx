@@ -31,7 +31,7 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
-import { getOccurrencesByDay } from "../../api/occurrences.api";
+import { getOccurrencesByDay, getDailyReportPdf } from "../../api/occurrences.api";
 import type { OccurrenceDTO } from "../../domain/occurrences";
 import { buildDailyReport } from "../utils/relatorio-diario";
 
@@ -158,6 +158,7 @@ export function RelatorioDiario({ onVoltar }: RelatorioDiarioProps) {
   const [filterType, setFilterType] = useState<string | null>(null);
   const [filterBase, setFilterBase] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [exportingPdf, setExportingPdf] = useState(false);
 
   // Fecha menu de cópia ao clicar fora
   useEffect(() => {
@@ -283,34 +284,24 @@ export function RelatorioDiario({ onVoltar }: RelatorioDiarioProps) {
     URL.revokeObjectURL(url);
   }
 
-  function handleExportarPDF() {
-    if (!canActions) return;
-    const html = `<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8" />
-  <title>Relatório Diário — ${displayDate}</title>
-  <style>
-    body { font-family: 'Courier New', monospace; font-size: 11px; padding: 24px 32px; color: #111; }
-    h2 { font-family: sans-serif; font-size: 15px; font-weight: 700; margin: 0 0 4px; }
-    p  { font-family: sans-serif; font-size: 12px; color: #555; margin: 0 0 20px; }
-    pre { white-space: pre-wrap; word-break: break-word; line-height: 1.6; }
-    @page { size: A4; margin: 18mm 16mm 22mm 16mm; }
-  </style>
-</head>
-<body>
-  <h2>Relatório Diário Consolidado</h2>
-  <p>${displayDate} · ${occurrences.length} ocorrência${occurrences.length !== 1 ? "s" : ""}</p>
-  <pre>${report.textForCopy.replace(/</g, "&lt;")}</pre>
-</body>
-</html>`;
-
-    const win = window.open("", "_blank");
-    if (!win) return;
-    win.document.write(html);
-    win.document.close();
-    win.focus();
-    setTimeout(() => win.print(), 400);
+  async function handleExportarPDF() {
+    if (!canActions || exportingPdf) return;
+    setExportingPdf(true);
+    try {
+      const blob = await getDailyReportPdf(dataSelecionada);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `relatorio-diario-${dataSelecionada}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      alert(`Falha ao gerar PDF: ${e?.message ?? "erro desconhecido"}`);
+    } finally {
+      setExportingPdf(false);
+    }
   }
 
   return (
@@ -441,16 +432,22 @@ export function RelatorioDiario({ onVoltar }: RelatorioDiarioProps) {
               {/* PDF */}
               <button
                 onClick={handleExportarPDF}
-                disabled={!canActions}
+                disabled={!canActions || exportingPdf}
                 className={`cursor-pointer h-8 px-3 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors ${
-                  canActions
+                  canActions && !exportingPdf
                     ? "bg-gray-800 text-white hover:bg-gray-900"
                     : "bg-gray-100 text-gray-400 cursor-not-allowed"
                 }`}
-                title="Abrir versão para imprimir / salvar como PDF"
+                title="Baixar relatório diário em PDF"
               >
-                <Printer className="w-3.5 h-3.5" />
-                PDF
+                {exportingPdf ? (
+                  <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeDasharray="32" strokeDashoffset="12" />
+                  </svg>
+                ) : (
+                  <Printer className="w-3.5 h-3.5" />
+                )}
+                {exportingPdf ? "Gerando..." : "PDF"}
               </button>
 
               {/* TXT */}

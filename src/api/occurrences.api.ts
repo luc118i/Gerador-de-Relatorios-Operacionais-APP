@@ -127,3 +127,12 @@ export async function getOccurrencesByDay(
   const json = (await res.json()) as { data: OccurrenceDTO[] };
   return json.data ?? [];
 }
+
+export async function getDailyReportPdf(date: string): Promise<Blob> {
+  const res = await fetch(`${BASE_URL}/reports/daily/${date}/pdf`);
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body?.error?.message ?? `HTTP ${res.status}`);
+  }
+  return res.blob();
+}
