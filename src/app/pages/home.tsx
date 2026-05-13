@@ -8,6 +8,8 @@ import {
   LayoutGrid,
   List,
   Tag,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useMemo, useState, useRef, useEffect, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -56,6 +58,7 @@ export function Home({
   const [groupBySubject, setGroupBySubject] = useState<boolean>(
     () => localStorage.getItem("home_groupBySubject") === "true",
   );
+  const [collapsedSubjects, setCollapsedSubjects] = useState<Set<string>>(new Set());
 
   const calendarRef = useRef<HTMLDivElement | null>(null);
 
@@ -253,6 +256,15 @@ export function Home({
     setShowDriveModal(false);
   }
 
+  function toggleSubjectCollapse(subject: string) {
+    setCollapsedSubjects((prev) => {
+      const next = new Set(prev);
+      if (next.has(subject)) next.delete(subject);
+      else next.add(subject);
+      return next;
+    });
+  }
+
   function getDriveStatus(id: string): DriveStatus {
     if (driveSendingId === id) return "sending";
     if (driveSentIds.has(id) && !driveNeedsUpdateIds.has(id)) return "sent";
@@ -431,56 +443,69 @@ export function Home({
         ) : grouped ? (
           /* ── Agrupado por assunto ─────────────────────────────────── */
           <div className="space-y-6">
-            {Array.from(grouped.entries()).map(([subject, occs]) => (
-              <div key={subject}>
-                <div className="flex items-center gap-2 mb-2">
-                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-                    {subject}
-                  </h3>
-                  <span className="text-xs text-gray-400 font-normal">
-                    ({occs.length})
-                  </span>
-                </div>
-                {viewMode === "list" ? (
-                  <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-                    <div className="flex items-center gap-0 bg-gray-50 border-b border-gray-200 text-[11px] font-semibold text-gray-400 uppercase tracking-wide" style={{ borderLeft: "3px solid transparent" }}>
-                      <div className="w-[70px] flex-shrink-0 px-3 py-2">Prefixo</div>
-                      <div className="w-[80px] flex-shrink-0 px-1 py-2 hidden sm:block">Base</div>
-                      <div className="flex-1 px-2 py-2">Ocorrência</div>
-                      <div className="w-[115px] flex-shrink-0 px-2 py-2 hidden sm:block">Horário</div>
-                      <div className="w-[170px] flex-shrink-0 px-2 py-2 hidden lg:block">Motorista</div>
-                      <div className="w-[140px] flex-shrink-0 px-1 py-2">Ações</div>
+            {Array.from(grouped.entries()).map(([subject, occs]) => {
+              const collapsed = collapsedSubjects.has(subject);
+              return (
+                <div key={subject}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                      {subject}
+                    </h3>
+                    <span className="text-xs text-gray-400 font-normal">
+                      ({occs.length})
+                    </span>
+                    <button
+                      onClick={() => toggleSubjectCollapse(subject)}
+                      title={collapsed ? "Mostrar ocorrências" : "Ocultar ocorrências"}
+                      className="cursor-pointer ml-auto p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                    >
+                      {collapsed
+                        ? <EyeOff className="w-3.5 h-3.5" />
+                        : <Eye className="w-3.5 h-3.5" />
+                      }
+                    </button>
+                  </div>
+                  {!collapsed && (viewMode === "list" ? (
+                    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                      <div className="flex items-center gap-0 bg-gray-50 border-b border-gray-200 text-[11px] font-semibold text-gray-400 uppercase tracking-wide" style={{ borderLeft: "3px solid transparent" }}>
+                        <div className="w-[70px] flex-shrink-0 px-3 py-2">Prefixo</div>
+                        <div className="w-[80px] flex-shrink-0 px-1 py-2 hidden sm:block">Base</div>
+                        <div className="flex-1 px-2 py-2">Ocorrência</div>
+                        <div className="w-[115px] flex-shrink-0 px-2 py-2 hidden sm:block">Horário</div>
+                        <div className="w-[170px] flex-shrink-0 px-2 py-2 hidden lg:block">Motorista</div>
+                        <div className="w-[140px] flex-shrink-0 px-1 py-2">Ações</div>
+                      </div>
+                      {occs.map((occ) => (
+                        <OccurrenceCard
+                          key={occ.id}
+                          compact
+                          occurrence={occ}
+                          onOpen={() => setPreviewId(occ.id)}
+                          onEditar={() => handleEditar(occ)}
+                          onExcluir={() => setExcluindoId(occ.id)}
+                          driveStatus={getDriveStatus(occ.id)}
+                          onSendToDrive={() => handleSendToDrive(occ.id)}
+                        />
+                      ))}
                     </div>
-                    {occs.map((occ) => (
-                      <OccurrenceCard
-                        key={occ.id}
-                        compact
-                        occurrence={occ}
-                        onOpen={() => setPreviewId(occ.id)}
-                        onEditar={() => handleEditar(occ)}
-                        onExcluir={() => setExcluindoId(occ.id)}
-                        driveStatus={getDriveStatus(occ.id)}
-                        onSendToDrive={() => handleSendToDrive(occ.id)}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {occs.map((occ) => (
-                      <OccurrenceCard
-                        key={occ.id}
-                        occurrence={occ}
-                        onOpen={() => setPreviewId(occ.id)}
-                        onEditar={() => handleEditar(occ)}
-                        onExcluir={() => setExcluindoId(occ.id)}
-                        driveStatus={getDriveStatus(occ.id)}
-                        onSendToDrive={() => handleSendToDrive(occ.id)}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {occs.map((occ) => (
+                        <OccurrenceCard
+                          key={occ.id}
+                          occurrence={occ}
+                          onOpen={() => setPreviewId(occ.id)}
+                          onEditar={() => handleEditar(occ)}
+                          onExcluir={() => setExcluindoId(occ.id)}
+                          driveStatus={getDriveStatus(occ.id)}
+                          onSendToDrive={() => handleSendToDrive(occ.id)}
+                        />
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
           </div>
         ) : viewMode === "list" ? (
           /* ── Lista compacta ──────────────────────────────────────── */
