@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import {
+  AlertTriangle,
   Plus,
   FileText,
   ChevronLeft,
@@ -37,7 +38,7 @@ import { reportsDriveApi } from "../../api/reportsDrive.api";
 import { getApiErrorMessage } from "../../api/http";
 import { useAdminAuth } from "../context/AdminAuthContext";
 import { AdminLoginModal } from "../components/AdminLoginModal";
-import { registerDisciplinaryOccurrence } from "../../api/automation.api";
+import { registerDisciplinaryOccurrence, fillMedidaLink } from "../../api/automation.api";
 import type { BatchOverlay } from "../components/OccurrenceCardDTO";
 import { useAutomationFolders } from "../../hooks/useAutomationFolders";
 import { AutomationFoldersModal } from "../components/AutomationFoldersModal";
@@ -68,6 +69,10 @@ export function Home({
   const [batchState, setBatchState] = useState<BatchState | null>(null);
   const batchCancelRef = useRef(false);
   const [batchConfirm, setBatchConfirm] = useState<{ subject: string; ids: string[] } | null>(null);
+
+  const [batchTratativaState, setBatchTratativaState] = useState<BatchState | null>(null);
+  const batchTrataivaCancelRef = useRef(false);
+  const [batchTratativaConfirm, setBatchTratativaConfirm] = useState<{ subject: string; ids: string[] } | null>(null);
 
   // ── Estados ──────────────────────────────────────────────
   const [selectedDate, setSelectedDate] = useState(() =>
@@ -239,6 +244,41 @@ export function Home({
     if (!batchState || batchState.subject !== subject) return undefined;
     if (batchState.currentId === occId) return "processing";
     if (batchState.ids.indexOf(occId) > batchState.ids.indexOf(batchState.currentId ?? "")) return "queued";
+    return undefined;
+  }
+
+  async function startBatchTratativa(subject: string, ids: string[]) {
+    if (!isAdmin || ids.length === 0) return;
+    if (!automationFolders.config) { setShowAutomationFolderModal(true); return; }
+    batchTrataivaCancelRef.current = false;
+    setBatchTratativaState({ subject, ids, currentId: null, doneCount: 0, cancelRequested: false });
+
+    for (let i = 0; i < ids.length; i++) {
+      if (batchTrataivaCancelRef.current) break;
+      const id = ids[i];
+      setBatchTratativaState(prev => prev ? { ...prev, currentId: id } : null);
+      try {
+        await fillMedidaLink(id, automationFolders.config.medidasFolderId);
+      } catch {
+        // falha individual não para a fila
+      }
+      setBatchTratativaState(prev => prev ? { ...prev, doneCount: i + 1, currentId: null } : null);
+    }
+
+    await queryClient.invalidateQueries({ queryKey: ["occurrences", "byCreationDate", selectedDate] });
+    setBatchTratativaState(null);
+    batchTrataivaCancelRef.current = false;
+  }
+
+  function cancelBatchTratativa() {
+    batchTrataivaCancelRef.current = true;
+    setBatchTratativaState(prev => prev ? { ...prev, cancelRequested: true } : null);
+  }
+
+  function getTratativaOverlay(occId: string, subject: string): BatchOverlay | undefined {
+    if (!batchTratativaState || batchTratativaState.subject !== subject) return undefined;
+    if (batchTratativaState.currentId === occId) return "processing";
+    if (batchTratativaState.ids.indexOf(occId) > batchTratativaState.ids.indexOf(batchTratativaState.currentId ?? "")) return "queued";
     return undefined;
   }
 
@@ -566,7 +606,9 @@ export function Home({
             {Array.from(grouped.entries()).map(([subject, occs]) => {
               const collapsed = collapsedSubjects.has(subject);
               const unregistered = occs.filter(o => !o.rizerRegistered);
+              const pendingTratativa = occs.filter(o => o.faltaTratativa);
               const isBatchRunning = batchState?.subject === subject;
+              const isBatchTratativaRunning = batchTratativaState?.subject === subject;
               return (
                 <div key={subject}>
                   <div className="flex items-center gap-2 mb-2">
@@ -578,13 +620,24 @@ export function Home({
                     </span>
 
                     {/* Botão "Registrar todas" */}
-                    {isAdmin && !batchState && unregistered.length > 0 && (
+                    {isAdmin && !batchState && !batchTratativaState && unregistered.length > 0 && (
                       <button
                         onClick={() => setBatchConfirm({ subject, ids: unregistered.map(o => o.id) })}
                         className="cursor-pointer inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border border-orange-200 bg-orange-50 text-orange-600 hover:bg-orange-100 transition-colors"
                       >
                         <Gavel className="w-3 h-3" />
                         Registrar todas ({unregistered.length})
+                      </button>
+                    )}
+
+                    {/* Botão "Enviar tratativas" */}
+                    {isAdmin && !batchState && !batchTratativaState && pendingTratativa.length > 0 && (
+                      <button
+                        onClick={() => setBatchTratativaConfirm({ subject, ids: pendingTratativa.map(o => o.id) })}
+                        className="cursor-pointer inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border border-amber-200 bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors"
+                      >
+                        <AlertTriangle className="w-3 h-3" />
+                        Enviar tratativas ({pendingTratativa.length})
                       </button>
                     )}
 
@@ -600,12 +653,10 @@ export function Home({
                     </button>
                   </div>
 
-                  {/* Banner de progresso */}
+                  {/* Banner de progresso — registro */}
                   {isBatchRunning && batchState && (
                     <div className="mb-2 flex items-center gap-3 px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg">
-                      {batchState.cancelRequested
-                        ? <Loader2 className="w-3.5 h-3.5 text-orange-400 animate-spin shrink-0" />
-                        : <Loader2 className="w-3.5 h-3.5 text-orange-500 animate-spin shrink-0" />}
+                      <Loader2 className="w-3.5 h-3.5 text-orange-500 animate-spin shrink-0" />
                       <span className="text-xs font-medium text-orange-700 flex-1">
                         {batchState.cancelRequested
                           ? "Cancelando após item atual..."
@@ -615,6 +666,26 @@ export function Home({
                         <button
                           onClick={cancelBatch}
                           className="cursor-pointer flex items-center gap-1 text-[10px] font-medium text-orange-500 hover:text-orange-700 transition-colors"
+                        >
+                          <X className="w-3 h-3" /> Cancelar
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Banner de progresso — tratativas */}
+                  {isBatchTratativaRunning && batchTratativaState && (
+                    <div className="mb-2 flex items-center gap-3 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
+                      <Loader2 className="w-3.5 h-3.5 text-amber-500 animate-spin shrink-0" />
+                      <span className="text-xs font-medium text-amber-700 flex-1">
+                        {batchTratativaState.cancelRequested
+                          ? "Cancelando após item atual..."
+                          : `Preenchendo tratativas… ${batchTratativaState.doneCount} de ${batchTratativaState.ids.length}`}
+                      </span>
+                      {!batchTratativaState.cancelRequested && (
+                        <button
+                          onClick={cancelBatchTratativa}
+                          className="cursor-pointer flex items-center gap-1 text-[10px] font-medium text-amber-500 hover:text-amber-700 transition-colors"
                         >
                           <X className="w-3 h-3" /> Cancelar
                         </button>
@@ -642,6 +713,7 @@ export function Home({
                           driveStatus={getDriveStatus(occ.id)}
                           onSendToDrive={() => handleSendToDrive(occ.id)}
                           batchOverlay={getBatchOverlay(occ.id, subject)}
+                          tratativaOverlay={getTratativaOverlay(occ.id, subject)}
                           relatoriosFolderId={automationFolders.config?.relatoriosFolderId}
                           medidasFolderId={automationFolders.config?.medidasFolderId}
                           onNeedFolderConfig={() => setShowAutomationFolderModal(true)}
@@ -660,6 +732,7 @@ export function Home({
                           driveStatus={getDriveStatus(occ.id)}
                           onSendToDrive={() => handleSendToDrive(occ.id)}
                           batchOverlay={getBatchOverlay(occ.id, subject)}
+                          tratativaOverlay={getTratativaOverlay(occ.id, subject)}
                           relatoriosFolderId={automationFolders.config?.relatoriosFolderId}
                           medidasFolderId={automationFolders.config?.medidasFolderId}
                           onNeedFolderConfig={() => setShowAutomationFolderModal(true)}
@@ -852,6 +925,54 @@ export function Home({
                   startBatch(subject, ids);
                 }}
                 className="px-4 py-2 text-sm rounded-lg bg-orange-500 text-white hover:bg-orange-600 transition-colors font-medium"
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmação do Batch de Tratativas */}
+      {batchTratativaConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setBatchTratativaConfirm(null)}
+          />
+          <div className="relative bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm mx-4">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 rounded-lg bg-amber-50">
+                <AlertTriangle className="w-5 h-5 text-amber-500" />
+              </div>
+              <h3 className="text-base font-semibold text-gray-900">
+                Enviar tratativas no RIZER?
+              </h3>
+            </div>
+            <p className="text-sm text-gray-600 mb-1">
+              Você está prestes a preencher a tratativa de{" "}
+              <span className="font-semibold text-gray-800">
+                {batchTratativaConfirm.ids.length} ocorrência{batchTratativaConfirm.ids.length !== 1 ? "s" : ""}
+              </span>{" "}
+              do assunto:
+            </p>
+            <p className="text-xs font-medium text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 mb-5">
+              {batchTratativaConfirm.subject}
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setBatchTratativaConfirm(null)}
+                className="px-4 py-2 text-sm rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  const { subject, ids } = batchTratativaConfirm;
+                  setBatchTratativaConfirm(null);
+                  startBatchTratativa(subject, ids);
+                }}
+                className="px-4 py-2 text-sm rounded-lg bg-amber-500 text-white hover:bg-amber-600 transition-colors font-medium"
               >
                 Confirmar
               </button>

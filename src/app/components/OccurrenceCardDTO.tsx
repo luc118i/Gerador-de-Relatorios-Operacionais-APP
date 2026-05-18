@@ -15,8 +15,9 @@ import {
   ShieldAlert,
   AlertTriangle,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { registerDisciplinaryOccurrence, fillMedidaLink } from "../../api/automation.api";
+import { getApiErrorMessage } from "../../api/http";
 import { toast } from "sonner";
 import { useAdminAuth } from "../context/AdminAuthContext";
 import { AdminLoginModal } from "./AdminLoginModal";
@@ -57,6 +58,7 @@ interface OccurrenceCardProps {
   driveStatus?: DriveStatus;
   onSendToDrive?: () => void;
   batchOverlay?: BatchOverlay;
+  tratativaOverlay?: BatchOverlay;
   relatoriosFolderId?: string;
   medidasFolderId?: string;
   onNeedFolderConfig?: () => void;
@@ -130,6 +132,7 @@ export function OccurrenceCard({
   driveStatus = "idle",
   onSendToDrive,
   batchOverlay,
+  tratativaOverlay,
   relatoriosFolderId,
   medidasFolderId,
   onNeedFolderConfig,
@@ -152,6 +155,16 @@ export function OccurrenceCard({
   );
   const [fillMedidaState, setFillMedidaState] = useState<"idle" | "loading" | "success">("idle");
 
+  // Sincroniza estado local quando o servidor atualiza (após refetch)
+  useEffect(() => {
+    setLocalFaltaTratativa(occurrence.faltaTratativa ?? false);
+  }, [occurrence.faltaTratativa]);
+  useEffect(() => {
+    if (occurrence.rizerRegistered) {
+      setDisciplinaryState(prev => prev === "idle" ? "success" : prev);
+    }
+  }, [occurrence.rizerRegistered]);
+
   async function handleFillMedida(e: React.MouseEvent) {
     e.stopPropagation();
     if (!isAdmin) { setShowAdminLogin(true); return; }
@@ -164,9 +177,8 @@ export function OccurrenceCard({
       setLocalFaltaTratativa(false);
       toast.success("Tratativa preenchida no RIZER!");
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Erro ao preencher tratativa.";
       setFillMedidaState("idle");
-      toast.error(msg);
+      toast.error(getApiErrorMessage(err, "Erro ao preencher tratativa."));
     }
   }
 
@@ -186,9 +198,8 @@ export function OccurrenceCard({
         toast.success("Ocorrência registrada no RIZER!");
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Erro ao registrar ocorrência.";
       setDisciplinaryState("error");
-      toast.error(msg);
+      toast.error(getApiErrorMessage(err, "Erro ao registrar ocorrência no RIZER."));
     }
   }
 
@@ -328,7 +339,7 @@ export function OccurrenceCard({
       )}
       <div
         className={`group relative flex items-center gap-0 bg-white border-b border-gray-100 transition-colors cursor-pointer ${
-          batchOverlay || disciplinaryState === "loading"
+          batchOverlay || tratativaOverlay || disciplinaryState === "loading" || fillMedidaState === "loading"
             ? "pointer-events-none"
             : localFaltaTratativa
               ? "hover:bg-amber-50/30"
@@ -347,12 +358,22 @@ export function OccurrenceCard({
         {disciplinaryState === "loading" && !batchOverlay && (
           <div className="absolute inset-0 z-10 flex items-center gap-1.5 px-3 bg-white/80 backdrop-blur-[1px] pointer-events-none">
             <Loader2 className="w-3.5 h-3.5 text-orange-400 animate-spin shrink-0" />
-            <span className="text-xs font-medium text-orange-600">Em execução...</span>
+            <span className="text-xs font-medium text-orange-600">Registrando no RIZER...</span>
+          </div>
+        )}
+        {(tratativaOverlay || fillMedidaState === "loading") && !batchOverlay && disciplinaryState !== "loading" && (
+          <div className="absolute inset-0 z-10 flex items-center gap-1.5 px-3 bg-amber-50/90 backdrop-blur-[1px] pointer-events-none">
+            {tratativaOverlay === "queued"
+              ? <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              : <Loader2 className="w-3.5 h-3.5 text-amber-500 animate-spin shrink-0" />}
+            <span className="text-xs font-medium text-amber-700">
+              {tratativaOverlay === "queued" ? "Aguardando tratativa..." : "Preenchendo tratativa..."}
+            </span>
           </div>
         )}
 
         {/* Overlay "Completar tratativa" — aparece no hover, cobre até o limite das AÇÕES */}
-        {localFaltaTratativa && !batchOverlay && (
+        {localFaltaTratativa && !batchOverlay && !tratativaOverlay && (
           <div
             className={`absolute inset-y-0 left-0 right-[148px] z-10 flex items-center justify-center transition-opacity backdrop-blur-[1px] ${
               fillMedidaState !== "idle" ? "opacity-100" : "opacity-0 group-hover:opacity-100"
@@ -584,7 +605,17 @@ export function OccurrenceCard({
       {disciplinaryState === "loading" && !batchOverlay && (
         <div className="absolute inset-0 z-10 rounded-lg flex flex-col items-center justify-center gap-2 bg-white/80 backdrop-blur-[2px] pointer-events-none">
           <Loader2 className="w-6 h-6 text-orange-400 animate-spin" />
-          <span className="text-xs font-medium text-orange-600">Em execução...</span>
+          <span className="text-xs font-medium text-orange-600">Registrando no RIZER...</span>
+        </div>
+      )}
+      {(tratativaOverlay || fillMedidaState === "loading") && !batchOverlay && disciplinaryState !== "loading" && (
+        <div className="absolute inset-0 z-10 rounded-lg flex flex-col items-center justify-center gap-2 bg-amber-50/90 backdrop-blur-[2px] pointer-events-none">
+          {tratativaOverlay === "queued"
+            ? <Clock className="w-5 h-5 text-amber-400" />
+            : <Loader2 className="w-6 h-6 text-amber-500 animate-spin" />}
+          <span className="text-xs font-medium text-amber-700">
+            {tratativaOverlay === "queued" ? "Aguardando tratativa..." : "Preenchendo tratativa..."}
+          </span>
         </div>
       )}
       {/* Cabeçalho */}
