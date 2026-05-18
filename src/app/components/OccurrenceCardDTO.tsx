@@ -3,6 +3,7 @@ import {
   Check,
   Clock,
   FileText,
+  FolderOpen,
   Gavel,
   ImageOff,
   Loader2,
@@ -57,6 +58,8 @@ interface OccurrenceCardProps {
   onSendToDrive?: () => void;
   batchOverlay?: BatchOverlay;
   relatoriosFolderId?: string;
+  medidasFolderId?: string;
+  onNeedFolderConfig?: () => void;
 }
 
 export type OccurrenceDetailDTO = OccurrenceDTO & {
@@ -128,6 +131,8 @@ export function OccurrenceCard({
   onSendToDrive,
   batchOverlay,
   relatoriosFolderId,
+  medidasFolderId,
+  onNeedFolderConfig,
 }: OccurrenceCardProps) {
   const [loadingEdit, setLoadingEdit] = useState(false);
   const [copiedWpp, setCopiedWpp] = useState(false);
@@ -151,9 +156,10 @@ export function OccurrenceCard({
     e.stopPropagation();
     if (!isAdmin) { setShowAdminLogin(true); return; }
     if (fillMedidaState === "loading" || fillMedidaState === "success") return;
+    if (!medidasFolderId) { onNeedFolderConfig?.(); return; }
     setFillMedidaState("loading");
     try {
-      await fillMedidaLink(occurrence.id, relatoriosFolderId);
+      await fillMedidaLink(occurrence.id, medidasFolderId);
       setFillMedidaState("success");
       setLocalFaltaTratativa(false);
       toast.success("Tratativa preenchida no RIZER!");
@@ -168,9 +174,10 @@ export function OccurrenceCard({
     e.stopPropagation();
     if (!isAdmin) { setShowAdminLogin(true); return; }
     if (disciplinaryState === "loading" || disciplinaryState === "success") return;
+    if (!relatoriosFolderId || !medidasFolderId) { onNeedFolderConfig?.(); return; }
     setDisciplinaryState("loading");
     try {
-      const res = await registerDisciplinaryOccurrence(occurrence.id, relatoriosFolderId);
+      const res = await registerDisciplinaryOccurrence(occurrence.id, relatoriosFolderId, medidasFolderId);
       setDisciplinaryState("success");
       if (res.faltaTratativa) {
         setLocalFaltaTratativa(true);
@@ -321,7 +328,7 @@ export function OccurrenceCard({
       )}
       <div
         className={`group relative flex items-center gap-0 bg-white border-b border-gray-100 transition-colors cursor-pointer ${
-          batchOverlay
+          batchOverlay || disciplinaryState === "loading"
             ? "pointer-events-none"
             : localFaltaTratativa
               ? "hover:bg-amber-50/30"
@@ -335,6 +342,12 @@ export function OccurrenceCard({
             {batchOverlay === "processing"
               ? <Loader2 className="w-4 h-4 text-orange-400 animate-spin" />
               : <Clock className="w-3.5 h-3.5 text-gray-300" />}
+          </div>
+        )}
+        {disciplinaryState === "loading" && !batchOverlay && (
+          <div className="absolute inset-0 z-10 flex items-center gap-1.5 px-3 bg-white/80 backdrop-blur-[1px] pointer-events-none">
+            <Loader2 className="w-3.5 h-3.5 text-orange-400 animate-spin shrink-0" />
+            <span className="text-xs font-medium text-orange-600">Em execução...</span>
           </div>
         )}
 
@@ -566,6 +579,12 @@ export function OccurrenceCard({
           {batchOverlay === "processing"
             ? <><Loader2 className="w-6 h-6 text-orange-400 animate-spin" /><span className="text-xs font-medium text-orange-500">Registrando...</span></>
             : <><Clock className="w-5 h-5 text-gray-300" /><span className="text-xs text-gray-400">Na fila</span></>}
+        </div>
+      )}
+      {disciplinaryState === "loading" && !batchOverlay && (
+        <div className="absolute inset-0 z-10 rounded-lg flex flex-col items-center justify-center gap-2 bg-white/80 backdrop-blur-[2px] pointer-events-none">
+          <Loader2 className="w-6 h-6 text-orange-400 animate-spin" />
+          <span className="text-xs font-medium text-orange-600">Em execução...</span>
         </div>
       )}
       {/* Cabeçalho */}

@@ -5,6 +5,8 @@ const STORAGE_KEY = "automation_folders";
 export type AutomationFolders = {
   relatoriosFolderId: string;
   relatoriosFolderName: string;
+  medidasFolderId: string;
+  medidasFolderName: string;
 };
 
 export function useAutomationFolders() {

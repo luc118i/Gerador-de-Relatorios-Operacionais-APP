@@ -40,6 +40,7 @@ import { AdminLoginModal } from "../components/AdminLoginModal";
 import { registerDisciplinaryOccurrence } from "../../api/automation.api";
 import type { BatchOverlay } from "../components/OccurrenceCardDTO";
 import { useAutomationFolders } from "../../hooks/useAutomationFolders";
+import { AutomationFoldersModal } from "../components/AutomationFoldersModal";
 import { FolderOpen } from "lucide-react";
 
 interface HomeProps {
@@ -213,7 +214,11 @@ export function Home({
       const id = ids[i];
       setBatchState(prev => prev ? { ...prev, currentId: id } : null);
       try {
-        await registerDisciplinaryOccurrence(id, automationFolders.config?.relatoriosFolderId);
+        await registerDisciplinaryOccurrence(
+          id,
+          automationFolders.config?.relatoriosFolderId,
+          automationFolders.config?.medidasFolderId,
+        );
       } catch {
         // falha individual não para a fila
       }
@@ -426,10 +431,12 @@ export function Home({
                       onClick={() => setShowAutomationFolderModal(true)}
                       className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-t-lg transition-colors"
                     >
-                      <FolderOpen className="w-3.5 h-3.5" />
-                      {automationFolders.config
-                        ? <span className="truncate" title={automationFolders.config.relatoriosFolderName}>{automationFolders.config.relatoriosFolderName}</span>
-                        : "Pasta de relatórios"}
+                      <FolderOpen className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">
+                        {automationFolders.config
+                          ? `${automationFolders.config.relatoriosFolderName} / ${automationFolders.config.medidasFolderName}`
+                          : "Pastas de automação"}
+                      </span>
                     </button>
                     <button
                       onClick={logout}
@@ -636,6 +643,8 @@ export function Home({
                           onSendToDrive={() => handleSendToDrive(occ.id)}
                           batchOverlay={getBatchOverlay(occ.id, subject)}
                           relatoriosFolderId={automationFolders.config?.relatoriosFolderId}
+                          medidasFolderId={automationFolders.config?.medidasFolderId}
+                          onNeedFolderConfig={() => setShowAutomationFolderModal(true)}
                         />
                       ))}
                     </div>
@@ -652,6 +661,8 @@ export function Home({
                           onSendToDrive={() => handleSendToDrive(occ.id)}
                           batchOverlay={getBatchOverlay(occ.id, subject)}
                           relatoriosFolderId={automationFolders.config?.relatoriosFolderId}
+                          medidasFolderId={automationFolders.config?.medidasFolderId}
+                          onNeedFolderConfig={() => setShowAutomationFolderModal(true)}
                         />
                       ))}
                     </div>
@@ -683,6 +694,8 @@ export function Home({
                 driveStatus={getDriveStatus(occ.id)}
                 onSendToDrive={() => handleSendToDrive(occ.id)}
                 relatoriosFolderId={automationFolders.config?.relatoriosFolderId}
+                medidasFolderId={automationFolders.config?.medidasFolderId}
+                onNeedFolderConfig={() => setShowAutomationFolderModal(true)}
               />
             ))}
           </div>
@@ -699,6 +712,8 @@ export function Home({
                 driveStatus={getDriveStatus(occ.id)}
                 onSendToDrive={() => handleSendToDrive(occ.id)}
                 relatoriosFolderId={automationFolders.config?.relatoriosFolderId}
+                medidasFolderId={automationFolders.config?.medidasFolderId}
+                onNeedFolderConfig={() => setShowAutomationFolderModal(true)}
               />
             ))}
           </div>
@@ -776,19 +791,12 @@ export function Home({
         </div>
       )}
 
-      {/* Modal de Configuração da Pasta de Relatórios (automação RIZER) */}
+      {/* Modal de Configuração das Pastas de Automação (RIZER) */}
       {showAutomationFolderModal && (
-        <DrivePickerModal
-          currentConfig={
-            automationFolders.config
-              ? { folderId: automationFolders.config.relatoriosFolderId, folderName: automationFolders.config.relatoriosFolderName }
-              : null
-          }
-          onConfirm={(args) => {
-            automationFolders.save({
-              relatoriosFolderId: args.config.folderId,
-              relatoriosFolderName: args.config.folderName,
-            });
+        <AutomationFoldersModal
+          current={automationFolders.config}
+          onConfirm={(data) => {
+            automationFolders.save(data);
             setShowAutomationFolderModal(false);
           }}
           onClose={() => setShowAutomationFolderModal(false)}
