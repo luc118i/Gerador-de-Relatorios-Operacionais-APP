@@ -3,6 +3,7 @@ import {
   Check,
   Clock,
   FileText,
+  Gavel,
   ImageOff,
   Loader2,
   MessageCircle,
@@ -11,9 +12,13 @@ import {
   Trash2,
   Zap,
   ShieldAlert,
+  AlertTriangle,
 } from "lucide-react";
 import { useState } from "react";
+import { registerDisciplinaryOccurrence } from "../../api/automation.api";
 import { toast } from "sonner";
+import { useAdminAuth } from "../context/AdminAuthContext";
+import { AdminLoginModal } from "./AdminLoginModal";
 import type { OccurrenceDTO } from "../../domain/occurrences";
 import type { Ocorrencia } from "../types";
 import {
@@ -40,6 +45,7 @@ function DriveIcon({ className }: { className?: string }) {
 }
 
 export type DriveStatus = "idle" | "sending" | "sent";
+export type BatchOverlay = "queued" | "processing";
 
 interface OccurrenceCardProps {
   occurrence: OccurrenceDTO;
@@ -49,6 +55,7 @@ interface OccurrenceCardProps {
   compact?: boolean;
   driveStatus?: DriveStatus;
   onSendToDrive?: () => void;
+  batchOverlay?: BatchOverlay;
 }
 
 export type OccurrenceDetailDTO = OccurrenceDTO & {
@@ -108,6 +115,8 @@ function dtoToMinimalOcorrencia(occ: OccurrenceDTO): Ocorrencia {
   };
 }
 
+type DisciplinaryState = "idle" | "loading" | "success" | "error";
+
 export function OccurrenceCard({
   occurrence,
   onOpen,
@@ -116,14 +125,45 @@ export function OccurrenceCard({
   compact = false,
   driveStatus = "idle",
   onSendToDrive,
+  batchOverlay,
 }: OccurrenceCardProps) {
   const [loadingEdit, setLoadingEdit] = useState(false);
   const [copiedWpp, setCopiedWpp] = useState(false);
   const [copiedRelat, setCopiedRelat] = useState(false);
   const [loadingAiWpp, setLoadingAiWpp] = useState(false);
   const [loadingAiRelat, setLoadingAiRelat] = useState(false);
+  const { isAdmin } = useAdminAuth();
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [showSuspensaoModal, setShowSuspensaoModal] = useState(false);
   const [localSuspensao, setLocalSuspensao] = useState(occurrence.suspensao ?? null);
+
+  const [disciplinaryState, setDisciplinaryState] = useState<DisciplinaryState>(
+    occurrence.rizerRegistered ? "success" : "idle"
+  );
+  const [localFaltaTratativa, setLocalFaltaTratativa] = useState<boolean>(
+    occurrence.faltaTratativa ?? false
+  );
+
+  async function handleRegisterDisciplinary(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!isAdmin) { setShowAdminLogin(true); return; }
+    if (disciplinaryState === "loading" || disciplinaryState === "success") return;
+    setDisciplinaryState("loading");
+    try {
+      const res = await registerDisciplinaryOccurrence(occurrence.id);
+      setDisciplinaryState("success");
+      if (res.faltaTratativa) {
+        setLocalFaltaTratativa(true);
+        toast.warning("Registrado no RIZER, mas falta a tratativa no Drive.");
+      } else {
+        toast.success("Ocorrência registrada no RIZER!");
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erro ao registrar ocorrência.";
+      setDisciplinaryState("error");
+      toast.error(msg);
+    }
+  }
 
   const isAnaliseOp = occurrence.typeCode === "ANALISE_OP";
 
@@ -251,6 +291,7 @@ export function OccurrenceCard({
 
     return (
       <>
+      {showAdminLogin && <AdminLoginModal onClose={() => setShowAdminLogin(false)} />}
       {showSuspensaoModal && (
         <SuspensaoModal
           occurrence={{ ...occurrence, suspensao: localSuspensao }}
@@ -259,10 +300,17 @@ export function OccurrenceCard({
         />
       )}
       <div
-        className="group flex items-center gap-0 bg-white border-b border-gray-100 hover:bg-blue-50/40 transition-colors cursor-pointer"
+        className={`group relative flex items-center gap-0 bg-white border-b border-gray-100 transition-colors cursor-pointer ${batchOverlay ? "pointer-events-none" : "hover:bg-blue-50/40"}`}
         style={{ borderLeft: `3px solid ${baseColor}` }}
         onClick={onOpen}
       >
+        {batchOverlay && (
+          <div className="absolute inset-0 z-10 flex items-center justify-end pr-3 bg-white/70 backdrop-blur-[1px]">
+            {batchOverlay === "processing"
+              ? <Loader2 className="w-4 h-4 text-orange-400 animate-spin" />
+              : <Clock className="w-3.5 h-3.5 text-gray-300" />}
+          </div>
+        )}
         {/* Prefixo */}
         <div className="w-[70px] flex-shrink-0 px-3 py-2.5">
           <span className="font-bold text-sm text-gray-900 tabular-nums">
@@ -297,6 +345,12 @@ export function OccurrenceCard({
               <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-orange-100 text-orange-600 font-semibold text-[10px] leading-none whitespace-nowrap flex-shrink-0">
                 <ImageOff className="w-2.5 h-2.5" />
                 Sem evidência
+              </span>
+            )}
+            {localFaltaTratativa && (
+              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-semibold text-[10px] leading-none whitespace-nowrap flex-shrink-0">
+                <AlertTriangle className="w-2.5 h-2.5" />
+                Falta a tratativa
               </span>
             )}
           </div>
@@ -378,6 +432,31 @@ export function OccurrenceCard({
             <ShieldAlert className="w-3.5 h-3.5" />
           </button>
           <button
+            onClick={disciplinaryState === "success" ? undefined : handleRegisterDisciplinary}
+            title={
+              disciplinaryState === "success"
+                ? "Já registrada no RIZER"
+                : !isAdmin
+                  ? "Registrar no RIZER (admin)"
+                  : "Registrar no RIZER"
+            }
+            className={`p-2 rounded transition-colors ${
+              disciplinaryState === "success"
+                ? "text-emerald-500 cursor-default"
+                : disciplinaryState === "loading"
+                  ? "text-orange-500 bg-orange-50"
+                  : !isAdmin
+                    ? "text-gray-300 hover:text-orange-400 hover:bg-orange-50"
+                    : "text-gray-400 hover:text-orange-600 hover:bg-orange-50"
+            }`}
+          >
+            {disciplinaryState === "loading"
+              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              : disciplinaryState === "success"
+                ? <Check className="w-3.5 h-3.5" />
+                : <Gavel className="w-3.5 h-3.5" />}
+          </button>
+          <button
             onClick={(e) => { e.stopPropagation(); onExcluir?.(); }}
             title="Excluir"
             className="p-2 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
@@ -415,13 +494,21 @@ export function OccurrenceCard({
   // ── Modo card ──────────────────────────────────────────────────────────────
   return (
     <>
+    {showAdminLogin && <AdminLoginModal onClose={() => setShowAdminLogin(false)} />}
     {showSuspensaoModal && (
       <SuspensaoModal occurrence={occurrence} onClose={() => setShowSuspensaoModal(false)} />
     )}
     <div
-      className="group bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+      className={`group relative bg-white border border-gray-200 rounded-lg p-4 transition-shadow cursor-pointer ${batchOverlay ? "pointer-events-none" : "hover:shadow-md"}`}
       onClick={onOpen}
     >
+      {batchOverlay && (
+        <div className="absolute inset-0 z-10 rounded-lg flex flex-col items-center justify-center gap-2 bg-white/75 backdrop-blur-[2px]">
+          {batchOverlay === "processing"
+            ? <><Loader2 className="w-6 h-6 text-orange-400 animate-spin" /><span className="text-xs font-medium text-orange-500">Registrando...</span></>
+            : <><Clock className="w-5 h-5 text-gray-300" /><span className="text-xs text-gray-400">Na fila</span></>}
+        </div>
+      )}
       {/* Cabeçalho */}
       <div className="flex items-start justify-between mb-3">
         <div>
@@ -433,17 +520,25 @@ export function OccurrenceCard({
           </div>
           <p className="text-sm text-gray-600">{subject}</p>
         </div>
-        {occurrence.typeCode === "DESCUMP_OP_PARADA_FORA" && (occurrence.evidenceCount ?? 0) === 0 ? (
-          <div className="flex items-center gap-1 bg-orange-50 border border-orange-200 text-orange-600 px-2 py-1 rounded">
-            <ImageOff className="w-3.5 h-3.5" />
-            <span className="text-xs font-semibold">Sem evidência</span>
-          </div>
-        ) : occurrence.evidenceCount > 0 ? (
-          <div className="flex items-center gap-1 text-gray-600 bg-gray-50 px-2 py-1 rounded">
-            <Camera className="w-4 h-4" />
-            <span className="text-sm font-medium">{occurrence.evidenceCount}</span>
-          </div>
-        ) : null}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {occurrence.typeCode === "DESCUMP_OP_PARADA_FORA" && (occurrence.evidenceCount ?? 0) === 0 ? (
+            <div className="flex items-center gap-1 bg-orange-50 border border-orange-200 text-orange-600 px-2 py-1 rounded">
+              <ImageOff className="w-3.5 h-3.5" />
+              <span className="text-xs font-semibold">Sem evidência</span>
+            </div>
+          ) : occurrence.evidenceCount > 0 ? (
+            <div className="flex items-center gap-1 text-gray-600 bg-gray-50 px-2 py-1 rounded">
+              <Camera className="w-4 h-4" />
+              <span className="text-sm font-medium">{occurrence.evidenceCount}</span>
+            </div>
+          ) : null}
+          {localFaltaTratativa && (
+            <div className="flex items-center gap-1 bg-amber-50 border border-amber-200 text-amber-700 px-2 py-1 rounded">
+              <AlertTriangle className="w-3.5 h-3.5" />
+              <span className="text-xs font-semibold">Falta a tratativa</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Corpo */}
@@ -572,7 +667,7 @@ export function OccurrenceCard({
           )}
         </div>
 
-        {/* Linha 3: Suspensão */}
+        {/* Linha 3: Suspensão + Registrar Disciplinar */}
         <div className="flex gap-2">
           <button
             onClick={() => setShowSuspensaoModal(true)}
@@ -585,7 +680,27 @@ export function OccurrenceCard({
             <ShieldAlert className="w-3.5 h-3.5" />
             {localSuspensao ? "Ver Suspensão" : "Gerar Suspensão"}
           </button>
+          <button
+            onClick={disciplinaryState === "success" ? undefined : handleRegisterDisciplinary}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs rounded-md transition-colors ${
+              disciplinaryState === "success"
+                ? "text-emerald-600 bg-emerald-50 cursor-default"
+                : disciplinaryState === "loading"
+                  ? "text-orange-600 bg-orange-50"
+                  : !isAdmin
+                    ? "text-gray-400 hover:text-orange-500 hover:bg-orange-50"
+                    : "text-gray-500 hover:text-orange-700 hover:bg-orange-50"
+            }`}
+          >
+            {disciplinaryState === "loading"
+              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              : disciplinaryState === "success"
+                ? <Check className="w-3.5 h-3.5" />
+                : <Gavel className="w-3.5 h-3.5" />}
+            {disciplinaryState === "loading" ? "Registrando..." : disciplinaryState === "success" ? "Registrado!" : "Registrar RIZER"}
+          </button>
         </div>
+
       </div>
     </div>
     </>

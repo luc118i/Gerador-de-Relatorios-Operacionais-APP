@@ -10,6 +10,12 @@ import {
   Tag,
   Eye,
   EyeOff,
+  Lock,
+  ShieldCheck,
+  LogOut,
+  Gavel,
+  Loader2,
+  X,
 } from "lucide-react";
 import { useMemo, useState, useRef, useEffect, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -29,6 +35,10 @@ import { useDriveFolder } from "../../hooks/useDriveFolder";
 import { requestDriveToken } from "../../utils/googleAuth";
 import { reportsDriveApi } from "../../api/reportsDrive.api";
 import { getApiErrorMessage } from "../../api/http";
+import { useAdminAuth } from "../context/AdminAuthContext";
+import { AdminLoginModal } from "../components/AdminLoginModal";
+import { registerDisciplinaryOccurrence } from "../../api/automation.api";
+import type { BatchOverlay } from "../components/OccurrenceCardDTO";
 
 interface HomeProps {
   onNovaOcorrencia: () => void;
@@ -42,6 +52,19 @@ export function Home({
   onGerenciarMotoristas,
 }: HomeProps) {
   const queryClient = useQueryClient();
+  const { isAdmin, logout } = useAdminAuth();
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
+
+  type BatchState = {
+    subject: string;
+    ids: string[];
+    currentId: string | null;
+    doneCount: number;
+    cancelRequested: boolean;
+  };
+  const [batchState, setBatchState] = useState<BatchState | null>(null);
+  const batchCancelRef = useRef(false);
+  const [batchConfirm, setBatchConfirm] = useState<{ subject: string; ids: string[] } | null>(null);
 
   // ── Estados ──────────────────────────────────────────────
   const [selectedDate, setSelectedDate] = useState(() =>
@@ -174,6 +197,40 @@ export function Home({
     setCalendarVisible(false);
   }
 
+  async function startBatch(subject: string, ids: string[]) {
+    if (!isAdmin || ids.length === 0) return;
+    batchCancelRef.current = false;
+    setBatchState({ subject, ids, currentId: null, doneCount: 0, cancelRequested: false });
+
+    for (let i = 0; i < ids.length; i++) {
+      if (batchCancelRef.current) break;
+      const id = ids[i];
+      setBatchState(prev => prev ? { ...prev, currentId: id } : null);
+      try {
+        await registerDisciplinaryOccurrence(id);
+      } catch {
+        // falha individual não para a fila
+      }
+      setBatchState(prev => prev ? { ...prev, doneCount: i + 1, currentId: null } : null);
+    }
+
+    await queryClient.invalidateQueries({ queryKey: ["occurrences", "byCreationDate", selectedDate] });
+    setBatchState(null);
+    batchCancelRef.current = false;
+  }
+
+  function cancelBatch() {
+    batchCancelRef.current = true;
+    setBatchState(prev => prev ? { ...prev, cancelRequested: true } : null);
+  }
+
+  function getBatchOverlay(occId: string, subject: string): BatchOverlay | undefined {
+    if (!batchState || batchState.subject !== subject) return undefined;
+    if (batchState.currentId === occId) return "processing";
+    if (batchState.ids.indexOf(occId) > batchState.ids.indexOf(batchState.currentId ?? "")) return "queued";
+    return undefined;
+  }
+
   async function handleEditar(occ: OccurrenceDTO) {
     try {
       const full = await occurrencesApi.getOccurrenceById(occ.id);
@@ -280,6 +337,8 @@ export function Home({
   // ── Render ────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gray-50">
+      {showAdminLogin && <AdminLoginModal onClose={() => setShowAdminLogin(false)} />}
+
       {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -342,6 +401,39 @@ export function Home({
               <ActionBtn onClick={onNovaOcorrencia} tooltip="Nova Ocorrência" primary>
                 <Plus className="w-4 h-4" />
               </ActionBtn>
+
+              {/* Separador */}
+              <div className="w-px h-5 bg-gray-200 mx-0.5" />
+
+              {/* Admin */}
+              {isAdmin ? (
+                <div className="relative group/admin">
+                  <button
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors"
+                    title="Logado como Admin"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Admin</span>
+                  </button>
+                  <div className="absolute right-0 top-full mt-1 w-36 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 pointer-events-none group-hover/admin:opacity-100 group-hover/admin:pointer-events-auto transition-opacity z-50">
+                    <button
+                      onClick={logout}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      Sair da conta admin
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowAdminLogin(true)}
+                  className="p-1.5 rounded-lg text-gray-300 hover:text-gray-500 hover:bg-gray-100 transition-colors"
+                  title="Entrar como Admin"
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -451,6 +543,8 @@ export function Home({
           <div className="space-y-6">
             {Array.from(grouped.entries()).map(([subject, occs]) => {
               const collapsed = collapsedSubjects.has(subject);
+              const unregistered = occs.filter(o => !o.rizerRegistered);
+              const isBatchRunning = batchState?.subject === subject;
               return (
                 <div key={subject}>
                   <div className="flex items-center gap-2 mb-2">
@@ -460,6 +554,18 @@ export function Home({
                     <span className="text-xs text-gray-400 font-normal">
                       ({occs.length})
                     </span>
+
+                    {/* Botão "Registrar todas" */}
+                    {isAdmin && !batchState && unregistered.length > 0 && (
+                      <button
+                        onClick={() => setBatchConfirm({ subject, ids: unregistered.map(o => o.id) })}
+                        className="cursor-pointer inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border border-orange-200 bg-orange-50 text-orange-600 hover:bg-orange-100 transition-colors"
+                      >
+                        <Gavel className="w-3 h-3" />
+                        Registrar todas ({unregistered.length})
+                      </button>
+                    )}
+
                     <button
                       onClick={() => toggleSubjectCollapse(subject)}
                       title={collapsed ? "Mostrar ocorrências" : "Ocultar ocorrências"}
@@ -471,6 +577,28 @@ export function Home({
                       }
                     </button>
                   </div>
+
+                  {/* Banner de progresso */}
+                  {isBatchRunning && batchState && (
+                    <div className="mb-2 flex items-center gap-3 px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg">
+                      {batchState.cancelRequested
+                        ? <Loader2 className="w-3.5 h-3.5 text-orange-400 animate-spin shrink-0" />
+                        : <Loader2 className="w-3.5 h-3.5 text-orange-500 animate-spin shrink-0" />}
+                      <span className="text-xs font-medium text-orange-700 flex-1">
+                        {batchState.cancelRequested
+                          ? "Cancelando após item atual..."
+                          : `Registrando no RIZER… ${batchState.doneCount} de ${batchState.ids.length}`}
+                      </span>
+                      {!batchState.cancelRequested && (
+                        <button
+                          onClick={cancelBatch}
+                          className="cursor-pointer flex items-center gap-1 text-[10px] font-medium text-orange-500 hover:text-orange-700 transition-colors"
+                        >
+                          <X className="w-3 h-3" /> Cancelar
+                        </button>
+                      )}
+                    </div>
+                  )}
                   {!collapsed && (viewMode === "list" ? (
                     <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
                       <div className="flex items-center gap-0 bg-gray-50 border-b border-gray-200 text-[11px] font-semibold text-gray-400 uppercase tracking-wide" style={{ borderLeft: "3px solid transparent" }}>
@@ -491,6 +619,7 @@ export function Home({
                           onExcluir={() => setExcluindoId(occ.id)}
                           driveStatus={getDriveStatus(occ.id)}
                           onSendToDrive={() => handleSendToDrive(occ.id)}
+                          batchOverlay={getBatchOverlay(occ.id, subject)}
                         />
                       ))}
                     </div>
@@ -505,6 +634,7 @@ export function Home({
                           onExcluir={() => setExcluindoId(occ.id)}
                           driveStatus={getDriveStatus(occ.id)}
                           onSendToDrive={() => handleSendToDrive(occ.id)}
+                          batchOverlay={getBatchOverlay(occ.id, subject)}
                         />
                       ))}
                     </div>
@@ -634,6 +764,54 @@ export function Home({
           onConfirm={handleDriveConfirm}
           onClose={() => setShowDriveModal(false)}
         />
+      )}
+
+      {/* Modal de Confirmação do Batch */}
+      {batchConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setBatchConfirm(null)}
+          />
+          <div className="relative bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm mx-4">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 rounded-lg bg-orange-50">
+                <Gavel className="w-5 h-5 text-orange-500" />
+              </div>
+              <h3 className="text-base font-semibold text-gray-900">
+                Registrar no RIZER?
+              </h3>
+            </div>
+            <p className="text-sm text-gray-600 mb-1">
+              Você está prestes a registrar{" "}
+              <span className="font-semibold text-gray-800">
+                {batchConfirm.ids.length} ocorrência{batchConfirm.ids.length !== 1 ? "s" : ""}
+              </span>{" "}
+              do assunto:
+            </p>
+            <p className="text-xs font-medium text-orange-700 bg-orange-50 border border-orange-100 rounded-lg px-3 py-2 mb-5">
+              {batchConfirm.subject}
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setBatchConfirm(null)}
+                className="px-4 py-2 text-sm rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  const { subject, ids } = batchConfirm;
+                  setBatchConfirm(null);
+                  startBatch(subject, ids);
+                }}
+                className="px-4 py-2 text-sm rounded-lg bg-orange-500 text-white hover:bg-orange-600 transition-colors font-medium"
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Modal de Confirmação de Exclusão */}

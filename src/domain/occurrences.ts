@@ -101,6 +101,9 @@ export type OccurrenceDTO = {
   showSectionPassageiros?: boolean | null;
   devolutivaBeforeEvidences?: boolean | null;
   suspensao?: { dataInicio: string; dias: number } | null;
+  rizerRegistered?: boolean;
+  advertencia?: boolean;
+  faltaTratativa?: boolean;
 };
 
 export type CreateOccurrenceFormInput = {

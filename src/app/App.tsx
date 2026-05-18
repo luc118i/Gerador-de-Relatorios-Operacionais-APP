@@ -7,6 +7,7 @@ import { Ocorrencia } from "./types";
 import { toast, Toaster } from "sonner";
 import { OccurrencePreviewPage } from "./pages/occurrences/preview/OccurrencePreviewPage";
 import { DriversPage } from "./pages/DriversPage";
+import { AdminAuthProvider } from "./context/AdminAuthContext";
 
 type Page =
   | "home"
@@ -39,6 +40,7 @@ export default function App() {
   };
 
   return (
+    <AdminAuthProvider>
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Toaster position="top-right" />
 
@@ -92,5 +94,6 @@ export default function App() {
         </div>
       </footer>
     </div>
+    </AdminAuthProvider>
   );
 }

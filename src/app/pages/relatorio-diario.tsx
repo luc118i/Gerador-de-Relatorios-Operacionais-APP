@@ -21,7 +21,13 @@ import {
   FileText,
   MessageCircle,
   Printer,
+  ShieldAlert,
+  Gavel,
+  Loader2,
 } from "lucide-react";
+import { registerDisciplinaryOccurrence } from "../../api/automation.api";
+import { useAdminAuth } from "../context/AdminAuthContext";
+import { AdminLoginModal } from "../components/AdminLoginModal";
 import {
   BarChart,
   Bar,
@@ -879,6 +885,9 @@ function FChip({
   );
 }
 
+type DisciplinaryState = "idle" | "loading" | "success" | "error";
+
+
 function OccurrenceRow({
   occurrence: o,
   expanded,
@@ -890,6 +899,28 @@ function OccurrenceRow({
 }) {
   const severity = getSeverity(o);
   const driver = o.drivers[0];
+
+  const { isAdmin } = useAdminAuth();
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [disciplinaryState, setDisciplinaryState] = useState<DisciplinaryState>(
+    o.rizerRegistered ? "success" : "idle"
+  );
+  const [localFaltaTratativa, setLocalFaltaTratativa] = useState<boolean>(
+    o.faltaTratativa ?? false
+  );
+
+  async function handleRegisterDisciplinary() {
+    if (!isAdmin) { setShowAdminLogin(true); return; }
+    if (disciplinaryState === "loading" || disciplinaryState === "success") return;
+    setDisciplinaryState("loading");
+    try {
+      const res = await registerDisciplinaryOccurrence(o.id);
+      setDisciplinaryState("success");
+      if (res.faltaTratativa) setLocalFaltaTratativa(true);
+    } catch (err: unknown) {
+      setDisciplinaryState("error");
+    }
+  }
 
   const typeBadgeStyle: Record<string, string> = {
     EXCESSO_VELOCIDADE: "bg-red-100 text-red-700",
@@ -987,6 +1018,41 @@ function OccurrenceRow({
                 value={`${d.name} · ${d.registry}`}
               />
             ))}
+          </div>
+
+          {/* ── Ação: Registrar Ocorrência Disciplinar ──────────────────── */}
+          {showAdminLogin && <AdminLoginModal onClose={() => setShowAdminLogin(false)} />}
+          <div className="mt-4 border-l-2 border-orange-100 pl-4 flex items-center gap-3 flex-wrap">
+            <button
+              onClick={() => void handleRegisterDisciplinary()}
+              disabled={disciplinaryState === "loading"}
+              className={`cursor-pointer inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors disabled:opacity-50 ${
+                disciplinaryState === "success"
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700 cursor-default"
+                  : disciplinaryState === "error"
+                    ? "border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
+                    : "border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100"
+              }`}
+            >
+              {disciplinaryState === "loading"
+                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                : disciplinaryState === "success"
+                  ? <Check className="w-3.5 h-3.5" />
+                  : <Gavel className="w-3.5 h-3.5" />}
+              {disciplinaryState === "loading"
+                ? "Registrando..."
+                : disciplinaryState === "success"
+                  ? "Registrado no RIZER"
+                  : disciplinaryState === "error"
+                    ? "Erro — Tentar novamente"
+                    : "Registrar no RIZER"}
+            </button>
+            {localFaltaTratativa && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded bg-amber-100 text-amber-700 border border-amber-200">
+                <AlertTriangle className="w-3 h-3" />
+                Falta a tratativa
+              </span>
+            )}
           </div>
         </div>
       )}
