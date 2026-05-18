@@ -39,6 +39,8 @@ import { useAdminAuth } from "../context/AdminAuthContext";
 import { AdminLoginModal } from "../components/AdminLoginModal";
 import { registerDisciplinaryOccurrence } from "../../api/automation.api";
 import type { BatchOverlay } from "../components/OccurrenceCardDTO";
+import { useAutomationFolders } from "../../hooks/useAutomationFolders";
+import { FolderOpen } from "lucide-react";
 
 interface HomeProps {
   onNovaOcorrencia: () => void;
@@ -89,6 +91,10 @@ export function Home({
   });
 
   const calendarRef = useRef<HTMLDivElement | null>(null);
+
+  // ── Pasta de relatórios (automação RIZER) ─────────────────
+  const automationFolders = useAutomationFolders();
+  const [showAutomationFolderModal, setShowAutomationFolderModal] = useState(false);
 
   // ── Google Drive ──────────────────────────────────────────
   const driveFolder = useDriveFolder();
@@ -207,7 +213,7 @@ export function Home({
       const id = ids[i];
       setBatchState(prev => prev ? { ...prev, currentId: id } : null);
       try {
-        await registerDisciplinaryOccurrence(id);
+        await registerDisciplinaryOccurrence(id, automationFolders.config?.relatoriosFolderId);
       } catch {
         // falha individual não para a fila
       }
@@ -415,10 +421,19 @@ export function Home({
                     <ShieldCheck className="w-3.5 h-3.5" />
                     <span className="hidden sm:inline">Admin</span>
                   </button>
-                  <div className="absolute right-0 top-full mt-1 w-36 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 pointer-events-none group-hover/admin:opacity-100 group-hover/admin:pointer-events-auto transition-opacity z-50">
+                  <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 pointer-events-none group-hover/admin:opacity-100 group-hover/admin:pointer-events-auto transition-opacity z-50">
+                    <button
+                      onClick={() => setShowAutomationFolderModal(true)}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-t-lg transition-colors"
+                    >
+                      <FolderOpen className="w-3.5 h-3.5" />
+                      {automationFolders.config
+                        ? <span className="truncate" title={automationFolders.config.relatoriosFolderName}>{automationFolders.config.relatoriosFolderName}</span>
+                        : "Pasta de relatórios"}
+                    </button>
                     <button
                       onClick={logout}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-b-lg transition-colors"
                     >
                       <LogOut className="w-3.5 h-3.5" />
                       Sair da conta admin
@@ -620,6 +635,7 @@ export function Home({
                           driveStatus={getDriveStatus(occ.id)}
                           onSendToDrive={() => handleSendToDrive(occ.id)}
                           batchOverlay={getBatchOverlay(occ.id, subject)}
+                          relatoriosFolderId={automationFolders.config?.relatoriosFolderId}
                         />
                       ))}
                     </div>
@@ -635,6 +651,7 @@ export function Home({
                           driveStatus={getDriveStatus(occ.id)}
                           onSendToDrive={() => handleSendToDrive(occ.id)}
                           batchOverlay={getBatchOverlay(occ.id, subject)}
+                          relatoriosFolderId={automationFolders.config?.relatoriosFolderId}
                         />
                       ))}
                     </div>
@@ -665,6 +682,7 @@ export function Home({
                 onExcluir={() => setExcluindoId(occ.id)}
                 driveStatus={getDriveStatus(occ.id)}
                 onSendToDrive={() => handleSendToDrive(occ.id)}
+                relatoriosFolderId={automationFolders.config?.relatoriosFolderId}
               />
             ))}
           </div>
@@ -680,6 +698,7 @@ export function Home({
                 onExcluir={() => setExcluindoId(occ.id)}
                 driveStatus={getDriveStatus(occ.id)}
                 onSendToDrive={() => handleSendToDrive(occ.id)}
+                relatoriosFolderId={automationFolders.config?.relatoriosFolderId}
               />
             ))}
           </div>
@@ -755,6 +774,25 @@ export function Home({
             />
           </div>
         </div>
+      )}
+
+      {/* Modal de Configuração da Pasta de Relatórios (automação RIZER) */}
+      {showAutomationFolderModal && (
+        <DrivePickerModal
+          currentConfig={
+            automationFolders.config
+              ? { folderId: automationFolders.config.relatoriosFolderId, folderName: automationFolders.config.relatoriosFolderName }
+              : null
+          }
+          onConfirm={(args) => {
+            automationFolders.save({
+              relatoriosFolderId: args.config.folderId,
+              relatoriosFolderName: args.config.folderName,
+            });
+            setShowAutomationFolderModal(false);
+          }}
+          onClose={() => setShowAutomationFolderModal(false)}
+        />
       )}
 
       {/* Modal de Configuração do Google Drive */}

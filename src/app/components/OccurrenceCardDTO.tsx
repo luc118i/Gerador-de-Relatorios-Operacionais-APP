@@ -15,7 +15,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { useState } from "react";
-import { registerDisciplinaryOccurrence } from "../../api/automation.api";
+import { registerDisciplinaryOccurrence, fillMedidaLink } from "../../api/automation.api";
 import { toast } from "sonner";
 import { useAdminAuth } from "../context/AdminAuthContext";
 import { AdminLoginModal } from "./AdminLoginModal";
@@ -56,6 +56,7 @@ interface OccurrenceCardProps {
   driveStatus?: DriveStatus;
   onSendToDrive?: () => void;
   batchOverlay?: BatchOverlay;
+  relatoriosFolderId?: string;
 }
 
 export type OccurrenceDetailDTO = OccurrenceDTO & {
@@ -126,6 +127,7 @@ export function OccurrenceCard({
   driveStatus = "idle",
   onSendToDrive,
   batchOverlay,
+  relatoriosFolderId,
 }: OccurrenceCardProps) {
   const [loadingEdit, setLoadingEdit] = useState(false);
   const [copiedWpp, setCopiedWpp] = useState(false);
@@ -143,6 +145,24 @@ export function OccurrenceCard({
   const [localFaltaTratativa, setLocalFaltaTratativa] = useState<boolean>(
     occurrence.faltaTratativa ?? false
   );
+  const [fillMedidaState, setFillMedidaState] = useState<"idle" | "loading" | "success">("idle");
+
+  async function handleFillMedida(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!isAdmin) { setShowAdminLogin(true); return; }
+    if (fillMedidaState === "loading" || fillMedidaState === "success") return;
+    setFillMedidaState("loading");
+    try {
+      await fillMedidaLink(occurrence.id, relatoriosFolderId);
+      setFillMedidaState("success");
+      setLocalFaltaTratativa(false);
+      toast.success("Tratativa preenchida no RIZER!");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erro ao preencher tratativa.";
+      setFillMedidaState("idle");
+      toast.error(msg);
+    }
+  }
 
   async function handleRegisterDisciplinary(e: React.MouseEvent) {
     e.stopPropagation();
@@ -150,7 +170,7 @@ export function OccurrenceCard({
     if (disciplinaryState === "loading" || disciplinaryState === "success") return;
     setDisciplinaryState("loading");
     try {
-      const res = await registerDisciplinaryOccurrence(occurrence.id);
+      const res = await registerDisciplinaryOccurrence(occurrence.id, relatoriosFolderId);
       setDisciplinaryState("success");
       if (res.faltaTratativa) {
         setLocalFaltaTratativa(true);
@@ -300,7 +320,13 @@ export function OccurrenceCard({
         />
       )}
       <div
-        className={`group relative flex items-center gap-0 bg-white border-b border-gray-100 transition-colors cursor-pointer ${batchOverlay ? "pointer-events-none" : "hover:bg-blue-50/40"}`}
+        className={`group relative flex items-center gap-0 bg-white border-b border-gray-100 transition-colors cursor-pointer ${
+          batchOverlay
+            ? "pointer-events-none"
+            : localFaltaTratativa
+              ? "hover:bg-amber-50/30"
+              : "hover:bg-blue-50/40"
+        }`}
         style={{ borderLeft: `3px solid ${baseColor}` }}
         onClick={onOpen}
       >
@@ -309,6 +335,39 @@ export function OccurrenceCard({
             {batchOverlay === "processing"
               ? <Loader2 className="w-4 h-4 text-orange-400 animate-spin" />
               : <Clock className="w-3.5 h-3.5 text-gray-300" />}
+          </div>
+        )}
+
+        {/* Overlay "Completar tratativa" — aparece no hover, cobre até o limite das AÇÕES */}
+        {localFaltaTratativa && !batchOverlay && (
+          <div
+            className={`absolute inset-y-0 left-0 right-[148px] z-10 flex items-center justify-center transition-opacity backdrop-blur-[1px] ${
+              fillMedidaState !== "idle" ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+            }`}
+            style={{ background: "radial-gradient(ellipse at center, rgba(254,243,199,0.95) 0%, rgba(254,243,199,0.6) 40%, transparent 100%)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={handleFillMedida}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border shadow-sm transition-colors ${
+                fillMedidaState === "loading"
+                  ? "border-amber-300 text-amber-600 bg-amber-100 cursor-not-allowed"
+                  : fillMedidaState === "success"
+                    ? "border-emerald-300 text-emerald-600 bg-white cursor-default"
+                    : "border-amber-300 text-amber-700 bg-white hover:bg-amber-100"
+              }`}
+            >
+              {fillMedidaState === "loading"
+                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                : fillMedidaState === "success"
+                  ? <Check className="w-3.5 h-3.5" />
+                  : <AlertTriangle className="w-3.5 h-3.5" />}
+              {fillMedidaState === "loading"
+                ? "Completando tratativa..."
+                : fillMedidaState === "success"
+                  ? "Tratativa preenchida!"
+                  : "Completar tratativa"}
+            </button>
           </div>
         )}
         {/* Prefixo */}
@@ -700,6 +759,31 @@ export function OccurrenceCard({
             {disciplinaryState === "loading" ? "Registrando..." : disciplinaryState === "success" ? "Registrado!" : "Registrar RIZER"}
           </button>
         </div>
+
+        {/* Linha 4: Completar tratativa — só aparece quando falta_tratativa e é admin */}
+        {isAdmin && localFaltaTratativa && (
+          <button
+            onClick={handleFillMedida}
+            className={`w-full flex items-center justify-center gap-1.5 py-1.5 text-xs rounded-md border transition-colors ${
+              fillMedidaState === "loading"
+                ? "border-amber-200 text-amber-600 bg-amber-50"
+                : fillMedidaState === "success"
+                  ? "border-emerald-200 text-emerald-600 bg-emerald-50 cursor-default"
+                  : "border-amber-200 text-amber-600 bg-amber-50 hover:bg-amber-100"
+            }`}
+          >
+            {fillMedidaState === "loading"
+              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              : fillMedidaState === "success"
+                ? <Check className="w-3.5 h-3.5" />
+                : <AlertTriangle className="w-3.5 h-3.5" />}
+            {fillMedidaState === "loading"
+              ? "Completando tratativa..."
+              : fillMedidaState === "success"
+                ? "Tratativa preenchida!"
+                : "Completar tratativa"}
+          </button>
+        )}
 
       </div>
     </div>
