@@ -443,6 +443,12 @@ export function OccurrenceCard({
                 Sem evidência
               </span>
             )}
+            {disciplinaryState === "idle" && (
+              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 font-semibold text-[10px] leading-none whitespace-nowrap flex-shrink-0">
+                <Gavel className="w-2.5 h-2.5" />
+                Pendente RIZER
+              </span>
+            )}
             {localFaltaTratativa && (
               <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-semibold text-[10px] leading-none whitespace-nowrap flex-shrink-0">
                 <AlertTriangle className="w-2.5 h-2.5" />
@@ -644,6 +650,12 @@ export function OccurrenceCard({
               <span className="text-sm font-medium">{occurrence.evidenceCount}</span>
             </div>
           ) : null}
+          {disciplinaryState === "idle" && (
+            <div className="flex items-center gap-1 bg-orange-50 border border-orange-200 text-orange-700 px-2 py-1 rounded">
+              <Gavel className="w-3.5 h-3.5" />
+              <span className="text-xs font-semibold">Pendente RIZER</span>
+            </div>
+          )}
           {localFaltaTratativa && (
             <div className="flex items-center gap-1 bg-amber-50 border border-amber-200 text-amber-700 px-2 py-1 rounded">
               <AlertTriangle className="w-3.5 h-3.5" />
