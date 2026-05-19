@@ -19,6 +19,7 @@ import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { registerDisciplinaryOccurrence, fillMedidaLink } from "../../api/automation.api";
 import { getApiErrorMessage } from "../../api/http";
+import { useAgentStatus } from "../../hooks/useAgentStatus";
 import { toast } from "sonner";
 import { useAdminAuth } from "../context/AdminAuthContext";
 import { AdminLoginModal } from "./AdminLoginModal";
@@ -145,6 +146,7 @@ export function OccurrenceCard({
   const [loadingAiRelat, setLoadingAiRelat] = useState(false);
   const { isAdmin } = useAdminAuth();
   const queryClient = useQueryClient();
+  const agentAvailable = useAgentStatus();
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [showSuspensaoModal, setShowSuspensaoModal] = useState(false);
   const [localSuspensao, setLocalSuspensao] = useState(occurrence.suspensao ?? null);
@@ -174,7 +176,7 @@ export function OccurrenceCard({
     if (!medidasFolderId) { onNeedFolderConfig?.(); return; }
     setFillMedidaState("loading");
     try {
-      await fillMedidaLink(occurrence.id, medidasFolderId);
+      await fillMedidaLink(occurrence.id, medidasFolderId, { useAgent: agentAvailable });
       setFillMedidaState("success");
       setLocalFaltaTratativa(false);
       toast.success("Tratativa preenchida no RIZER!");
@@ -192,7 +194,7 @@ export function OccurrenceCard({
     if (!relatoriosFolderId || !medidasFolderId) { onNeedFolderConfig?.(); return; }
     setDisciplinaryState("loading");
     try {
-      const res = await registerDisciplinaryOccurrence(occurrence.id, relatoriosFolderId, medidasFolderId);
+      const res = await registerDisciplinaryOccurrence(occurrence.id, relatoriosFolderId, medidasFolderId, { useAgent: agentAvailable });
       setDisciplinaryState("success");
       if (res.faltaTratativa) {
         setLocalFaltaTratativa(true);

@@ -43,7 +43,8 @@ import { registerDisciplinaryOccurrence, fillMedidaLink } from "../../api/automa
 import type { BatchOverlay } from "../components/OccurrenceCardDTO";
 import { useAutomationFolders } from "../../hooks/useAutomationFolders";
 import { AutomationFoldersModal } from "../components/AutomationFoldersModal";
-import { FolderOpen } from "lucide-react";
+import { FolderOpen, Cpu } from "lucide-react";
+import { useAgentStatus } from "../../hooks/useAgentStatus";
 
 interface HomeProps {
   onNovaOcorrencia: () => void;
@@ -100,6 +101,9 @@ export function Home({
   });
 
   const calendarRef = useRef<HTMLDivElement | null>(null);
+
+  // ── Agente local (localhost:3334) ─────────────────────────
+  const agentAvailable = useAgentStatus();
 
   // ── Pasta de relatórios (automação RIZER) ─────────────────
   const automationFolders = useAutomationFolders();
@@ -232,6 +236,7 @@ export function Home({
           id,
           automationFolders.config?.relatoriosFolderId,
           automationFolders.config?.medidasFolderId,
+          { useAgent: agentAvailable },
         );
       } catch {
         // falha individual não para a fila
@@ -267,7 +272,7 @@ export function Home({
       const id = ids[i];
       setBatchTratativaState(prev => prev ? { ...prev, currentId: id } : null);
       try {
-        await fillMedidaLink(id, automationFolders.config.medidasFolderId);
+        await fillMedidaLink(id, automationFolders.config.medidasFolderId, { useAgent: agentAvailable });
       } catch {
         // falha individual não para a fila
       }
@@ -461,6 +466,22 @@ export function Home({
               <ActionBtn onClick={onNovaOcorrencia} tooltip="Nova Ocorrência" primary>
                 <Plus className="w-4 h-4" />
               </ActionBtn>
+
+              {/* Separador */}
+              <div className="w-px h-5 bg-gray-200 mx-0.5" />
+
+              {/* Indicador do agente local */}
+              <div
+                title={agentAvailable ? "Agente local conectado — automações rodam na sua máquina" : "Sem agente local — automações rodam no servidor"}
+                className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-colors ${
+                  agentAvailable
+                    ? "text-emerald-700 bg-emerald-50"
+                    : "text-gray-400 bg-gray-100"
+                }`}
+              >
+                <Cpu className="w-3 h-3" />
+                <span className="hidden sm:inline">{agentAvailable ? "Agente" : "Servidor"}</span>
+              </div>
 
               {/* Separador */}
               <div className="w-px h-5 bg-gray-200 mx-0.5" />
