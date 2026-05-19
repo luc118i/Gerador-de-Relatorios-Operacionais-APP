@@ -165,12 +165,18 @@ export function Home({
           ? (occ as any).reportTitle || occ.typeTitle
           : occ.typeTitle;
       // Normaliza: remove acentos, colapsa espaços, padroniza caixa
-      const subject = String(raw ?? "")
+      const TYPO_CORRECTIONS: Record<string, string> = {
+        "OPERCIONAL": "OPERACIONAL",
+      };
+      let subject = String(raw ?? "")
         .normalize("NFD")
         .replace(/[̀-ͯ]/g, "")
         .trim()
         .toUpperCase()
         .replace(/\s+/g, " ");
+      for (const [typo, correct] of Object.entries(TYPO_CORRECTIONS)) {
+        subject = subject.replace(new RegExp(`\\b${typo}\\b`, "g"), correct);
+      }
       if (!map.has(subject)) map.set(subject, []);
       map.get(subject)!.push(occ);
     }
