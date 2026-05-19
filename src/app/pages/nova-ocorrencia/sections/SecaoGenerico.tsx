@@ -1,11 +1,14 @@
 import { AlertCircle } from "lucide-react";
 import { ExpandableRichTextEditor } from "../../../components/ExpandableRichTextEditor";
 import { ReportTitleInput } from "./ReportTitleInput";
+import { ReportTitleSelect } from "./ReportTitleSelect";
 
 interface SecaoGenericoProps {
   reportTitle: string;
   onReportTitleChange: (v: string) => void;
   reportTitleSuggestions?: string[];
+  reportTitlePresets?: string[];
+  isAdmin?: boolean;
   ccoOperator: string;
   onCcoOperatorChange: (v: string) => void;
   vehicleKm: number | null;
@@ -30,6 +33,8 @@ interface SecaoGenericoProps {
 export function SecaoGenerico({
   reportTitle, onReportTitleChange,
   reportTitleSuggestions = [],
+  reportTitlePresets = [],
+  isAdmin = false,
   ccoOperator, onCcoOperatorChange,
   vehicleKm, onVehicleKmChange,
   passengerCount, onPassengerCountChange,
@@ -54,12 +59,21 @@ export function SecaoGenerico({
         </h2>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Nome do Relatório *</label>
-          <ReportTitleInput
-            value={reportTitle}
-            onChange={onReportTitleChange}
-            suggestions={reportTitleSuggestions}
-            hasError={triedSave && !reportTitle.trim()}
-          />
+          {isAdmin ? (
+            <ReportTitleInput
+              value={reportTitle}
+              onChange={onReportTitleChange}
+              suggestions={reportTitleSuggestions}
+              hasError={triedSave && !reportTitle.trim()}
+            />
+          ) : (
+            <ReportTitleSelect
+              value={reportTitle}
+              onChange={onReportTitleChange}
+              presets={reportTitlePresets}
+              hasError={triedSave && !reportTitle.trim()}
+            />
+          )}
           {triedSave && !reportTitle.trim() && (
             <div className="flex items-center gap-2 text-sm text-red-600 mt-1">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />

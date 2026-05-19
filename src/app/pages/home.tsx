@@ -17,6 +17,7 @@ import {
   Gavel,
   Loader2,
   X,
+  BookMarked,
 } from "lucide-react";
 import { useMemo, useState, useRef, useEffect, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -48,12 +49,14 @@ interface HomeProps {
   onNovaOcorrencia: () => void;
   onGerarRelatorio: () => void;
   onGerenciarMotoristas: () => void;
+  onGerenciarNomes: () => void;
 }
 
 export function Home({
   onNovaOcorrencia,
   onGerarRelatorio,
   onGerenciarMotoristas,
+  onGerenciarNomes,
 }: HomeProps) {
   const queryClient = useQueryClient();
   const { isAdmin, logout } = useAdminAuth();
@@ -483,6 +486,13 @@ export function Home({
                           ? `${automationFolders.config.relatoriosFolderName} / ${automationFolders.config.medidasFolderName}`
                           : "Pastas de automação"}
                       </span>
+                    </button>
+                    <button
+                      onClick={onGerenciarNomes}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                    >
+                      <BookMarked className="w-3.5 h-3.5 shrink-0" />
+                      Nomes padronizados
                     </button>
                     <button
                       onClick={logout}

@@ -13,6 +13,8 @@ import { SecaoDadosEvento } from "./nova-ocorrencia/sections/SecaoDadosEvento";
 import { SecaoGenerico } from "./nova-ocorrencia/sections/SecaoGenerico";
 import { SaveStatusOverlay } from "./nova-ocorrencia/sections/SaveStatusOverlay";
 import { occurrencesApi } from "../../api/occurrences.api";
+import { presetsApi } from "../../api/presets.api";
+import { useAdminAuth } from "../context/AdminAuthContext";
 
 interface NovaOcorrenciaProps {
   onVoltar: () => void;
@@ -23,12 +25,23 @@ interface NovaOcorrenciaProps {
 export function NovaOcorrencia({ onVoltar, onSaved, edicao }: NovaOcorrenciaProps) {
   const form = useNovaOcorrenciaForm({ onVoltar, onSaved, edicao });
   const typeConfig = getOccurrenceTypeConfig(form.typeCode);
+  const { isAdmin } = useAdminAuth();
 
   const { data: reportTitleSuggestions = [] } = useQuery({
     queryKey: ["occurrences", "report-titles"],
     queryFn: () => occurrencesApi.getReportTitles(),
     staleTime: 5 * 60_000,
-    enabled: typeConfig.isGeneric,
+    enabled: typeConfig.isGeneric && isAdmin,
+  });
+
+  const { data: reportTitlePresets = [] } = useQuery({
+    queryKey: ["occurrence-presets"],
+    queryFn: async () => {
+      const presets = await presetsApi.getPresets();
+      return presets.map((p) => p.name);
+    },
+    staleTime: 5 * 60_000,
+    enabled: typeConfig.isGeneric && !isAdmin,
   });
 
   const showTripulacao = typeConfig.isGeneric
@@ -211,6 +224,8 @@ export function NovaOcorrencia({ onVoltar, onSaved, edicao }: NovaOcorrenciaProp
                 reportTitle={form.reportTitle}
                 onReportTitleChange={form.setReportTitle}
                 reportTitleSuggestions={reportTitleSuggestions}
+                reportTitlePresets={reportTitlePresets}
+                isAdmin={isAdmin}
                 ccoOperator={form.ccoOperator}
                 onCcoOperatorChange={form.setCcoOperator}
                 vehicleKm={form.vehicleKm}

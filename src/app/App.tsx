@@ -7,6 +7,7 @@ import { Ocorrencia } from "./types";
 import { toast, Toaster } from "sonner";
 import { OccurrencePreviewPage } from "./pages/occurrences/preview/OccurrencePreviewPage";
 import { DriversPage } from "./pages/DriversPage";
+import { GerenciarNomesPage } from "./pages/GerenciarNomesPage";
 import { AdminAuthProvider } from "./context/AdminAuthContext";
 
 type Page =
@@ -14,7 +15,8 @@ type Page =
   | "nova-ocorrencia"
   | "relatorio-diario"
   | "preview-ocorrencia"
-  | "motoristas";
+  | "motoristas"
+  | "gerenciar-nomes";
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>("home");
@@ -47,9 +49,10 @@ export default function App() {
       <main className="flex-grow">
         {currentPage === "home" && (
           <Home
-            onNovaOcorrencia={handleIrParaNovo} // Usa a função que limpa o estado
+            onNovaOcorrencia={handleIrParaNovo}
             onGerarRelatorio={() => setCurrentPage("relatorio-diario")}
             onGerenciarMotoristas={() => setCurrentPage("motoristas")}
+            onGerenciarNomes={() => setCurrentPage("gerenciar-nomes")}
           />
         )}
 
@@ -79,6 +82,10 @@ export default function App() {
 
         {currentPage === "motoristas" && (
           <DriversPage onVoltar={() => setCurrentPage("home")} />
+        )}
+
+        {currentPage === "gerenciar-nomes" && (
+          <GerenciarNomesPage onVoltar={() => setCurrentPage("home")} />
         )}
       </main>
 
