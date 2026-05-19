@@ -159,6 +159,10 @@ export function Home({
 
   const ocorrencias: OccurrenceDTO[] = data ?? [];
 
+  const TYPO_CORRECTIONS: [RegExp, string][] = [
+    [/\bOPERCIONAL\b/g, "OPERACIONAL"],
+  ];
+
   const grouped = useMemo(() => {
     if (!groupBySubject || ocorrencias.length === 0) return null;
     const map = new Map<string, OccurrenceDTO[]>();
@@ -167,18 +171,14 @@ export function Home({
         occ.typeCode === "GENERICO"
           ? (occ as any).reportTitle || occ.typeTitle
           : occ.typeTitle;
-      // Normaliza: remove acentos, colapsa espaços, padroniza caixa
-      const TYPO_CORRECTIONS: Record<string, string> = {
-        "OPERCIONAL": "OPERACIONAL",
-      };
       let subject = String(raw ?? "")
         .normalize("NFD")
         .replace(/[̀-ͯ]/g, "")
         .trim()
         .toUpperCase()
         .replace(/\s+/g, " ");
-      for (const [typo, correct] of Object.entries(TYPO_CORRECTIONS)) {
-        subject = subject.replace(new RegExp(`\\b${typo}\\b`, "g"), correct);
+      for (const [pattern, correct] of TYPO_CORRECTIONS) {
+        subject = subject.replace(pattern, correct);
       }
       if (!map.has(subject)) map.set(subject, []);
       map.get(subject)!.push(occ);
