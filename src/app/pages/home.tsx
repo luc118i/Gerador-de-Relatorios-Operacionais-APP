@@ -471,17 +471,25 @@ export function Home({
               <div className="w-px h-5 bg-gray-200 mx-0.5" />
 
               {/* Indicador do agente local */}
-              <div
-                title={agentAvailable ? "Agente local conectado — automações rodam na sua máquina" : "Sem agente local — automações rodam no servidor"}
-                className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-colors ${
-                  agentAvailable
-                    ? "text-emerald-700 bg-emerald-50"
-                    : "text-gray-400 bg-gray-100"
-                }`}
-              >
-                <Cpu className="w-3 h-3" />
-                <span className="hidden sm:inline">{agentAvailable ? "Agente" : "Servidor"}</span>
-              </div>
+              {agentAvailable ? (
+                <div
+                  title="Agente local conectado — automações rodam na sua máquina"
+                  className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium text-emerald-700 bg-emerald-50"
+                >
+                  <Cpu className="w-3 h-3" />
+                  <span className="hidden sm:inline">Agente</span>
+                </div>
+              ) : (
+                <a
+                  href="https://github.com/luc118i/rizer-agent/releases/latest/download/RIZER.Agent.Setup.exe"
+                  title="Baixar agente local — automações rodarão na sua máquina"
+                  className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium text-gray-400 bg-gray-100 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                  download
+                >
+                  <Cpu className="w-3 h-3" />
+                  <span className="hidden sm:inline">Servidor</span>
+                </a>
+              )}
 
               {/* Separador */}
               <div className="w-px h-5 bg-gray-200 mx-0.5" />
