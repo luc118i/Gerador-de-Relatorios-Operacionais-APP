@@ -16,6 +16,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { registerDisciplinaryOccurrence, fillMedidaLink } from "../../api/automation.api";
 import { getApiErrorMessage } from "../../api/http";
 import { toast } from "sonner";
@@ -143,6 +144,7 @@ export function OccurrenceCard({
   const [loadingAiWpp, setLoadingAiWpp] = useState(false);
   const [loadingAiRelat, setLoadingAiRelat] = useState(false);
   const { isAdmin } = useAdminAuth();
+  const queryClient = useQueryClient();
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [showSuspensaoModal, setShowSuspensaoModal] = useState(false);
   const [localSuspensao, setLocalSuspensao] = useState(occurrence.suspensao ?? null);
@@ -176,6 +178,7 @@ export function OccurrenceCard({
       setFillMedidaState("success");
       setLocalFaltaTratativa(false);
       toast.success("Tratativa preenchida no RIZER!");
+      queryClient.invalidateQueries({ queryKey: ["occurrences"] });
     } catch (err: unknown) {
       setFillMedidaState("idle");
       toast.error(getApiErrorMessage(err, "Erro ao preencher tratativa."));

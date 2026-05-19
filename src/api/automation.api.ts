@@ -23,7 +23,7 @@ export function registerDisciplinaryOccurrence(
 }
 
 export function fillMedidaLink(occurrenceId: string, medidasFolderId?: string) {
-  return request<{ success: boolean; message: string }>({
+  return request<{ success: boolean; message: string; pendentes: number }>({
     method: "POST",
     path: "/automation/fill-medida",
     body: {
