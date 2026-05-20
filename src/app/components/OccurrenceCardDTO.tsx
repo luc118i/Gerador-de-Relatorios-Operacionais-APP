@@ -14,7 +14,7 @@ import {
   Zap,
   ShieldAlert,
   AlertTriangle,
-  ScanSearch,
+  RefreshCw,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -162,7 +162,7 @@ export function OccurrenceCard({
   const [fillMedidaState, setFillMedidaState] = useState<"idle" | "loading" | "success">("idle");
   const [showRizerModal, setShowRizerModal] = useState(false);
   const [tipoMedida, setTipoMedida] = useState<TipoMedida>("advertencia");
-  const [verifyState, setVerifyState] = useState<"idle" | "loading">("idle");
+  const [disciplinaryAction, setDisciplinaryAction] = useState<"registering" | "verifying" | null>(null);
 
   // Sincroniza estado local quando o servidor atualiza (após refetch)
   useEffect(() => {
@@ -192,40 +192,53 @@ export function OccurrenceCard({
     }
   }
 
-  async function handleVerify(e: React.MouseEvent) {
+  function handleRizerClick(e: React.MouseEvent) {
     e.stopPropagation();
     if (!isAdmin) { setShowAdminLogin(true); return; }
-    if (verifyState === "loading") return;
-    setVerifyState("loading");
-    try {
-      const res = await verifyRizerOccurrence(occurrence.id, { useAgent: agentAvailable });
-      queryClient.invalidateQueries({ queryKey: ["occurrences"] });
-      if (!res.registered) {
-        toast.info("Ocorrência não encontrada no RIZER.");
-      } else if (res.hasTratativa) {
-        toast.success("Registrada no RIZER ✓ — tratativa preenchida ✓");
-      } else {
-        toast.warning("Registrada no RIZER ✓ — tratativa pendente.");
-      }
-    } catch (err: unknown) {
-      toast.error(getApiErrorMessage(err, "Erro ao verificar no RIZER."));
-    } finally {
-      setVerifyState("idle");
-    }
-  }
+    if (disciplinaryState === "loading") return;
 
-  function handleRegisterDisciplinary(e: React.MouseEvent) {
-    e.stopPropagation();
-    if (!isAdmin) { setShowAdminLogin(true); return; }
-    if (disciplinaryState === "loading" || disciplinaryState === "success") return;
+    // Já registrado → verificar/sincronizar status no RIZER
+    if (disciplinaryState === "success") {
+      void doVerify(e);
+      return;
+    }
+
     if (!relatoriosFolderId || !medidasFolderId) { onNeedFolderConfig?.(); return; }
     setShowRizerModal(true);
+  }
+
+  async function doVerify(e: React.MouseEvent) {
+    e.stopPropagation();
+    setDisciplinaryState("loading");
+    setDisciplinaryAction("verifying");
+    try {
+      const res = await verifyRizerOccurrence(occurrence.id, { useAgent: agentAvailable });
+      await queryClient.invalidateQueries({ queryKey: ["occurrences"] });
+      if (!res.registered) {
+        setDisciplinaryState("idle");
+        toast.warning("Não encontrado no RIZER — pode ser registrado novamente.");
+      } else {
+        setDisciplinaryState("success");
+        if (res.hasTratativa) {
+          setLocalFaltaTratativa(false);
+          toast.success("Registrado no RIZER — tratativa preenchida.");
+        } else {
+          toast.info("Registrado no RIZER — tratativa ainda pendente.");
+        }
+      }
+    } catch (err: unknown) {
+      setDisciplinaryState("success");
+      toast.error(getApiErrorMessage(err, "Erro ao verificar no RIZER."));
+    } finally {
+      setDisciplinaryAction(null);
+    }
   }
 
   async function submitRizerRegister(tipo: TipoMedida) {
     setShowRizerModal(false);
     const advertencia = tipo === "advertencia";
     setDisciplinaryState("loading");
+    setDisciplinaryAction("registering");
     try {
       const res = await registerDisciplinaryOccurrence(
         occurrence.id,
@@ -236,13 +249,15 @@ export function OccurrenceCard({
       setDisciplinaryState("success");
       if (res.faltaTratativa) {
         setLocalFaltaTratativa(true);
-        toast.warning("Registrado no RIZER, mas falta a tratativa no Drive.");
+        toast.warning("Enviado ao RIZER, mas o arquivo de medida não foi encontrado no Drive.");
       } else {
-        toast.success("Ocorrência registrada no RIZER!");
+        toast.success("Ocorrência enviada ao RIZER com sucesso!");
       }
     } catch (err: unknown) {
       setDisciplinaryState("error");
-      toast.error(getApiErrorMessage(err, "Erro ao registrar ocorrência no RIZER."));
+      toast.error(getApiErrorMessage(err, "Erro ao enviar ocorrência ao RIZER."));
+    } finally {
+      setDisciplinaryAction(null);
     }
   }
 
@@ -581,42 +596,37 @@ export function OccurrenceCard({
             <ShieldAlert className="w-3.5 h-3.5" />
           </button>
           <button
-            onClick={disciplinaryState === "success" ? undefined : handleRegisterDisciplinary}
+            onClick={handleRizerClick}
+            disabled={disciplinaryState === "loading"}
             title={
               disciplinaryState === "success"
-                ? "Já registrada no RIZER"
+                ? "Clique para verificar o status no RIZER"
                 : !isAdmin
-                  ? "Registrar no RIZER (admin)"
-                  : "Registrar no RIZER"
+                  ? "Apenas administradores podem registrar no RIZER"
+                  : "Enviar ocorrência ao RIZER"
             }
-            className={`p-2 rounded transition-colors ${
+            className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium border transition-all disabled:opacity-60 ${
               disciplinaryState === "success"
-                ? "text-emerald-500 cursor-default"
+                ? "text-emerald-700 bg-emerald-50 border-emerald-200 hover:bg-emerald-100"
                 : disciplinaryState === "loading"
-                  ? "text-orange-500 bg-orange-50"
-                  : !isAdmin
-                    ? "text-gray-300 hover:text-orange-400 hover:bg-orange-50"
-                    : "text-gray-400 hover:text-orange-600 hover:bg-orange-50"
+                  ? "text-orange-600 bg-orange-50 border-orange-200 cursor-wait"
+                  : disciplinaryState === "error"
+                    ? "text-red-600 bg-red-50 border-red-200 hover:bg-red-100"
+                    : !isAdmin
+                      ? "text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed"
+                      : "text-orange-600 bg-orange-50 border-orange-200 hover:bg-orange-100"
             }`}
           >
-            {disciplinaryState === "loading"
-              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              : disciplinaryState === "success"
-                ? <Check className="w-3.5 h-3.5" />
-                : <Gavel className="w-3.5 h-3.5" />}
+            {disciplinaryState === "loading" ? (
+              <><Loader2 className="w-3 h-3 animate-spin" />{disciplinaryAction === "verifying" ? "Verificando..." : "Enviando..."}</>
+            ) : disciplinaryState === "success" ? (
+              <><Check className="w-3 h-3" />No RIZER<RefreshCw className="w-2.5 h-2.5 opacity-50" /></>
+            ) : disciplinaryState === "error" ? (
+              <><Gavel className="w-3 h-3" />Tentar novamente</>
+            ) : (
+              <><Gavel className="w-3 h-3" />Enviar ao RIZER</>
+            )}
           </button>
-          {isAdmin && (
-            <button
-              onClick={handleVerify}
-              title="Verificar status no RIZER"
-              className="p-2 rounded text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors disabled:opacity-40"
-              disabled={verifyState === "loading"}
-            >
-              {verifyState === "loading"
-                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                : <ScanSearch className="w-3.5 h-3.5" />}
-            </button>
-          )}
           <button
             onClick={(e) => { e.stopPropagation(); onExcluir?.(); }}
             title="Excluir"
@@ -719,7 +729,7 @@ export function OccurrenceCard({
           {disciplinaryState === "idle" && (
             <div className="flex items-center gap-1 bg-orange-50 border border-orange-200 text-orange-700 px-2 py-1 rounded">
               <Gavel className="w-3.5 h-3.5" />
-              <span className="text-xs font-semibold">Pendente RIZER</span>
+              <span className="text-xs font-semibold">Não enviado ao RIZER</span>
             </div>
           )}
           {localFaltaTratativa && (
@@ -871,36 +881,30 @@ export function OccurrenceCard({
             {localSuspensao ? "Ver Suspensão" : "Gerar Suspensão"}
           </button>
           <button
-            onClick={disciplinaryState === "success" ? undefined : handleRegisterDisciplinary}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs rounded-md transition-colors ${
+            onClick={handleRizerClick}
+            disabled={disciplinaryState === "loading"}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium rounded-md transition-colors disabled:opacity-60 ${
               disciplinaryState === "success"
-                ? "text-emerald-600 bg-emerald-50 cursor-default"
+                ? "text-emerald-700 bg-emerald-50 hover:bg-emerald-100"
                 : disciplinaryState === "loading"
-                  ? "text-orange-600 bg-orange-50"
-                  : !isAdmin
-                    ? "text-gray-400 hover:text-orange-500 hover:bg-orange-50"
-                    : "text-gray-500 hover:text-orange-700 hover:bg-orange-50"
+                  ? "text-orange-600 bg-orange-50 cursor-wait"
+                  : disciplinaryState === "error"
+                    ? "text-red-600 bg-red-50 hover:bg-red-100"
+                    : !isAdmin
+                      ? "text-gray-400 bg-gray-50 cursor-not-allowed"
+                      : "text-orange-700 bg-orange-50 hover:bg-orange-100"
             }`}
           >
-            {disciplinaryState === "loading"
-              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              : disciplinaryState === "success"
-                ? <Check className="w-3.5 h-3.5" />
-                : <Gavel className="w-3.5 h-3.5" />}
-            {disciplinaryState === "loading" ? "Registrando..." : disciplinaryState === "success" ? "Registrado!" : "Registrar RIZER"}
+            {disciplinaryState === "loading" ? (
+              <><Loader2 className="w-3.5 h-3.5 animate-spin" />{disciplinaryAction === "verifying" ? "Verificando no RIZER..." : "Enviando ao RIZER..."}</>
+            ) : disciplinaryState === "success" ? (
+              <><Check className="w-3.5 h-3.5" />Enviado ao RIZER <RefreshCw className="w-3 h-3 opacity-40" /></>
+            ) : disciplinaryState === "error" ? (
+              <><Gavel className="w-3.5 h-3.5" />Tentar novamente</>
+            ) : (
+              <><Gavel className="w-3.5 h-3.5" />Enviar ao RIZER</>
+            )}
           </button>
-          {isAdmin && (
-            <button
-              onClick={handleVerify}
-              disabled={verifyState === "loading"}
-              className="flex items-center justify-center gap-1 px-2 py-1.5 text-xs rounded-md text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors disabled:opacity-40"
-              title="Verificar status no RIZER"
-            >
-              {verifyState === "loading"
-                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                : <ScanSearch className="w-3.5 h-3.5" />}
-            </button>
-          )}
         </div>
 
         {/* Linha 4: Completar tratativa — só aparece quando falta_tratativa e é admin */}
