@@ -33,6 +33,7 @@ import { getBaseCanonicalKey, resolveBaseSigla } from "../utils/base";
 import { BaseChip } from "./base-chip";
 import { aiApi } from "../../api/ai.api";
 import { SuspensaoModal } from "./SuspensaoModal";
+import { RizerRegisterModal, type TipoMedida } from "./RizerRegisterModal";
 
 // ── SVG Google Drive (inline, sem dependência externa) ────────────────────────
 function DriveIcon({ className }: { className?: string }) {
@@ -158,6 +159,8 @@ export function OccurrenceCard({
     occurrence.faltaTratativa ?? false
   );
   const [fillMedidaState, setFillMedidaState] = useState<"idle" | "loading" | "success">("idle");
+  const [showRizerModal, setShowRizerModal] = useState(false);
+  const [tipoMedida, setTipoMedida] = useState<TipoMedida>("advertencia");
 
   // Sincroniza estado local quando o servidor atualiza (após refetch)
   useEffect(() => {
@@ -187,14 +190,25 @@ export function OccurrenceCard({
     }
   }
 
-  async function handleRegisterDisciplinary(e: React.MouseEvent) {
+  function handleRegisterDisciplinary(e: React.MouseEvent) {
     e.stopPropagation();
     if (!isAdmin) { setShowAdminLogin(true); return; }
     if (disciplinaryState === "loading" || disciplinaryState === "success") return;
     if (!relatoriosFolderId || !medidasFolderId) { onNeedFolderConfig?.(); return; }
+    setShowRizerModal(true);
+  }
+
+  async function submitRizerRegister(tipo: TipoMedida) {
+    setShowRizerModal(false);
+    const advertencia = tipo === "advertencia";
     setDisciplinaryState("loading");
     try {
-      const res = await registerDisciplinaryOccurrence(occurrence.id, relatoriosFolderId, medidasFolderId, { useAgent: agentAvailable });
+      const res = await registerDisciplinaryOccurrence(
+        occurrence.id,
+        relatoriosFolderId,
+        medidasFolderId,
+        { useAgent: agentAvailable, advertencia },
+      );
       setDisciplinaryState("success");
       if (res.faltaTratativa) {
         setLocalFaltaTratativa(true);
@@ -342,6 +356,13 @@ export function OccurrenceCard({
           onSuspensaoGerada={(s) => setLocalSuspensao(s)}
         />
       )}
+      <RizerRegisterModal
+        open={showRizerModal}
+        selected={tipoMedida}
+        onSelect={setTipoMedida}
+        onConfirm={submitRizerRegister}
+        onCancel={() => setShowRizerModal(false)}
+      />
       <div
         className={`group relative flex items-center gap-0 bg-white border-b border-gray-100 transition-colors cursor-pointer ${
           batchOverlay || tratativaOverlay || disciplinaryState === "loading" || fillMedidaState === "loading"
@@ -602,6 +623,13 @@ export function OccurrenceCard({
     {showSuspensaoModal && (
       <SuspensaoModal occurrence={occurrence} onClose={() => setShowSuspensaoModal(false)} />
     )}
+    <RizerRegisterModal
+      open={showRizerModal}
+      selected={tipoMedida}
+      onSelect={setTipoMedida}
+      onConfirm={submitRizerRegister}
+      onCancel={() => setShowRizerModal(false)}
+    />
     <div
       className={`group relative bg-white border border-gray-200 rounded-lg p-4 transition-shadow cursor-pointer ${batchOverlay ? "pointer-events-none" : "hover:shadow-md"}`}
       onClick={onOpen}

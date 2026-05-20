@@ -35,7 +35,7 @@ export function registerDisciplinaryOccurrence(
   occurrenceId: string,
   relatoriosFolderId?: string,
   medidasFolderId?: string,
-  opts?: { useAgent?: boolean },
+  opts?: { useAgent?: boolean; advertencia?: boolean },
 ) {
   return automationPost<RegisterDisciplinaryResponse>(
     "/automation/disciplinary",
@@ -43,6 +43,7 @@ export function registerDisciplinaryOccurrence(
       occurrence_id: occurrenceId,
       ...(relatoriosFolderId ? { relatorios_folder_id: relatoriosFolderId } : {}),
       ...(medidasFolderId ? { medidas_folder_id: medidasFolderId } : {}),
+      ...(opts?.advertencia !== undefined ? { advertencia: opts.advertencia } : {}),
     },
     opts?.useAgent ?? false,
   );
