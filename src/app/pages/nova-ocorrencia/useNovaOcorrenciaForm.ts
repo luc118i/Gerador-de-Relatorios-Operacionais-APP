@@ -31,6 +31,7 @@ export function useNovaOcorrenciaForm({ onSaved, edicao }: NovaOcorrenciaProps) 
   // ── Tipo ─────────────────────────────────────────────────────────────────
   const [typeCode, setTypeCode] = useState("DESCUMP_OP_PARADA_FORA");
   const [speedKmh, setSpeedKmh] = useState<number | null>(null);
+  const [occurrenceName, setOccurrenceName] = useState<string | null>(null);
 
   // ── Campos GENERICO ──────────────────────────────────────────────────────
   const [reportTitle, setReportTitle] = useState("");
@@ -174,6 +175,7 @@ export function useNovaOcorrenciaForm({ onSaved, edicao }: NovaOcorrenciaProps) 
     setVehicleNumber(viagemSalva.prefixo || "");
     if (edicao.typeCode) setTypeCode(edicao.typeCode);
     setSpeedKmh(edicao.speedKmh ?? null);
+    setOccurrenceName((edicao as any).occurrenceName ?? null);
 
     setReportTitle(edicao.reportTitle ?? "");
     setCcoOperator(edicao.ccoOperator ?? "");
@@ -401,6 +403,7 @@ export function useNovaOcorrenciaForm({ onSaved, edicao }: NovaOcorrenciaProps) 
         lineLabel,
         typeCode,
         speedKmh,
+        occurrenceName,
         reportTitle: typeConfig.isGeneric ? reportTitle : null,
         ccoOperator: typeConfig.isGeneric ? ccoOperator : null,
         vehicleKm: typeConfig.isGeneric ? vehicleKm : null,
@@ -490,6 +493,8 @@ export function useNovaOcorrenciaForm({ onSaved, edicao }: NovaOcorrenciaProps) 
   return {
     // tipo
     typeCode, handleTypeChange,
+    // nome RIZER
+    occurrenceName, setOccurrenceName,
     // campos generico
     reportTitle, setReportTitle,
     ccoOperator, setCcoOperator,

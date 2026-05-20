@@ -31,6 +31,7 @@ export type CreateOccurrenceInput = {
   lineLabel?: string | null;
   baseCode?: string; // opcional (backend deriva se faltar)
   speedKmh?: number | null; // para tipo EXCESSO_VELOCIDADE
+  occurrenceName?: string | null; // nome exato no RIZER
 
   // Campos do tipo GENERICO (CCO)
   reportTitle?: string | null;
@@ -81,6 +82,7 @@ export type OccurrenceDTO = {
   place: string;
   speedKmh?: number | null;
   tripTime?: string | null; // horário de partida da viagem (HH:mm)
+  occurrenceName?: string | null;
   createdAt: string; // ISO
   drivers: OccurrenceDriverDTO[];
   evidenceCount: number;

@@ -17,6 +17,7 @@ export function buildOccurrencePayload(args: {
   tripTime?: string | null;
   lineLabel?: string | null;
   speedKmh?: number | null;
+  occurrenceName?: string | null;
 
   // Campos do tipo GENERICO (CCO)
   reportTitle?: string | null;
@@ -69,6 +70,7 @@ export function buildOccurrencePayload(args: {
     tripTime: args.tripTime || null,
     lineLabel: args.lineLabel ?? null,
     speedKmh: args.speedKmh ?? null,
+    occurrenceName: args.occurrenceName ?? null,
     // Campos GENERICO
     reportTitle: args.reportTitle ?? null,
     ccoOperator: args.ccoOperator ?? null,
