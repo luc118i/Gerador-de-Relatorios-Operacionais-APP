@@ -45,6 +45,7 @@ import { useAutomationFolders } from "../../hooks/useAutomationFolders";
 import { AutomationFoldersModal } from "../components/AutomationFoldersModal";
 import { FolderOpen, Cpu } from "lucide-react";
 import { useAgentStatus } from "../../hooks/useAgentStatus";
+import { BatchRizerModal, type BatchRizerItem } from "../components/BatchRizerModal";
 
 interface HomeProps {
   onNovaOcorrencia: () => void;
@@ -72,7 +73,7 @@ export function Home({
   };
   const [batchState, setBatchState] = useState<BatchState | null>(null);
   const batchCancelRef = useRef(false);
-  const [batchConfirm, setBatchConfirm] = useState<{ subject: string; ids: string[] } | null>(null);
+  const [batchConfirm, setBatchConfirm] = useState<{ subject: string; occs: OccurrenceDTO[] } | null>(null);
 
   const [batchTratativaState, setBatchTratativaState] = useState<BatchState | null>(null);
   const batchTrataivaCancelRef = useRef(false);
@@ -222,21 +223,21 @@ export function Home({
     setCalendarVisible(false);
   }
 
-  async function startBatch(subject: string, ids: string[]) {
-    if (!isAdmin || ids.length === 0) return;
+  async function startBatch(subject: string, items: BatchRizerItem[]) {
+    if (!isAdmin || items.length === 0) return;
     batchCancelRef.current = false;
-    setBatchState({ subject, ids, currentId: null, doneCount: 0, cancelRequested: false });
+    setBatchState({ subject, ids: items.map(i => i.id), currentId: null, doneCount: 0, cancelRequested: false });
 
-    for (let i = 0; i < ids.length; i++) {
+    for (let i = 0; i < items.length; i++) {
       if (batchCancelRef.current) break;
-      const id = ids[i];
+      const { id, advertencia } = items[i];
       setBatchState(prev => prev ? { ...prev, currentId: id } : null);
       try {
         await registerDisciplinaryOccurrence(
           id,
           automationFolders.config?.relatoriosFolderId,
           automationFolders.config?.medidasFolderId,
-          { useAgent: agentAvailable },
+          { useAgent: agentAvailable, advertencia },
         );
       } catch {
         // falha individual não para a fila
@@ -669,7 +670,7 @@ export function Home({
                     {/* Botão "Registrar todas" */}
                     {isAdmin && !batchState && !batchTratativaState && unregistered.length > 0 && (
                       <button
-                        onClick={() => setBatchConfirm({ subject, ids: unregistered.map(o => o.id) })}
+                        onClick={() => setBatchConfirm({ subject, occs: unregistered })}
                         className="cursor-pointer inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border border-orange-200 bg-orange-50 text-orange-600 hover:bg-orange-100 transition-colors"
                       >
                         <Gavel className="w-3 h-3" />
@@ -933,52 +934,16 @@ export function Home({
       )}
 
       {/* Modal de Confirmação do Batch */}
-      {batchConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/40"
-            onClick={() => setBatchConfirm(null)}
-          />
-          <div className="relative bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm mx-4">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 rounded-lg bg-orange-50">
-                <Gavel className="w-5 h-5 text-orange-500" />
-              </div>
-              <h3 className="text-base font-semibold text-gray-900">
-                Registrar no RIZER?
-              </h3>
-            </div>
-            <p className="text-sm text-gray-600 mb-1">
-              Você está prestes a registrar{" "}
-              <span className="font-semibold text-gray-800">
-                {batchConfirm.ids.length} ocorrência{batchConfirm.ids.length !== 1 ? "s" : ""}
-              </span>{" "}
-              do assunto:
-            </p>
-            <p className="text-xs font-medium text-orange-700 bg-orange-50 border border-orange-100 rounded-lg px-3 py-2 mb-5">
-              {batchConfirm.subject}
-            </p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setBatchConfirm(null)}
-                className="px-4 py-2 text-sm rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => {
-                  const { subject, ids } = batchConfirm;
-                  setBatchConfirm(null);
-                  startBatch(subject, ids);
-                }}
-                className="px-4 py-2 text-sm rounded-lg bg-orange-500 text-white hover:bg-orange-600 transition-colors font-medium"
-              >
-                Confirmar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <BatchRizerModal
+        open={!!batchConfirm}
+        subject={batchConfirm?.subject ?? ""}
+        occs={batchConfirm?.occs ?? []}
+        onConfirm={(items) => {
+          setBatchConfirm(null);
+          startBatch(batchConfirm!.subject, items);
+        }}
+        onCancel={() => setBatchConfirm(null)}
+      />
 
       {/* Modal de Confirmação do Batch de Tratativas */}
       {batchTratativaConfirm && (
