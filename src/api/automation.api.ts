@@ -49,6 +49,23 @@ export function registerDisciplinaryOccurrence(
   );
 }
 
+export type VerifyRizerResponse = {
+  registered: boolean
+  rizerId: string | null
+  hasTratativa: boolean
+}
+
+export function verifyRizerOccurrence(
+  occurrenceId: string,
+  opts?: { useAgent?: boolean },
+) {
+  return automationPost<VerifyRizerResponse>(
+    "/automation/verify",
+    { occurrence_id: occurrenceId },
+    opts?.useAgent ?? false,
+  );
+}
+
 export function fillMedidaLink(
   occurrenceId: string,
   medidasFolderId?: string,

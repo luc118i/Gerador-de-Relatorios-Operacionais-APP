@@ -14,10 +14,11 @@ import {
   Zap,
   ShieldAlert,
   AlertTriangle,
+  ScanSearch,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { registerDisciplinaryOccurrence, fillMedidaLink } from "../../api/automation.api";
+import { registerDisciplinaryOccurrence, fillMedidaLink, verifyRizerOccurrence } from "../../api/automation.api";
 import { getApiErrorMessage } from "../../api/http";
 import { useAgentStatus } from "../../hooks/useAgentStatus";
 import { toast } from "sonner";
@@ -161,6 +162,7 @@ export function OccurrenceCard({
   const [fillMedidaState, setFillMedidaState] = useState<"idle" | "loading" | "success">("idle");
   const [showRizerModal, setShowRizerModal] = useState(false);
   const [tipoMedida, setTipoMedida] = useState<TipoMedida>("advertencia");
+  const [verifyState, setVerifyState] = useState<"idle" | "loading">("idle");
 
   // Sincroniza estado local quando o servidor atualiza (após refetch)
   useEffect(() => {
@@ -187,6 +189,28 @@ export function OccurrenceCard({
     } catch (err: unknown) {
       setFillMedidaState("idle");
       toast.error(getApiErrorMessage(err, "Erro ao preencher tratativa."));
+    }
+  }
+
+  async function handleVerify(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!isAdmin) { setShowAdminLogin(true); return; }
+    if (verifyState === "loading") return;
+    setVerifyState("loading");
+    try {
+      const res = await verifyRizerOccurrence(occurrence.id, { useAgent: agentAvailable });
+      queryClient.invalidateQueries({ queryKey: ["occurrences"] });
+      if (!res.registered) {
+        toast.info("Ocorrência não encontrada no RIZER.");
+      } else if (res.hasTratativa) {
+        toast.success("Registrada no RIZER ✓ — tratativa preenchida ✓");
+      } else {
+        toast.warning("Registrada no RIZER ✓ — tratativa pendente.");
+      }
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err, "Erro ao verificar no RIZER."));
+    } finally {
+      setVerifyState("idle");
     }
   }
 
@@ -581,6 +605,18 @@ export function OccurrenceCard({
                 ? <Check className="w-3.5 h-3.5" />
                 : <Gavel className="w-3.5 h-3.5" />}
           </button>
+          {isAdmin && (
+            <button
+              onClick={handleVerify}
+              title="Verificar status no RIZER"
+              className="p-2 rounded text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors disabled:opacity-40"
+              disabled={verifyState === "loading"}
+            >
+              {verifyState === "loading"
+                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                : <ScanSearch className="w-3.5 h-3.5" />}
+            </button>
+          )}
           <button
             onClick={(e) => { e.stopPropagation(); onExcluir?.(); }}
             title="Excluir"
@@ -853,6 +889,18 @@ export function OccurrenceCard({
                 : <Gavel className="w-3.5 h-3.5" />}
             {disciplinaryState === "loading" ? "Registrando..." : disciplinaryState === "success" ? "Registrado!" : "Registrar RIZER"}
           </button>
+          {isAdmin && (
+            <button
+              onClick={handleVerify}
+              disabled={verifyState === "loading"}
+              className="flex items-center justify-center gap-1 px-2 py-1.5 text-xs rounded-md text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors disabled:opacity-40"
+              title="Verificar status no RIZER"
+            >
+              {verifyState === "loading"
+                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                : <ScanSearch className="w-3.5 h-3.5" />}
+            </button>
+          )}
         </div>
 
         {/* Linha 4: Completar tratativa — só aparece quando falta_tratativa e é admin */}
