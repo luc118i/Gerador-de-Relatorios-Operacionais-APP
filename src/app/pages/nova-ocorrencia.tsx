@@ -125,26 +125,6 @@ export function NovaOcorrencia({ onVoltar, onSaved, edicao }: NovaOcorrenciaProp
             {/* 0 — Tipo */}
             <TipoSelector value={form.typeCode} onChange={form.handleTypeChange} />
 
-            {/* 0a — Nome RIZER (automação) */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nome da ocorrência no RIZER
-              </label>
-              <select
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={form.occurrenceName ?? ""}
-                onChange={(e) => form.setOccurrenceName(e.target.value || null)}
-              >
-                <option value="">— Selecione —</option>
-                {[...reportTitlePresets, ...reportTitleSuggestions.filter(s => !reportTitlePresets.includes(s))].map((name) => (
-                  <option key={name} value={name}>{name}</option>
-                ))}
-              </select>
-              <p className="text-xs text-gray-400 mt-1">
-                Nome exato usado para registrar no RIZER via automação.
-              </p>
-            </div>
-
             {/* 0b — Composição do relatório (só GENERICO) */}
             {typeConfig.isGeneric && (
               <ComposicaoRelatorio
@@ -241,7 +221,10 @@ export function NovaOcorrencia({ onVoltar, onSaved, edicao }: NovaOcorrenciaProp
             {typeConfig.isGeneric && (
               <SecaoGenerico
                 reportTitle={form.reportTitle}
-                onReportTitleChange={form.setReportTitle}
+                onReportTitleChange={(v) => {
+                  form.setReportTitle(v)
+                  form.setOccurrenceName(v || null)
+                }}
                 reportTitleSuggestions={reportTitleSuggestions}
                 reportTitlePresets={reportTitlePresets}
                 isAdmin={isAdmin}

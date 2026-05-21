@@ -192,18 +192,38 @@ export function OccurrenceCard({
     }
   }
 
-  function handleRizerClick(e: React.MouseEvent) {
+  async function handleRizerClick(e: React.MouseEvent) {
     e.stopPropagation();
     if (!isAdmin) { setShowAdminLogin(true); return; }
     if (disciplinaryState === "loading") return;
 
-    // Já registrado → verificar/sincronizar status no RIZER
+    // Já registrado no banco → verificar/sincronizar status no RIZER
     if (disciplinaryState === "success") {
       void doVerify(e);
       return;
     }
 
     if (!relatoriosFolderId || !medidasFolderId) { onNeedFolderConfig?.(); return; }
+
+    // Antes de abrir o modal, verifica se já existe no RIZER para evitar duplicatas
+    setDisciplinaryState("loading");
+    setDisciplinaryAction("verifying");
+    try {
+      const res = await verifyRizerOccurrence(occurrence.id, { useAgent: agentAvailable });
+      if (res.registered) {
+        await queryClient.invalidateQueries({ queryKey: ["occurrences"] });
+        setDisciplinaryState("success");
+        setLocalFaltaTratativa(!res.hasTratativa && (occurrence.advertencia ?? true));
+        toast.info("Esta ocorrência já está registrada no RIZER.");
+        return;
+      }
+    } catch {
+      // falha na verificação — deixa prosseguir para o modal
+    } finally {
+      setDisciplinaryAction(null);
+    }
+
+    setDisciplinaryState("idle");
     setShowRizerModal(true);
   }
 
@@ -237,6 +257,7 @@ export function OccurrenceCard({
   async function submitRizerRegister(tipo: TipoMedida) {
     setShowRizerModal(false);
     const advertencia = tipo === "advertencia";
+    const suspensao = tipo === "suspensao";
     setDisciplinaryState("loading");
     setDisciplinaryAction("registering");
     try {
@@ -244,7 +265,7 @@ export function OccurrenceCard({
         occurrence.id,
         relatoriosFolderId,
         medidasFolderId,
-        { useAgent: agentAvailable, advertencia },
+        { useAgent: agentAvailable, advertencia, suspensao },
       );
       setDisciplinaryState("success");
       if (res.faltaTratativa) {

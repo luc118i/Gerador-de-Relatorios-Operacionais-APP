@@ -9,6 +9,10 @@ import { OccurrencePreviewPage } from "./pages/occurrences/preview/OccurrencePre
 import { DriversPage } from "./pages/DriversPage";
 import { GerenciarNomesPage } from "./pages/GerenciarNomesPage";
 import { AdminAuthProvider } from "./context/AdminAuthContext";
+import { AppDrawer, type DrawerPage } from "./components/AppDrawer";
+import { AnaliseTelemetriaPage } from "./pages/AnaliseTelemetriaPage";
+import { EsquemasRotaPage } from "./pages/EsquemasRotaPage";
+import { LocaisPage } from "./pages/LocaisPage";
 
 type Page =
   | "home"
@@ -16,18 +20,16 @@ type Page =
   | "relatorio-diario"
   | "preview-ocorrencia"
   | "motoristas"
-  | "gerenciar-nomes";
+  | "gerenciar-nomes"
+  | DrawerPage;
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>("home");
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const [previewOccurrenceId, setPreviewOccurrenceId] = useState<string | null>(
-    null,
-  );
-  const [previewOccurrenceView, setPreviewOccurrenceView] =
-    useState<Ocorrencia | null>(null);
+  const [previewOccurrenceId, setPreviewOccurrenceId] = useState<string | null>(null);
+  const [previewOccurrenceView, setPreviewOccurrenceView] = useState<Ocorrencia | null>(null);
 
-  // Função auxiliar para limpar os estados de edição/preview ao criar uma nova
   const handleIrParaNovo = () => {
     setPreviewOccurrenceId(null);
     setPreviewOccurrenceView(null);
@@ -41,66 +43,89 @@ export default function App() {
     setCurrentPage("preview-ocorrencia");
   };
 
+  const drawerPage: DrawerPage | null =
+    currentPage === "analise-viagem" || currentPage === "esquemas-rota" || currentPage === "locais"
+      ? currentPage
+      : null;
+
   return (
     <AdminAuthProvider>
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <Toaster position="top-right" />
+      <div className="min-h-screen flex flex-col bg-gray-50">
+        <Toaster position="top-right" />
 
-      <main className="flex-grow">
-        {currentPage === "home" && (
-          <Home
-            onNovaOcorrencia={handleIrParaNovo}
-            onGerarRelatorio={() => setCurrentPage("relatorio-diario")}
-            onGerenciarMotoristas={() => setCurrentPage("motoristas")}
-            onGerenciarNomes={() => setCurrentPage("gerenciar-nomes")}
-          />
-        )}
+        <AppDrawer
+          open={drawerOpen}
+          currentPage={drawerPage}
+          onClose={() => setDrawerOpen(false)}
+          onNavigate={(page) => setCurrentPage(page)}
+        />
 
-        {currentPage === "nova-ocorrencia" && (
-          <NovaOcorrencia
-            onVoltar={() => setCurrentPage("home")}
-            onSaved={handleSavedToPreview}
-            // AQUI ESTÁ A CHAVE: Passamos o objeto que estava no preview para o formulário
-            edicao={previewOccurrenceView ?? undefined}
-          />
-        )}
-
-        {currentPage === "relatorio-diario" && (
-          <RelatorioDiario onVoltar={() => setCurrentPage("home")} />
-        )}
-
-        {currentPage === "preview-ocorrencia" &&
-          previewOccurrenceId &&
-          previewOccurrenceView && (
-            <OccurrencePreviewPage
-              occurrenceId={previewOccurrenceId}
-              occurrence={previewOccurrenceView}
-              onBack={() => setCurrentPage("home")}
-              onEdit={() => setCurrentPage("nova-ocorrencia")} // Agora o 'nova-ocorrencia' acima terá o 'edicao' preenchido
+        <main className="flex-grow">
+          {currentPage === "home" && (
+            <Home
+              onNovaOcorrencia={handleIrParaNovo}
+              onGerarRelatorio={() => setCurrentPage("relatorio-diario")}
+              onGerenciarMotoristas={() => setCurrentPage("motoristas")}
+              onGerenciarNomes={() => setCurrentPage("gerenciar-nomes")}
+              onOpenDrawer={() => setDrawerOpen(true)}
             />
           )}
 
-        {currentPage === "motoristas" && (
-          <DriversPage onVoltar={() => setCurrentPage("home")} />
-        )}
+          {currentPage === "nova-ocorrencia" && (
+            <NovaOcorrencia
+              onVoltar={() => setCurrentPage("home")}
+              onSaved={handleSavedToPreview}
+              edicao={previewOccurrenceView ?? undefined}
+            />
+          )}
 
-        {currentPage === "gerenciar-nomes" && (
-          <GerenciarNomesPage onVoltar={() => setCurrentPage("home")} />
-        )}
-      </main>
+          {currentPage === "relatorio-diario" && (
+            <RelatorioDiario onVoltar={() => setCurrentPage("home")} />
+          )}
 
-      <footer className="py-6 px-6 md:px-12 border-t border-gray-200 bg-transparent">
-        <div
-          className="max-w-7xl mx-auto text-center"
-          style={{ color: "#718096" }} // Um cinza um pouco mais escuro para melhor contraste
-        >
-          <p className="text-sm">
-            © {new Date().getFullYear()} Lucas Inacio • Gerador de Relatórios
-            Operacionais
-          </p>
-        </div>
-      </footer>
-    </div>
+          {currentPage === "preview-ocorrencia" &&
+            previewOccurrenceId &&
+            previewOccurrenceView && (
+              <OccurrencePreviewPage
+                occurrenceId={previewOccurrenceId}
+                occurrence={previewOccurrenceView}
+                onBack={() => setCurrentPage("home")}
+                onEdit={() => setCurrentPage("nova-ocorrencia")}
+              />
+            )}
+
+          {currentPage === "motoristas" && (
+            <DriversPage onVoltar={() => setCurrentPage("home")} />
+          )}
+
+          {currentPage === "gerenciar-nomes" && (
+            <GerenciarNomesPage onVoltar={() => setCurrentPage("home")} />
+          )}
+
+          {currentPage === "analise-viagem" && (
+            <AnaliseTelemetriaPage onVoltar={() => setCurrentPage("home")} />
+          )}
+
+          {currentPage === "esquemas-rota" && (
+            <EsquemasRotaPage onVoltar={() => setCurrentPage("home")} />
+          )}
+
+          {currentPage === "locais" && (
+            <LocaisPage onVoltar={() => setCurrentPage("home")} />
+          )}
+        </main>
+
+        <footer className="py-6 px-6 md:px-12 border-t border-gray-200 bg-transparent">
+          <div
+            className="max-w-7xl mx-auto text-center"
+            style={{ color: "#718096" }}
+          >
+            <p className="text-sm">
+              © {new Date().getFullYear()} Lucas Inacio • Gerador de Relatórios Operacionais
+            </p>
+          </div>
+        </footer>
+      </div>
     </AdminAuthProvider>
   );
 }

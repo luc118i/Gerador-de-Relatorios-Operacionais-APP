@@ -18,6 +18,7 @@ import {
   Loader2,
   X,
   BookMarked,
+  Menu,
 } from "lucide-react";
 import { useMemo, useState, useRef, useEffect, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -52,6 +53,7 @@ interface HomeProps {
   onGerarRelatorio: () => void;
   onGerenciarMotoristas: () => void;
   onGerenciarNomes: () => void;
+  onOpenDrawer: () => void;
 }
 
 export function Home({
@@ -59,6 +61,7 @@ export function Home({
   onGerarRelatorio,
   onGerenciarMotoristas,
   onGerenciarNomes,
+  onOpenDrawer,
 }: HomeProps) {
   const queryClient = useQueryClient();
   const { isAdmin, logout } = useAdminAuth();
@@ -410,6 +413,12 @@ export function Home({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="relative flex items-center gap-3">
+
+              {isAdmin && (
+                <NavBtn onClick={onOpenDrawer} tooltip="Módulos">
+                  <Menu className="w-4 h-4" />
+                </NavBtn>
+              )}
 
               <img src="/favicon.svg" alt="Logo" className="w-10 h-10 rounded-xl shrink-0 block" />
 
