@@ -255,11 +255,18 @@ export function OccurrenceCard({
     setDisciplinaryAction("verifying");
     try {
       const res = await verifyRizerOccurrence(occurrence.id, { useAgent: agentAvailable });
-      await queryClient.invalidateQueries({ queryKey: ["occurrences"] });
       if (!res.registered) {
+        // Não invalida queries aqui: o re-fetch reverteria o estado para "success"
+        // via useEffect e o modal nunca abriria.
         setDisciplinaryState("idle");
-        toast.warning("Não encontrado no RIZER — pode ser registrado novamente.");
+        toast.warning("Não encontrado no RIZER — selecione a tratativa para registrar.");
+        if (relatoriosFolderId && medidasFolderId) {
+          setShowRizerModal(true);
+        } else {
+          onNeedFolderConfig?.();
+        }
       } else {
+        await queryClient.invalidateQueries({ queryKey: ["occurrences"] });
         setDisciplinaryState("success");
         if (res.hasTratativa) {
           setLocalFaltaTratativa(false);

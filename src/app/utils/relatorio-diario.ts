@@ -21,7 +21,7 @@ const TRATATIVA_LABEL: Record<string, string> = {
 
 // ── buildDailyReport ──────────────────────────────────────────────────────────
 
-export function buildDailyReport(occurrences: OccurrenceDTO[]): {
+export function buildDailyReport(occurrences: OccurrenceDTO[], reportDate?: string): {
   textWithMarkers: string;  // para o textarea (detalhado, com [#01])
   textForCopy: string;      // formato compacto padrão
   textForWhatsApp: string;  // formato compacto whatsapp (idêntico ao padrão)
@@ -130,7 +130,9 @@ export function buildDailyReport(occurrences: OccurrenceDTO[]): {
 
   // ── Formato compacto para os botões Copiar ────────────────────────────────
   // Cabeçalho
-  const dateStr      = sorted.length ? formatDateBR(sorted[0]!.eventDate) : "";
+  const dateStr      = reportDate
+    ? formatDateBR(reportDate)
+    : (sorted.length ? formatDateBR(sorted[0]!.eventDate) : "");
   const compactHeader = `*RELATORIO DIARIO DO DIA ${dateStr}*`;
 
   // Uma linha por ocorrência

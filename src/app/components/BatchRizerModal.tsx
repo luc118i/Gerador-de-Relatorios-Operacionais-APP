@@ -49,12 +49,6 @@ export function BatchRizerModal({ open, subject, occs, onConfirm, onCancel }: Pr
     Object.fromEntries(occs.map((o) => [o.id, "advertencia" as TipoMedida]))
   );
 
-  // Re-init when occs change (modal reopened for different batch)
-  const occIds = occs.map((o) => o.id).join(",");
-  useState(() => {
-    setRows(Object.fromEntries(occs.map((o) => [o.id, "advertencia" as TipoMedida])));
-  });
-
   if (!open) return null;
 
   function setTipo(id: string, tipo: TipoMedida) {

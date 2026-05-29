@@ -19,6 +19,7 @@ import {
   X,
   BookMarked,
   Menu,
+  Clock,
 } from "lucide-react";
 import { useMemo, useState, useRef, useEffect, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -112,6 +113,9 @@ export function Home({
   // ── Pasta de relatórios (automação RIZER) ─────────────────
   const automationFolders = useAutomationFolders();
   const [showAutomationFolderModal, setShowAutomationFolderModal] = useState(false);
+
+  // ── Lembrete 17h ─────────────────────────────────────────
+  const [showReminder, setShowReminder] = useState(false);
 
   // ── Google Drive ──────────────────────────────────────────
   const driveFolder = useDriveFolder();
@@ -208,7 +212,30 @@ export function Home({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Lembrete diário às 17h em dias úteis
+  useEffect(() => {
+    function check() {
+      const now = new Date();
+      const dow = now.getDay();
+      if (dow === 0 || dow === 6) return; // fim de semana
+      if (now.getHours() < 17) return;   // antes das 17h
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+      const confirmed = localStorage.getItem("kandango_reminder_confirmed");
+      if (confirmed !== today) setShowReminder(true);
+    }
+    check();
+    const timer = setInterval(check, 60_000);
+    return () => clearInterval(timer);
+  }, []);
+
   // ── Handlers ──────────────────────────────────────────────
+  function handleConfirmReminder() {
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    localStorage.setItem("kandango_reminder_confirmed", today);
+    setShowReminder(false);
+  }
+
   function changeDay(offset: number) {
     const [year, month, day] = selectedDate.split("-").map(Number);
     const date = new Date(year, month - 1, day);
@@ -228,6 +255,7 @@ export function Home({
 
   async function startBatch(subject: string, items: BatchRizerItem[]) {
     if (!isAdmin || items.length === 0) return;
+    if (!automationFolders.config) { setShowAutomationFolderModal(true); return; }
     batchCancelRef.current = false;
     setBatchState({ subject, ids: items.map(i => i.id), currentId: null, doneCount: 0, cancelRequested: false });
 
@@ -407,6 +435,11 @@ export function Home({
   return (
     <div className="min-h-screen bg-gray-50">
       {showAdminLogin && <AdminLoginModal onClose={() => setShowAdminLogin(false)} />}
+
+      {/* Modal de lembrete às 17h */}
+      {showReminder && (
+        <ReminderModal onConfirm={handleConfirmReminder} />
+      )}
 
       {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
@@ -945,16 +978,19 @@ export function Home({
       )}
 
       {/* Modal de Confirmação do Batch */}
-      <BatchRizerModal
-        open={!!batchConfirm}
-        subject={batchConfirm?.subject ?? ""}
-        occs={batchConfirm?.occs ?? []}
-        onConfirm={(items) => {
-          setBatchConfirm(null);
-          startBatch(batchConfirm!.subject, items);
-        }}
-        onCancel={() => setBatchConfirm(null)}
-      />
+      {batchConfirm && (
+        <BatchRizerModal
+          open={true}
+          subject={batchConfirm.subject}
+          occs={batchConfirm.occs}
+          onConfirm={(items) => {
+            const subject = batchConfirm.subject;
+            setBatchConfirm(null);
+            startBatch(subject, items);
+          }}
+          onCancel={() => setBatchConfirm(null)}
+        />
+      )}
 
       {/* Modal de Confirmação do Batch de Tratativas */}
       {batchTratativaConfirm && (
@@ -1037,6 +1073,56 @@ export function Home({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ── ReminderModal ─────────────────────────────────────────────────────────────
+
+function ReminderModal({ onConfirm }: { onConfirm: () => void }) {
+  const now = new Date();
+  const hour = String(now.getHours()).padStart(2, "0");
+  const min  = String(now.getMinutes()).padStart(2, "0");
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
+        {/* Topo colorido */}
+        <div className="bg-amber-500 px-5 py-4 flex items-center gap-3">
+          <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+            <Clock className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <p className="text-white font-bold text-sm leading-none">Lembrete — {hour}h{min}</p>
+            <p className="text-amber-100 text-xs mt-0.5">Encerramento do turno</p>
+          </div>
+        </div>
+
+        {/* Corpo */}
+        <div className="px-5 py-5 space-y-3">
+          <p className="text-sm text-gray-700 leading-relaxed">
+            Confira se todas as ocorrencias foram apuradas e envie o{" "}
+            <span className="font-semibold text-gray-900">Relatorio Diario</span>{" "}
+            para o Google Drive antes de encerrar o turno.
+          </p>
+          <div className="flex items-start gap-2 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2.5">
+            <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+            <p className="text-xs text-amber-700 leading-relaxed">
+              Use o botao <span className="font-semibold">Drive</span> no topo da pagina para enviar o PDF automaticamente.
+            </p>
+          </div>
+        </div>
+
+        {/* Rodape */}
+        <div className="px-5 py-4 border-t border-gray-100 bg-gray-50 flex justify-end">
+          <button
+            onClick={onConfirm}
+            className="cursor-pointer h-9 px-6 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold transition-colors"
+          >
+            Confirmar
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
