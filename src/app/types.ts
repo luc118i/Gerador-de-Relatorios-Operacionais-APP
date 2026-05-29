@@ -57,6 +57,8 @@ export interface Ocorrencia {
   showSectionTripulacao?: boolean;    // Exibir seção "Tripulação" no PDF
   showSectionPassageiros?: boolean;   // Exibir seção "Passageiros" no PDF
   devolutivaBeforeEvidences?: boolean; // Devolutiva antes das evidências no PDF
+  tratativa?: "SUSPEICAO" | "ADVERTENCIA" | "VALE" | "REGISTRO" | null;
+  analisadoPor?: string | null;
 }
 
 export type ApiError = {

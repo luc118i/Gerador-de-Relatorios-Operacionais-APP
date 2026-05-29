@@ -34,6 +34,8 @@ export function buildOccurrencePayload(args: {
   showSectionTripulacao?: boolean;
   showSectionPassageiros?: boolean;
   devolutivaBeforeEvidences?: boolean;
+  tratativa?: "SUSPEICAO" | "ADVERTENCIA" | "VALE" | "REGISTRO" | null;
+  analisadoPor?: string | null;
 }): CreateOccurrenceInput {
   const tripulacaoAtiva = args.showSectionTripulacao !== false;
 
@@ -86,6 +88,8 @@ export function buildOccurrencePayload(args: {
     showSectionTripulacao: args.showSectionTripulacao ?? true,
     showSectionPassageiros: args.showSectionPassageiros ?? true,
     devolutivaBeforeEvidences: args.devolutivaBeforeEvidences ?? false,
+    tratativa: args.tratativa ?? null,
+    analisadoPor: args.analisadoPor ?? null,
     drivers,
     // baseCode: não manda (backend deriva)
   };

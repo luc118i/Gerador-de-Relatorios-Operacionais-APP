@@ -7,7 +7,6 @@ export const reportsDriveApi = {
     accessToken?: string;
     folderId?: string;
     fileName?: string;
-    /** Se true, substitui o arquivo existente no Drive em vez de criar um novo */
     force?: boolean;
   }) {
     return request<OccurrenceDriveResponse>({
@@ -19,6 +18,18 @@ export const reportsDriveApi = {
         ...(args.fileName    ? { fileName: args.fileName }       : {}),
         ...(args.force       ? { force: true }                   : {}),
       },
+    });
+  },
+
+  sendDailyReportToDrive(args: {
+    date: string;
+    accessToken: string;
+    folderId: string;
+  }): Promise<{ data: { fileName: string; webViewLink: string } }> {
+    return request<{ data: { fileName: string; webViewLink: string } }>({
+      method: "POST",
+      path: `/reports/daily/${args.date}/drive`,
+      body: { accessToken: args.accessToken, folderId: args.folderId },
     });
   },
 };

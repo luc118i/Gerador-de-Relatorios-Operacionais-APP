@@ -50,6 +50,9 @@ export type CreateOccurrenceInput = {
   devolutivaBeforeEvidences?: boolean | null;
 
   drivers: OccurrenceDriverInput[];
+
+  tratativa?: "SUSPEICAO" | "ADVERTENCIA" | "VALE" | "REGISTRO" | null;
+  analisadoPor?: string | null;
 };
 // envelope padrão que o backend usa em listas (GET /drivers, GET /occurrences)
 export type ApiData<T> = { data: T };
@@ -106,6 +109,9 @@ export type OccurrenceDTO = {
   rizerRegistered?: boolean;
   advertencia?: boolean;
   faltaTratativa?: boolean;
+  tratativa?: "SUSPEICAO" | "ADVERTENCIA" | "VALE" | "REGISTRO" | null;
+  analisadoPor?: string | null;
+  justificativaRegistro?: string | null;
 };
 
 export type CreateOccurrenceFormInput = {

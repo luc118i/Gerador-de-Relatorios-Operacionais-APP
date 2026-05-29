@@ -73,6 +73,10 @@ export function useNovaOcorrenciaForm({ onSaved, edicao }: NovaOcorrenciaProps) 
   const [schemaHtml, setSchemaHtml] = useState<string | null>(null);
   const [schemaStatus, setSchemaStatus] = useState<"idle" | "loading" | "found" | "not_found">("idle");
 
+  // ── Análise e Tratativa ──────────────────────────────────────────────────
+  const [tratativa, setTratativa] = useState<"SUSPEICAO" | "ADVERTENCIA" | "VALE" | "REGISTRO" | null>(null);
+  const [analisadoPor, setAnalisadoPor] = useState("");
+
   // ── Evidências ───────────────────────────────────────────────────────────
   const [evidencias, setEvidencias] = useState<Evidencia[]>([]);
 
@@ -191,6 +195,8 @@ export function useNovaOcorrenciaForm({ onSaved, edicao }: NovaOcorrenciaProps) 
     setShowSectionDados(edicao.showSectionDados ?? true);
     setShowSectionTripulacao(edicao.showSectionTripulacao ?? true);
     setShowSectionPassageiros(edicao.showSectionPassageiros ?? true);
+    setTratativa((edicao as any).tratativa ?? null);
+    setAnalisadoPor((edicao as any).analisadoPor ?? "");
 
     const [codigo, ...resto] = (viagemSalva.linha || "").split(" - ");
     setViagemSelecionada({
@@ -420,6 +426,8 @@ export function useNovaOcorrenciaForm({ onSaved, edicao }: NovaOcorrenciaProps) 
         showSectionTripulacao: typeConfig.isGeneric ? showSectionTripulacao : true,
         showSectionPassageiros: typeConfig.isGeneric ? showSectionPassageiros : true,
         devolutivaBeforeEvidences: typeConfig.isGeneric ? devolutivaBeforeEvidences : false,
+        tratativa: tratativa ?? null,
+        analisadoPor: analisadoPor.trim() || null,
       });
 
       let resultId: string;
@@ -477,6 +485,8 @@ export function useNovaOcorrenciaForm({ onSaved, edicao }: NovaOcorrenciaProps) 
         showSectionTripulacao: typeConfig.isGeneric ? showSectionTripulacao : true,
         showSectionPassageiros: typeConfig.isGeneric ? showSectionPassageiros : true,
         devolutivaBeforeEvidences: typeConfig.isGeneric ? devolutivaBeforeEvidences : false,
+        tratativa: tratativa ?? null,
+        analisadoPor: analisadoPor.trim() || null,
       };
 
       setSaveStatus("success");
@@ -527,6 +537,9 @@ export function useNovaOcorrenciaForm({ onSaved, edicao }: NovaOcorrenciaProps) 
     isDriverModalOpen, setIsDriverModalOpen,
     createTarget, setCreateTarget,
     handleDriverCreated,
+    // análise e tratativa
+    tratativa, setTratativa,
+    analisadoPor, setAnalisadoPor,
     // esquema (DESCUMP_OP_PARADA_FORA)
     schemaStatus,
     // evidências

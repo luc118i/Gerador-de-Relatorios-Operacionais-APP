@@ -10,10 +10,21 @@ export type ReportAnchor = {
   baseCode: string;
 };
 
+// ── Rótulos de tratativa ──────────────────────────────────────────────────────
+
+const TRATATIVA_LABEL: Record<string, string> = {
+  SUSPEICAO:   "Suspeição",
+  ADVERTENCIA: "Advertência",
+  VALE:        "Vale",
+  REGISTRO:    "Só o Registro",
+};
+
+// ── buildDailyReport ──────────────────────────────────────────────────────────
+
 export function buildDailyReport(occurrences: OccurrenceDTO[]): {
-  textWithMarkers: string;   // para o textarea (com [#01])
-  textForCopy: string;       // formato padrão (sem marcadores)
-  textForWhatsApp: string;   // formato whatsapp
+  textWithMarkers: string;  // para o textarea (detalhado, com [#01])
+  textForCopy: string;      // formato compacto padrão
+  textForWhatsApp: string;  // formato compacto whatsapp (idêntico ao padrão)
   anchors: ReportAnchor[];
   totals: {
     occurrences: number;
@@ -41,34 +52,28 @@ export function buildDailyReport(occurrences: OccurrenceDTO[]): {
 
   const sep = "-".repeat(80);
   const anchors: ReportAnchor[] = [];
-
   let outVisual = "";
-  let outCopy = "";
-  const wppBlocks: string[] = [];
 
+  // ── Loop principal — monta o textarea detalhado e os anchors ──────────────
   sorted.forEach((o, idx) => {
-    const key = `#${String(idx + 1).padStart(2, "0")}`;
-    const marker = `[${key}]`;
+    const key      = `#${String(idx + 1).padStart(2, "0")}`;
+    const marker   = `[${key}]`;
     const startIndex = outVisual.length;
 
     const eventDate = formatDateBR(o.eventDate);
     const tripDate  = formatDateBR(o.tripDate);
     const start     = formatHourBR(o.startTime);
     const end       = formatHourBR(o.endTime);
+    const line      = o.lineLabel ?? "—";
+    const place     = o.place     ?? "—";
+    const base      = o.baseCode  ?? "—";
 
-    const line  = o.lineLabel ?? "—";
-    const place = o.place     ?? "—";
-    const base  = o.baseCode  ?? "—";
-
-    // ── Título: usa reportTitle para GENERICO ─────────────────────────
     const occTitle =
       o.typeCode === "GENERICO" && o.reportTitle
         ? o.reportTitle
         : o.typeTitle;
 
-    // ── Horário: não repete quando inicio = fim ────────────────────────
     const timeDisplay = start === end ? start : `${start} à ${end}`;
-
     const compact = `${o.startTime} • ${o.vehicleNumber} • ${truncate(place, 32)}`;
 
     anchors.push({
@@ -83,7 +88,6 @@ export function buildDailyReport(occurrences: OccurrenceDTO[]): {
 
     const narrativa = buildNarrativa(o, eventDate, tripDate, start, end);
 
-    // ── Bloco visual (textarea) ────────────────────────────────────────
     const blockVisual =
       `${marker} OCORRÊNCIA: ${occTitle}\n` +
       `DATA: ${eventDate}\n` +
@@ -94,77 +98,75 @@ export function buildDailyReport(occurrences: OccurrenceDTO[]): {
       (o.typeCode === "EXCESSO_VELOCIDADE" ? `VELOCIDADE: ${o.speedKmh ?? "—"} km/h\n` : "") +
       `BASE: ${base}\n`;
 
-    // ── Bloco para copiar (padrão) ─────────────────────────────────────
-    const blockCopy =
-      `OCORRÊNCIA: ${occTitle}\n` +
-      `DATA: ${eventDate}\n` +
-      `Horario do evento: ${timeDisplay}.\n` +
-      `${narrativa}\n` +
-      `LINHA: ${line}\n` +
-      (o.typeCode !== "EXCESSO_VELOCIDADE" ? `LOCAL: ${place}\n` : "") +
-      (o.typeCode === "EXCESSO_VELOCIDADE" ? `VELOCIDADE: ${o.speedKmh ?? "—"} km/h\n` : "") +
-      `BASE: ${base}\n`;
-
     outVisual += blockVisual;
-    outCopy   += blockCopy;
-
-    // ── Bloco WhatsApp ─────────────────────────────────────────────────
-    wppBlocks.push(buildWhatsAppBlock(o, idx, occTitle, eventDate, start, end, place, line));
 
     if (idx < sorted.length - 1) {
       outVisual += `${sep}\n\n`;
-      outCopy   += `${sep}\n\n`;
     }
   });
 
-  // ── Cabeçalho WhatsApp ─────────────────────────────────────────────
-  const wppHeader =
-    totals.occurrences > 0
-      ? `📋 *RELATÓRIO DIÁRIO — ${formatDateBR(sorted[0]!.eventDate)}*\n` +
-        `${totals.occurrences} ocorrência${totals.occurrences > 1 ? "s" : ""} registrada${totals.occurrences > 1 ? "s" : ""}\n\n`
-      : "";
+  // ── Bloco de Apuração no textarea ─────────────────────────────────────────
+  const apuracaoLinhas = sorted
+    .filter((o) => o.tratativa)
+    .map((o) => {
+      const nome =
+        o.typeCode === "GENERICO" && o.reportTitle ? o.reportTitle : o.typeTitle;
+      const trat     = TRATATIVA_LABEL[o.tratativa!] ?? o.tratativa!;
+      const analista = o.analisadoPor?.trim() || "—";
+      const base     = `${o.vehicleNumber} - ${nome} - ${trat} - ${analista}`;
+      if (o.justificativaRegistro?.trim()) {
+        return `${base}\n  Justificativa: ${o.justificativaRegistro.trim()}`;
+      }
+      return base;
+    });
 
-  const textForWhatsApp = wppHeader + wppBlocks.join("\n─────────────────────\n\n");
+  if (apuracaoLinhas.length > 0) {
+    outVisual +=
+      `\n${"=".repeat(80)}\n` +
+      `APURAÇÃO\n` +
+      apuracaoLinhas.join("\n") +
+      "\n";
+  }
+
+  // ── Formato compacto para os botões Copiar ────────────────────────────────
+  // Cabeçalho
+  const dateStr      = sorted.length ? formatDateBR(sorted[0]!.eventDate) : "";
+  const compactHeader = `*RELATORIO DIARIO DO DIA ${dateStr}*`;
+
+  // Uma linha por ocorrência
+  const compactLines = sorted.map((o) => {
+    const baseNome = o.typeCode === "GENERICO" && o.reportTitle
+      ? o.reportTitle
+      : o.typeTitle;
+    const nome = o.typeCode === "EXCESSO_VELOCIDADE" && o.speedKmh != null
+      ? `${baseNome} (${o.speedKmh} km/h)`
+      : baseNome;
+    const trat     = o.tratativa
+      ? (TRATATIVA_LABEL[o.tratativa] ?? o.tratativa)
+      : "Sem tratativa";
+    const analista = o.analisadoPor?.trim() || "—";
+
+    let line = `${o.vehicleNumber} - ${nome} - ${trat} - \`${analista}\``;
+
+    if (o.justificativaRegistro?.trim()) {
+      line += `\n  ${o.justificativaRegistro.trim()}`;
+    }
+
+    return line;
+  });
+
+  const compactText = compactHeader + "\n" + compactLines.join("\n");
 
   return {
     textWithMarkers: outVisual,
-    textForCopy: outCopy,
-    textForWhatsApp,
+    textForCopy:     compactText,
+    textForWhatsApp: compactText,
     anchors,
     totals,
   };
 }
 
 // ── Builders internos ─────────────────────────────────────────────────────────
-
-function buildWhatsAppBlock(
-  o: OccurrenceDTO,
-  idx: number,
-  title: string,
-  eventDate: string,
-  start: string,
-  end: string,
-  place: string,
-  line: string,
-): string {
-  const num = `${idx + 1}.`;
-  const timeDisplay = start === end ? start : `${start} às ${end}`;
-  const driver = o.drivers[0];
-
-  let block = `${num} *${title.toUpperCase()}*\n`;
-  block += `📅 ${eventDate}  ⏰ ${timeDisplay}\n`;
-  block += `🚌 Veículo *${o.vehicleNumber}*`;
-  if (line && line !== "—") block += `  |  ${line}`;
-  block += "\n";
-  if (driver) block += `👤 ${driver.name}\n`;
-  if (o.typeCode !== "EXCESSO_VELOCIDADE" && place && place !== "—")
-    block += `📍 ${place}\n`;
-  if (o.typeCode === "EXCESSO_VELOCIDADE" && o.speedKmh)
-    block += `⚡ *${o.speedKmh} km/h*\n`;
-  block += `🏢 Base: ${o.baseCode ?? "—"}`;
-
-  return block;
-}
 
 function buildNarrativa(
   o: OccurrenceDTO,

@@ -123,6 +123,19 @@ export const occurrencesApi = {
     return json.data;
   },
 
+  async patchTratativa(
+    id: string,
+    tratativa: string | null,
+    analisadoPor: string | null,
+    justificativaRegistro?: string | null,
+  ): Promise<void> {
+    await request<{ ok: boolean }>({
+      method: "PATCH",
+      path: `/occurrences/${id}/tratativa`,
+      body: { tratativa, analisadoPor, justificativaRegistro },
+    });
+  },
+
   async getTripSchema(tripId: string): Promise<{ found: boolean; html?: string }> {
     return request<{ found: boolean; html?: string }>({
       method: "GET",

@@ -11,6 +11,7 @@ import {
   Pencil,
   Sparkles,
   Trash2,
+  UserCheck,
   Zap,
   ShieldAlert,
   AlertTriangle,
@@ -35,6 +36,27 @@ import { BaseChip } from "./base-chip";
 import { aiApi } from "../../api/ai.api";
 import { SuspensaoModal } from "./SuspensaoModal";
 import { RizerRegisterModal, type TipoMedida } from "./RizerRegisterModal";
+
+// ── TratativaBadge ────────────────────────────────────────────────────────────
+const TRATATIVA_META: Record<string, { label: string; dot: string; cls: string }> = {
+  SUSPEICAO:   { label: "Suspeição",      dot: "bg-violet-500", cls: "bg-violet-50 text-violet-700 border border-violet-200" },
+  ADVERTENCIA: { label: "Advertência",    dot: "bg-amber-400",  cls: "bg-amber-50 text-amber-700 border border-amber-200"   },
+  VALE:        { label: "Vale",           dot: "bg-red-500",    cls: "bg-red-50 text-red-700 border border-red-200"         },
+  REGISTRO:    { label: "Só o Registro",  dot: "bg-gray-400",   cls: "bg-gray-100 text-gray-600 border border-gray-200"     },
+};
+
+function TratativaBadge({ value, size = "sm" }: { value: string; size?: "xs" | "sm" }) {
+  const meta = TRATATIVA_META[value];
+  if (!meta) return null;
+  const textCls = size === "xs" ? "text-[10px]" : "text-xs";
+  const dotCls  = size === "xs" ? "w-1.5 h-1.5"  : "w-2 h-2";
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-semibold leading-none ${textCls} ${meta.cls}`}>
+      <span className={`rounded-full flex-shrink-0 ${dotCls} ${meta.dot}`} />
+      {meta.label}
+    </span>
+  );
+}
 
 // ── SVG Google Drive (inline, sem dependência externa) ────────────────────────
 function DriveIcon({ className }: { className?: string }) {
@@ -538,6 +560,9 @@ export function OccurrenceCard({
                 Falta a tratativa
               </span>
             )}
+            {occurrence.tratativa && (
+              <TratativaBadge value={occurrence.tratativa} size="xs" />
+            )}
           </div>
           {subjectDetail && (
             <span className="text-[11px] text-gray-400 truncate block leading-tight">
@@ -759,6 +784,9 @@ export function OccurrenceCard({
               <span className="text-xs font-semibold">Falta a tratativa</span>
             </div>
           )}
+          {occurrence.tratativa && (
+            <TratativaBadge value={occurrence.tratativa} size="sm" />
+          )}
         </div>
       </div>
 
@@ -791,9 +819,17 @@ export function OccurrenceCard({
           <p className="text-sm text-gray-600">📍 {occurrence.place}</p>
         )}
 
-        <div className="text-xs text-gray-500 pt-2 border-t border-gray-100">
-          {driver1?.name ?? "—"}
-          {driver2?.name ? ` • ${driver2.name}` : ""}
+        <div className="text-xs text-gray-500 pt-2 border-t border-gray-100 flex items-center justify-between gap-2">
+          <span>
+            {driver1?.name ?? "—"}
+            {driver2?.name ? ` • ${driver2.name}` : ""}
+          </span>
+          {occurrence.analisadoPor && (
+            <span className="text-[11px] text-gray-400 flex items-center gap-1 flex-shrink-0">
+              <UserCheck className="w-3 h-3" />
+              {occurrence.analisadoPor}
+            </span>
+          )}
         </div>
       </div>
 

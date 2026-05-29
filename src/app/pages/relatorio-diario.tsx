@@ -1,11 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
-import type { ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode, FormEvent } from "react";
 import {
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
   Copy,
-  Download,
   Check,
   AlertTriangle,
   Car,
@@ -21,10 +20,20 @@ import {
   FileText,
   MessageCircle,
   Printer,
-  ShieldAlert,
   Gavel,
   Loader2,
+  UserCheck,
+  ClipboardCheck,
+  SlidersHorizontal,
+  CloudUpload,
+  Lock,
+  Eye,
+  EyeOff,
+  ShieldCheck,
 } from "lucide-react";
+import { DrivePickerModal } from "./occurrences/preview/components/DrivePickerModal";
+import { useDriveFolder, type DriveFolderConfig } from "../../hooks/useDriveFolder";
+import { reportsDriveApi } from "../../api/reportsDrive.api";
 import { registerDisciplinaryOccurrence } from "../../api/automation.api";
 import { useAdminAuth } from "../context/AdminAuthContext";
 import { AdminLoginModal } from "../components/AdminLoginModal";
@@ -37,7 +46,7 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
-import { getOccurrencesByDay, getDailyReportPdf } from "../../api/occurrences.api";
+import { getOccurrencesByDay, getDailyReportPdf, occurrencesApi } from "../../api/occurrences.api";
 import type { OccurrenceDTO } from "../../domain/occurrences";
 import { buildDailyReport } from "../utils/relatorio-diario";
 
@@ -153,6 +162,7 @@ interface RelatorioDiarioProps {
 }
 
 export function RelatorioDiario({ onVoltar }: RelatorioDiarioProps) {
+  const { isAdmin } = useAdminAuth();
   const [dataSelecionada, setDataSelecionada] = useState(todayISO);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -165,14 +175,57 @@ export function RelatorioDiario({ onVoltar }: RelatorioDiarioProps) {
   const [filterBase, setFilterBase] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [exportingPdf, setExportingPdf] = useState(false);
+  const [apuracaoSaving, setApuracaoSaving] = useState(false);
+  const [showFilterPanel, setShowFilterPanel] = useState(false);
+  const [reportExcludedCodes, setReportExcludedCodes] = useState<Set<string>>(new Set());
+  const [showDrivePicker, setShowDrivePicker] = useState(false);
+  const [sendingToDrive, setSendingToDrive] = useState(false);
+  const [driveSent, setDriveSent] = useState(false);
+  const [showReminder, setShowReminder] = useState(false);
 
-  // Fecha menu de cópia ao clicar fora
+  const { config: driveConfig, save: saveDriveConfig } = useDriveFolder();
+  const filterPanelRef = useRef<HTMLDivElement>(null);
+  const copyMenuRef    = useRef<HTMLDivElement>(null);
+
+  // Fecha menu de cópia ao clicar FORA do container (não interfere com os botões internos)
   useEffect(() => {
     if (!showCopyMenu) return;
-    const close = () => setShowCopyMenu(false);
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
+    function handleOutside(e: MouseEvent) {
+      if (copyMenuRef.current && !copyMenuRef.current.contains(e.target as Node)) {
+        setShowCopyMenu(false);
+      }
+    }
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
   }, [showCopyMenu]);
+
+  // Fecha painel de filtro de relatório ao clicar fora
+  useEffect(() => {
+    if (!showFilterPanel) return;
+    function handleOutside(e: MouseEvent) {
+      if (filterPanelRef.current && !filterPanelRef.current.contains(e.target as Node)) {
+        setShowFilterPanel(false);
+      }
+    }
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [showFilterPanel]);
+
+  // Lembrete diário às 17h em dias úteis
+  useEffect(() => {
+    function check() {
+      const now = new Date();
+      const dow = now.getDay();
+      if (dow === 0 || dow === 6) return; // fim de semana
+      if (now.getHours() < 17) return;   // antes das 17h
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+      const confirmed = localStorage.getItem("kandango_reminder_confirmed");
+      if (confirmed !== today) setShowReminder(true);
+    }
+    check();
+    const timer = setInterval(check, 60_000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -185,7 +238,23 @@ export function RelatorioDiario({ onVoltar }: RelatorioDiarioProps) {
     return () => { alive = false; };
   }, [dataSelecionada]);
 
-  const report = useMemo(() => buildDailyReport(occurrences), [occurrences]);
+  const typeCodesInDay = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const o of occurrences) {
+      if (!seen.has(o.typeCode)) seen.set(o.typeCode, o.typeTitle);
+    }
+    return [...seen.entries()].map(([code, title]) => ({ code, title }));
+  }, [occurrences]);
+
+  const reportOccurrences = useMemo(
+    () =>
+      reportExcludedCodes.size === 0
+        ? occurrences
+        : occurrences.filter((o) => !reportExcludedCodes.has(o.typeCode)),
+    [occurrences, reportExcludedCodes],
+  );
+
+  const report = useMemo(() => buildDailyReport(reportOccurrences), [reportOccurrences]);
 
   const filtered = useMemo(
     () =>
@@ -298,7 +367,8 @@ export function RelatorioDiario({ onVoltar }: RelatorioDiarioProps) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `relatorio-diario-${dataSelecionada}.pdf`;
+      const [yy, mm, dd] = dataSelecionada.split("-");
+      a.download = `${dd}.${mm}.${yy} - RELATORIO DIARIO MONITORAMENTO.pdf`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -309,6 +379,43 @@ export function RelatorioDiario({ onVoltar }: RelatorioDiarioProps) {
       setExportingPdf(false);
     }
   }
+
+  function handleConfirmReminder() {
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    localStorage.setItem("kandango_reminder_confirmed", today);
+    setShowReminder(false);
+  }
+
+  async function handleSendToDrive({
+    config,
+    accessToken,
+    saveAsDefault,
+  }: {
+    config: DriveFolderConfig;
+    accessToken: string;
+    saveAsDefault: boolean;
+  }) {
+    if (saveAsDefault) saveDriveConfig(config);
+    setShowDrivePicker(false);
+    setSendingToDrive(true);
+    setDriveSent(false);
+    try {
+      await reportsDriveApi.sendDailyReportToDrive({
+        date: dataSelecionada,
+        accessToken,
+        folderId: config.folderId,
+      });
+      setDriveSent(true);
+      setTimeout(() => setDriveSent(false), 4000);
+    } catch (e: any) {
+      alert(`Falha ao enviar para o Drive: ${e?.message ?? "erro desconhecido"}`);
+    } finally {
+      setSendingToDrive(false);
+    }
+  }
+
+  if (!isAdmin) return <AdminGate onVoltar={onVoltar} />;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -381,7 +488,7 @@ export function RelatorioDiario({ onVoltar }: RelatorioDiarioProps) {
               </div>
 
               {/* Botão copiar com dropdown */}
-              <div className="relative">
+              <div ref={copyMenuRef} className="relative">
                 <div
                   className={`flex items-center rounded-lg border overflow-hidden transition-colors ${
                     canActions
@@ -438,37 +545,129 @@ export function RelatorioDiario({ onVoltar }: RelatorioDiarioProps) {
               {/* PDF */}
               <button
                 onClick={handleExportarPDF}
-                disabled={!canActions || exportingPdf}
+                disabled={!canActions || exportingPdf || apuracaoSaving}
                 className={`cursor-pointer h-8 px-3 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors ${
-                  canActions && !exportingPdf
+                  canActions && !exportingPdf && !apuracaoSaving
                     ? "bg-gray-800 text-white hover:bg-gray-900"
                     : "bg-gray-100 text-gray-400 cursor-not-allowed"
                 }`}
-                title="Baixar relatório diário em PDF"
+                title={apuracaoSaving ? "Aguarde — salvando apurações..." : "Baixar relatório diário em PDF"}
               >
-                {exportingPdf ? (
+                {exportingPdf || apuracaoSaving ? (
                   <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
                     <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeDasharray="32" strokeDashoffset="12" />
                   </svg>
                 ) : (
                   <Printer className="w-3.5 h-3.5" />
                 )}
-                {exportingPdf ? "Gerando..." : "PDF"}
+                {exportingPdf ? "Gerando..." : apuracaoSaving ? "Salvando..." : "PDF"}
               </button>
 
-              {/* TXT */}
+              {/* Filtro de tipos no relatório */}
+              <div ref={filterPanelRef} className="relative">
+                <button
+                  onClick={() => canActions && setShowFilterPanel((v) => !v)}
+                  disabled={!canActions}
+                  className={`cursor-pointer h-8 px-2.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors border ${
+                    canActions
+                      ? showFilterPanel
+                        ? "border-gray-300 bg-gray-100 text-gray-700"
+                        : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                      : "border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed"
+                  }`}
+                  title="Filtrar tipos de ocorrência no relatório"
+                >
+                  <SlidersHorizontal className="w-3.5 h-3.5" />
+                  {reportExcludedCodes.size > 0 && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-orange-500 shrink-0" />
+                  )}
+                </button>
+
+                {showFilterPanel && canActions && (
+                  <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-2 min-w-[220px]">
+                    <div className="px-3 pb-2 border-b border-gray-100 mb-1">
+                      <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
+                        Tipos no relatório
+                      </p>
+                    </div>
+                    {typeCodesInDay.map(({ code, title }) => {
+                      const included = !reportExcludedCodes.has(code);
+                      return (
+                        <button
+                          key={code}
+                          type="button"
+                          onClick={() =>
+                            setReportExcludedCodes((prev) => {
+                              const next = new Set(prev);
+                              if (included) next.add(code);
+                              else next.delete(code);
+                              return next;
+                            })
+                          }
+                          className="w-full px-3 py-2 flex items-center gap-2.5 text-xs hover:bg-gray-50 transition-colors text-left"
+                        >
+                          <div
+                            className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-colors ${
+                              included
+                                ? "bg-blue-600 border-blue-600"
+                                : "bg-white border-gray-300"
+                            }`}
+                          >
+                            {included && (
+                              <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </div>
+                          <span className="text-gray-700 font-medium flex-1 truncate">
+                            {abbrevType(code, title)}
+                          </span>
+                          <span className="text-gray-400 text-[10px] tabular-nums">
+                            {occurrences.filter((o) => o.typeCode === code).length}
+                          </span>
+                        </button>
+                      );
+                    })}
+                    {reportExcludedCodes.size > 0 && (
+                      <div className="px-3 pt-2 border-t border-gray-100 mt-1">
+                        <button
+                          type="button"
+                          onClick={() => setReportExcludedCodes(new Set())}
+                          className="cursor-pointer text-[11px] text-blue-600 hover:text-blue-800 font-medium"
+                        >
+                          Incluir todos
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Drive */}
               <button
-                onClick={handleExportar}
-                disabled={!canActions}
+                onClick={() => canActions && !driveSent && setShowDrivePicker(true)}
+                disabled={!canActions || sendingToDrive || apuracaoSaving}
                 className={`cursor-pointer h-8 px-3 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors ${
-                  canActions
-                    ? "bg-blue-600 text-white hover:bg-blue-700"
-                    : "bg-blue-100 text-blue-300 cursor-not-allowed"
+                  !canActions || apuracaoSaving
+                    ? "bg-blue-100 text-blue-300 cursor-not-allowed"
+                    : sendingToDrive
+                      ? "bg-blue-500 text-white cursor-not-allowed"
+                      : driveSent
+                        ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                        : "bg-blue-600 text-white hover:bg-blue-700"
                 }`}
-                title="Exportar como .txt"
+                title={driveSent ? "Relatório enviado ao Drive" : "Enviar relatório diário para o Google Drive"}
               >
-                <Download className="w-3.5 h-3.5" />
-                .txt
+                {sendingToDrive ? (
+                  <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeDasharray="32" strokeDashoffset="12" />
+                  </svg>
+                ) : driveSent ? (
+                  <Check className="w-3.5 h-3.5" />
+                ) : (
+                  <CloudUpload className="w-3.5 h-3.5" />
+                )}
+                {sendingToDrive ? "Enviando..." : driveSent ? "Enviado!" : "Drive"}
               </button>
             </div>
           </div>
@@ -768,7 +967,10 @@ export function RelatorioDiario({ onVoltar }: RelatorioDiarioProps) {
               </div>
             </div>
 
-            {/* ── Bloco 6: Relatório texto (colapsável) ───────────────── */}
+            {/* ── Bloco 6: Apuração ───────────────────────────────────── */}
+            <ApuracaoTable occurrences={occurrences} onSavingChange={setApuracaoSaving} />
+
+            {/* ── Bloco 7: Relatório texto (colapsável) ───────────────── */}
             <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
               <button
                 onClick={() => setShowReport((v) => !v)}
@@ -798,6 +1000,20 @@ export function RelatorioDiario({ onVoltar }: RelatorioDiarioProps) {
           </>
         )}
       </main>
+
+      {/* Modal de lembrete às 17h */}
+      {showReminder && (
+        <ReminderModal onConfirm={handleConfirmReminder} />
+      )}
+
+      {/* Drive picker modal */}
+      {showDrivePicker && (
+        <DrivePickerModal
+          currentConfig={driveConfig}
+          onConfirm={handleSendToDrive}
+          onClose={() => setShowDrivePicker(false)}
+        />
+      )}
     </div>
   );
 }
@@ -1065,6 +1281,461 @@ function DetailItem({ label, value }: { label: string; value: string }) {
     <div>
       <div className="text-gray-400 mb-0.5">{label}</div>
       <div className="font-medium text-gray-700 truncate">{value}</div>
+    </div>
+  );
+}
+
+// ── Apuração ──────────────────────────────────────────────────────────────────
+
+type TratativaKey = "SUSPEICAO" | "ADVERTENCIA" | "VALE" | "REGISTRO";
+
+const TRATATIVA_OPTIONS: { value: TratativaKey; label: string; dot: string; badge: string }[] = [
+  { value: "SUSPEICAO",   label: "Suspeição",     dot: "bg-violet-500", badge: "bg-violet-50 text-violet-700 border-violet-200" },
+  { value: "ADVERTENCIA", label: "Advertência",   dot: "bg-amber-400",  badge: "bg-amber-50  text-amber-700  border-amber-200"  },
+  { value: "VALE",        label: "Vale",          dot: "bg-red-500",    badge: "bg-red-50    text-red-700    border-red-200"    },
+  { value: "REGISTRO",    label: "Só o Registro", dot: "bg-gray-400",   badge: "bg-gray-100  text-gray-600   border-gray-200"   },
+];
+
+function getTratativaOpt(v: string | null | undefined) {
+  return TRATATIVA_OPTIONS.find((o) => o.value === v) ?? null;
+}
+
+// ── TratativaSelect — dropdown custom ────────────────────────────────────────
+
+function TratativaSelect({
+  value,
+  onChange,
+}: {
+  value: TratativaKey | null;
+  onChange: (val: TratativaKey | null) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const opt = getTratativaOpt(value);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative inline-block">
+      {/* Trigger */}
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border cursor-pointer transition-all select-none ${
+          opt
+            ? `${opt.badge} hover:brightness-95`
+            : "bg-gray-50 text-gray-400 border-gray-200 hover:border-gray-300 hover:bg-gray-100"
+        }`}
+      >
+        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${opt ? opt.dot : "bg-gray-300"}`} />
+        {opt ? opt.label : "Sem tratativa"}
+        <ChevronDown className={`w-3 h-3 opacity-40 ml-0.5 transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {/* Painel */}
+      {open && (
+        <div className="absolute z-50 top-full mt-1.5 left-0 bg-white border border-gray-200 rounded-xl shadow-xl py-1.5 min-w-[168px]">
+          {/* Sem tratativa */}
+          <button
+            type="button"
+            onClick={() => { onChange(null); setOpen(false); }}
+            className="w-full px-3 py-2 flex items-center gap-2.5 text-xs hover:bg-gray-50 transition-colors text-left group"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-gray-300 shrink-0" />
+            <span className="text-gray-400 font-medium flex-1">Sem tratativa</span>
+            {value === null && <Check className="w-3 h-3 text-gray-400 shrink-0" />}
+          </button>
+
+          <div className="my-1 mx-2 border-t border-gray-100" />
+
+          {TRATATIVA_OPTIONS.map((op) => (
+            <button
+              key={op.value}
+              type="button"
+              onClick={() => { onChange(op.value); setOpen(false); }}
+              className={`w-full px-3 py-2 flex items-center gap-2.5 text-xs transition-colors text-left ${
+                value === op.value ? "bg-gray-50/80" : "hover:bg-gray-50"
+              }`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${op.dot}`} />
+              <span className="font-medium text-gray-700 flex-1">{op.label}</span>
+              {value === op.value && <Check className="w-3 h-3 text-gray-500 shrink-0" />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── ApuracaoRow ───────────────────────────────────────────────────────────────
+
+function ApuracaoRow({
+  occurrence: o,
+  onSavingStart,
+  onSavingEnd,
+}: {
+  occurrence: OccurrenceDTO;
+  onSavingStart: () => void;
+  onSavingEnd: () => void;
+}) {
+  const [tratativa, setTratativa]               = useState<TratativaKey | null>((o.tratativa as TratativaKey) ?? null);
+  const [analista, setAnalista]                 = useState(o.analisadoPor ?? "");
+  const [justificativa, setJustificativa]       = useState(o.justificativaRegistro ?? "");
+  const [showJustificativa, setShowJustificativa] = useState(() => (o.justificativaRegistro ?? "").trim().length > 0);
+  const [saveState, setSaveState]               = useState<"idle" | "saving" | "saved">("idle");
+  const [analistaDirty, setAnalistaDirty]       = useState(false);
+  const [justificativaDirty, setJustificativaDirty] = useState(false);
+
+  const driver = o.drivers[0];
+  const title  = o.typeCode === "GENERICO" && o.reportTitle ? o.reportTitle : o.typeTitle;
+
+  async function save(t: TratativaKey | null, a: string, j: string) {
+    onSavingStart();
+    setSaveState("saving");
+    try {
+      await occurrencesApi.patchTratativa(o.id, t, a.trim() || null, j.trim() || null);
+      setSaveState("saved");
+      setTimeout(() => setSaveState("idle"), 1800);
+    } catch {
+      setSaveState("idle");
+    } finally {
+      onSavingEnd();
+    }
+  }
+
+  function handleAnalistaBlur() {
+    if (!analistaDirty) return;
+    setAnalistaDirty(false);
+    void save(tratativa, analista, justificativa);
+  }
+
+  function handleJustificativaBlur() {
+    if (!justificativaDirty) return;
+    setJustificativaDirty(false);
+    void save(tratativa, analista, justificativa);
+  }
+
+  return (
+    <>
+      <tr className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+        {/* Prefixo */}
+        <td className="px-4 py-3 align-middle text-xs font-mono font-semibold text-gray-700 whitespace-nowrap">
+          {o.vehicleNumber}
+        </td>
+
+        {/* Ocorrência */}
+        <td className="px-4 py-3 align-middle min-w-0">
+          <div className="text-xs font-medium text-gray-800 truncate max-w-[220px]">{title}</div>
+          {driver && (
+            <div className="text-[11px] text-gray-400 truncate mt-0.5">{driver.name}</div>
+          )}
+        </td>
+
+        {/* Base */}
+        <td className="px-4 py-3 align-middle text-xs text-gray-500 whitespace-nowrap">
+          {o.baseCode ?? "—"}
+        </td>
+
+        {/* Tratativa */}
+        <td className="px-4 py-3 align-middle">
+          <div className="flex flex-col items-start gap-1">
+            <TratativaSelect
+              value={tratativa}
+              onChange={(val) => {
+                setTratativa(val);
+                if (val === null) setShowJustificativa(false);
+                void save(val, analista, justificativa);
+              }}
+            />
+            {tratativa !== null && (
+              <button
+                type="button"
+                onClick={() => setShowJustificativa((v) => !v)}
+                className={`flex items-center gap-0.5 text-[10px] transition-colors cursor-pointer ${
+                  justificativa.trim()
+                    ? "text-amber-600 hover:text-amber-800 font-medium"
+                    : "text-gray-400 hover:text-gray-500"
+                }`}
+              >
+                <ChevronDown className={`w-2.5 h-2.5 transition-transform duration-150 ${showJustificativa ? "rotate-180" : ""}`} />
+                Justificativa
+              </button>
+            )}
+          </div>
+        </td>
+
+        {/* Analista */}
+        <td className="px-4 py-3 align-middle">
+          <div className="flex items-center gap-1.5">
+            <div className="relative">
+              <UserCheck className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-300 pointer-events-none" />
+              <input
+                type="text"
+                value={analista}
+                placeholder="Quem apurou"
+                onChange={(e) => { setAnalista(e.target.value); setAnalistaDirty(true); }}
+                onBlur={handleAnalistaBlur}
+                className="text-xs pl-6 pr-2 py-1.5 border border-gray-200 rounded-lg w-36 focus:outline-none focus:ring-1 focus:ring-blue-400 focus:border-blue-400 placeholder:text-gray-300 bg-white"
+              />
+            </div>
+            {saveState === "saving" && (
+              <Loader2 className="w-3 h-3 text-gray-300 animate-spin shrink-0" />
+            )}
+            {saveState === "saved" && (
+              <Check className="w-3 h-3 text-emerald-500 shrink-0" />
+            )}
+          </div>
+        </td>
+      </tr>
+
+      {/* Sub-linha de justificativa — recolhida por padrão */}
+      {tratativa !== null && showJustificativa && (
+        <tr className="border-b border-gray-50 bg-gray-50/40">
+          <td />
+          <td colSpan={4} className="px-4 pb-3 pt-1">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] text-gray-400 shrink-0">Justificativa:</span>
+              <input
+                type="text"
+                value={justificativa}
+                placeholder="Ex: falha do comercial, veículo quebrado..."
+                onChange={(e) => { setJustificativa(e.target.value); setJustificativaDirty(true); }}
+                onBlur={handleJustificativaBlur}
+                className="flex-1 text-xs px-2.5 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400 placeholder:text-gray-300 bg-white"
+              />
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
+  );
+}
+
+function ApuracaoTable({
+  occurrences,
+  onSavingChange,
+}: {
+  occurrences: OccurrenceDTO[];
+  onSavingChange?: (saving: boolean) => void;
+}) {
+  const sorted = [...occurrences].sort((a, b) => a.startTime.localeCompare(b.startTime));
+  const [savingCount, setSavingCount] = useState(0);
+
+  useEffect(() => {
+    onSavingChange?.(savingCount > 0);
+  }, [savingCount, onSavingChange]);
+
+  function handleSavingStart() { setSavingCount((c) => c + 1); }
+  function handleSavingEnd()   { setSavingCount((c) => Math.max(0, c - 1)); }
+
+  if (sorted.length === 0) return null;
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+      {/* Header */}
+      <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-2">
+        <ClipboardCheck className="w-4 h-4 text-gray-400" />
+        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+          Apuração
+        </h3>
+        <span className="ml-auto text-xs text-gray-400">{sorted.length} ocorrência{sorted.length !== 1 ? "s" : ""}</span>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-gray-100">
+              <th className="px-4 py-2 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Prefixo</th>
+              <th className="px-4 py-2 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Ocorrência</th>
+              <th className="px-4 py-2 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Base</th>
+              <th className="px-4 py-2 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Tratativa</th>
+              <th className="px-4 py-2 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Quem apurou</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map((o) => (
+              <ApuracaoRow
+                key={o.id}
+                occurrence={o}
+                onSavingStart={handleSavingStart}
+                onSavingEnd={handleSavingEnd}
+              />
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ── ReminderModal ─────────────────────────────────────────────────────────────
+
+function ReminderModal({ onConfirm }: { onConfirm: () => void }) {
+  const now = new Date();
+  const hour = String(now.getHours()).padStart(2, "0");
+  const min  = String(now.getMinutes()).padStart(2, "0");
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
+        {/* Topo colorido */}
+        <div className="bg-amber-500 px-5 py-4 flex items-center gap-3">
+          <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+            <Clock className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <p className="text-white font-bold text-sm leading-none">Lembrete — {hour}h{min}</p>
+            <p className="text-amber-100 text-xs mt-0.5">Encerramento do turno</p>
+          </div>
+        </div>
+
+        {/* Corpo */}
+        <div className="px-5 py-5 space-y-3">
+          <p className="text-sm text-gray-700 leading-relaxed">
+            Confira se todas as ocorrencias foram apuradas e envie o{" "}
+            <span className="font-semibold text-gray-900">Relatorio Diario</span>{" "}
+            para o Google Drive antes de encerrar o turno.
+          </p>
+          <div className="flex items-start gap-2 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2.5">
+            <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+            <p className="text-xs text-amber-700 leading-relaxed">
+              Use o botao <span className="font-semibold">Drive</span> no topo da pagina para enviar o PDF automaticamente.
+            </p>
+          </div>
+        </div>
+
+        {/* Rodape */}
+        <div className="px-5 py-4 border-t border-gray-100 bg-gray-50 flex justify-end">
+          <button
+            onClick={onConfirm}
+            className="cursor-pointer h-9 px-6 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold transition-colors"
+          >
+            Confirmar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── AdminGate — tela de bloqueio para não-admins ──────────────────────────────
+
+function AdminGate({ onVoltar }: { onVoltar: () => void }) {
+  const { login } = useAdminAuth();
+  const [pin, setPin]         = useState("");
+  const [showPin, setShowPin] = useState(false);
+  const [error, setError]     = useState(false);
+  const [shake, setShake]     = useState(false);
+  const inputRef              = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    const ok = login(pin);
+    if (!ok) {
+      setError(true);
+      setShake(true);
+      setPin("");
+      setTimeout(() => setShake(false), 500);
+    }
+    // se ok === true, isAdmin vira true e o componente pai re-renderiza automaticamente
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Header mínimo */}
+      <header className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center h-14 gap-3">
+            <button
+              onClick={onVoltar}
+              className="cursor-pointer p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4 text-gray-500" />
+            </button>
+            <span className="text-sm font-semibold text-gray-900">Relatório Diário</span>
+          </div>
+        </div>
+      </header>
+
+      {/* Conteúdo centralizado */}
+      <div className="flex-1 flex items-center justify-center px-4">
+        <div className={`bg-white rounded-2xl shadow-xl w-full max-w-sm p-8 border border-gray-100 ${shake ? "animate-shake" : ""}`}>
+          {/* Ícone */}
+          <div className="flex justify-center mb-5">
+            <div className="w-14 h-14 rounded-full bg-orange-50 flex items-center justify-center">
+              <Lock className="w-7 h-7 text-orange-500" />
+            </div>
+          </div>
+
+          <h2 className="text-center text-lg font-semibold text-gray-800 mb-1">
+            Acesso Restrito
+          </h2>
+          <p className="text-center text-sm text-gray-500 mb-6">
+            O Relatório Diário é exclusivo para administradores.
+          </p>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="relative">
+              <input
+                ref={inputRef}
+                type={showPin ? "text" : "password"}
+                value={pin}
+                onChange={(e) => { setPin(e.target.value); setError(false); }}
+                placeholder="Senha de acesso"
+                className={`w-full px-4 py-3 pr-10 rounded-xl border text-sm outline-none transition-colors ${
+                  error
+                    ? "border-red-400 bg-red-50 focus:ring-1 focus:ring-red-300"
+                    : "border-gray-200 focus:border-orange-400 focus:ring-1 focus:ring-orange-200"
+                }`}
+              />
+              <button
+                type="button"
+                tabIndex={-1}
+                onClick={() => setShowPin((v) => !v)}
+                className="cursor-pointer absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                {showPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+
+            {error && (
+              <p className="text-xs text-red-500 text-center">Senha incorreta. Tente novamente.</p>
+            )}
+
+            <button
+              type="submit"
+              disabled={!pin}
+              className="cursor-pointer w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-orange-500 hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium transition-colors"
+            >
+              <ShieldCheck className="w-4 h-4" />
+              Entrar como Admin
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          20%       { transform: translateX(-6px); }
+          40%       { transform: translateX(6px); }
+          60%       { transform: translateX(-4px); }
+          80%       { transform: translateX(4px); }
+        }
+        .animate-shake { animation: shake 0.45s ease-in-out; }
+      `}</style>
     </div>
   );
 }

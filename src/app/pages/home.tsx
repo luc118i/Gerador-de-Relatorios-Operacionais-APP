@@ -467,9 +467,11 @@ export function Home({
 
             {/* Ações — icon-only com tooltip */}
             <div className="flex items-center gap-1.5">
-              <ActionBtn onClick={onGerarRelatorio} tooltip="Ocorrências da Data">
-                <FileText className="w-4 h-4" />
-              </ActionBtn>
+              {isAdmin && (
+                <ActionBtn onClick={onGerarRelatorio} tooltip="Relatorio Diario">
+                  <FileText className="w-4 h-4" />
+                </ActionBtn>
+              )}
               <ActionBtn onClick={onGerenciarMotoristas} tooltip="Motoristas">
                 <Users className="w-4 h-4" />
               </ActionBtn>
