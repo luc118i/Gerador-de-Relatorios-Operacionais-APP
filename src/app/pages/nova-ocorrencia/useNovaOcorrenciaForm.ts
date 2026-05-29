@@ -141,6 +141,13 @@ export function useNovaOcorrenciaForm({ onSaved, edicao }: NovaOcorrenciaProps) 
       if (!relatoHtml.trim()) errors.push({ id: "field-relato", label: "Relato da Ocorrência" });
     }
 
+    if (evidencias.length > 20) {
+      errors.push({
+        id: "section-evidencias",
+        label: `Limite de 20 fotos excedido — remova ${evidencias.length - 20} foto${evidencias.length - 20 !== 1 ? "s" : ""}`,
+      });
+    }
+
     return errors;
   }
 

@@ -4,7 +4,7 @@ import { Evidencia } from "../types";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 
-const MAX_EVIDENCIAS = 30;
+const MAX_EVIDENCIAS = 20;
 
 interface EvidenciasGridProps {
   evidencias: Evidencia[];
