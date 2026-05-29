@@ -414,6 +414,7 @@ export function useNovaOcorrenciaForm({ onSaved, edicao }: NovaOcorrenciaProps) 
         tripId: viagemSelecionada?.id,
         tripTime: viagemSelecionada?.horaPartida ?? null,
         lineLabel,
+        tripSentido: viagemSelecionada?.sentido ?? null,
         typeCode,
         speedKmh,
         occurrenceName,

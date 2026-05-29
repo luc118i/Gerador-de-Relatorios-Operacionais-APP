@@ -29,6 +29,7 @@ export type CreateOccurrenceInput = {
 
   tripId?: string; // opcional no backend
   lineLabel?: string | null;
+  tripSentido?: string | null;
   baseCode?: string; // opcional (backend deriva se faltar)
   speedKmh?: number | null; // para tipo EXCESSO_VELOCIDADE
   occurrenceName?: string | null; // nome exato no RIZER
