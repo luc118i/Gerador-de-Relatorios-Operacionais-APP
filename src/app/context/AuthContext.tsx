@@ -18,6 +18,8 @@ type AuthContextValue = {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
+  /** Salva o nome de exibição no perfil do usuário logado. */
+  updateProfileName: (name: string) => Promise<{ error: string | null }>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -26,7 +28,10 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 function fallbackName(user: User | null): string {
   if (!user) return "";
   const meta = user.user_metadata ?? {};
-  const metaName = (meta.nome ?? meta.full_name ?? meta.name) as string | undefined;
+  // `display_name` é a coluna "Display name" do dashboard do Supabase.
+  const metaName = (meta.nome ?? meta.display_name ?? meta.full_name ?? meta.name) as
+    | string
+    | undefined;
   if (metaName && metaName.trim()) return metaName.trim();
   const email = user.email ?? "";
   const local = email.split("@")[0] ?? "";
@@ -95,9 +100,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   }, []);
 
+  const updateProfileName = useCallback(async (name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return { error: "Informe um nome." };
+
+    // Garante uma sessão válida antes de gravar (getSession tenta refresh do token).
+    // Evita o erro cru "Auth session missing!" quando o JWT expirou.
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData.session) {
+      return { error: "Sua sessão expirou. Saia e entre novamente para editar o perfil." };
+    }
+
+    // Grava em `display_name` (coluna do dashboard) e `nome` (lido primeiro pelo app).
+    const { data, error } = await supabase.auth.updateUser({
+      data: { display_name: trimmed, nome: trimmed },
+    });
+    if (error) {
+      const msg = /session|jwt|token/i.test(error.message)
+        ? "Sua sessão expirou. Saia e entre novamente para editar o perfil."
+        : error.message;
+      return { error: msg };
+    }
+    setUser(data.user);
+    setProfileName(trimmed);
+    return { error: null };
+  }, []);
+
   return (
     <AuthContext.Provider
-      value={{ session, user, profileName, loading, signIn, signOut }}
+      value={{ session, user, profileName, loading, signIn, signOut, updateProfileName }}
     >
       {children}
     </AuthContext.Provider>

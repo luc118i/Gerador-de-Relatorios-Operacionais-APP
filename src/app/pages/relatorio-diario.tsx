@@ -210,7 +210,11 @@ export function RelatorioDiario({ onVoltar }: RelatorioDiarioProps) {
   useEffect(() => {
     if (!showFilterPanel) return;
     function handleOutside(e: MouseEvent) {
-      if (filterPanelRef.current && !filterPanelRef.current.contains(e.target as Node)) {
+      const target = e.target as Node | null;
+      // Ignora alvos que já se desconectaram do DOM durante o evento
+      // (ex.: ao desmarcar um item, o ícone de check clicado é removido no re-render).
+      if (target && !target.isConnected) return;
+      if (filterPanelRef.current && target && !filterPanelRef.current.contains(target)) {
         setShowFilterPanel(false);
       }
     }
@@ -582,7 +586,10 @@ export function RelatorioDiario({ onVoltar }: RelatorioDiarioProps) {
                 </button>
 
                 {showFilterPanel && canActions && (
-                  <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-2 min-w-[260px] max-w-[340px] flex flex-col max-h-[340px]">
+                  <div
+                    onMouseDown={(e) => e.stopPropagation()}
+                    className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-2 min-w-[260px] max-w-[340px] flex flex-col max-h-[340px]"
+                  >
                     <div className="px-3 pb-2 border-b border-gray-100 mb-1 shrink-0">
                       <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
                         Ocorrências no relatório

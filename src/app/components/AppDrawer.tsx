@@ -1,5 +1,6 @@
-import { useEffect } from "react";
-import { X, Route, MapPin, BarChart2, LogOut, UserCircle2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { X, Route, MapPin, BarChart2, LogOut, UserCircle2, Pencil, Check, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { useAuth } from "../context/AuthContext";
 
 export type DrawerPage = "analise-viagem" | "esquemas-rota" | "locais";
@@ -33,7 +34,33 @@ const ITEMS: { id: DrawerPage; label: string; description: string; icon: React.R
 ];
 
 export function AppDrawer({ open, currentPage, onClose, onNavigate }: AppDrawerProps) {
-  const { profileName, user, signOut } = useAuth();
+  const { profileName, user, signOut, updateProfileName } = useAuth();
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState("");
+  const [savingName, setSavingName] = useState(false);
+
+  function startEditName() {
+    setNameDraft(profileName || "");
+    setEditingName(true);
+  }
+
+  async function saveName() {
+    if (savingName) return;
+    const trimmed = nameDraft.trim();
+    if (!trimmed) {
+      toast.error("Informe um nome.");
+      return;
+    }
+    setSavingName(true);
+    const { error } = await updateProfileName(trimmed);
+    setSavingName(false);
+    if (error) {
+      toast.error(error);
+    } else {
+      toast.success("Nome atualizado!");
+      setEditingName(false);
+    }
+  }
   // Bloqueia scroll do body quando o drawer está aberto
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
@@ -107,12 +134,56 @@ export function AppDrawer({ open, currentPage, onClose, onNavigate }: AppDrawerP
         <div className="px-3 py-4 border-t border-gray-100">
           <div className="flex items-center gap-3 px-2 py-2">
             <UserCircle2 className="w-8 h-8 text-gray-300 shrink-0" />
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-gray-700 truncate">
-                {profileName || "Analista"}
-              </p>
-              <p className="text-xs text-gray-400 truncate">{user?.email ?? ""}</p>
-            </div>
+            {editingName ? (
+              <div className="min-w-0 flex-1 flex items-center gap-1.5">
+                <input
+                  autoFocus
+                  value={nameDraft}
+                  onChange={(e) => setNameDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") void saveName();
+                    if (e.key === "Escape") setEditingName(false);
+                  }}
+                  placeholder="Seu nome"
+                  maxLength={60}
+                  disabled={savingName}
+                  className="min-w-0 flex-1 px-2 py-1 rounded-lg border border-gray-200 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-200 disabled:opacity-60"
+                />
+                <button
+                  onClick={() => void saveName()}
+                  disabled={savingName}
+                  className="cursor-pointer p-1.5 rounded-lg text-green-600 hover:bg-green-50 disabled:opacity-50 transition-colors shrink-0"
+                  aria-label="Salvar nome"
+                >
+                  {savingName ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                </button>
+                <button
+                  onClick={() => setEditingName(false)}
+                  disabled={savingName}
+                  className="cursor-pointer p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 disabled:opacity-50 transition-colors shrink-0"
+                  aria-label="Cancelar"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-gray-700 truncate">
+                    {profileName || "Analista"}
+                  </p>
+                  <p className="text-xs text-gray-400 truncate">{user?.email ?? ""}</p>
+                </div>
+                <button
+                  onClick={startEditName}
+                  className="cursor-pointer p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors shrink-0"
+                  aria-label="Editar nome"
+                  title="Editar seu nome"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
+              </>
+            )}
           </div>
           <button
             onClick={() => { void signOut(); }}

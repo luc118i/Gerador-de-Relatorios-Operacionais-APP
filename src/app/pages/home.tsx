@@ -43,6 +43,7 @@ import { useAdminAuth } from "../context/AdminAuthContext";
 import { AdminLoginModal } from "../components/AdminLoginModal";
 import { ApuracaoPodium } from "../components/ApuracaoPodium";
 import { EmptyReportScene } from "../components/EmptyReportScene";
+import { UserMenu } from "../components/UserMenu";
 import { registerDisciplinaryOccurrence, fillMedidaLink } from "../../api/automation.api";
 import type { BatchOverlay } from "../components/OccurrenceCardDTO";
 import { useAutomationFolders } from "../../hooks/useAutomationFolders";
@@ -507,9 +508,23 @@ export function Home({
                   <FileText className="w-4 h-4" />
                 </ActionBtn>
               )}
-              <ActionBtn onClick={onGerenciarMotoristas} tooltip="Motoristas">
-                <Users className="w-4 h-4" />
-              </ActionBtn>
+              {isAdmin && (
+                <ActionBtn onClick={onGerenciarMotoristas} tooltip="Motoristas">
+                  <Users className="w-4 h-4" />
+                </ActionBtn>
+              )}
+
+              {/* Login de Admin — à esquerda do +, apenas quando não é admin */}
+              {!isAdmin && (
+                <button
+                  onClick={() => setShowAdminLogin(true)}
+                  className="p-1.5 rounded-lg text-gray-300 hover:text-gray-500 hover:bg-gray-100 transition-colors"
+                  title="Entrar como Admin"
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                </button>
+              )}
+
               <ActionBtn onClick={onNovaOcorrencia} tooltip="Nova Ocorrência" primary>
                 <Plus className="w-4 h-4" />
               </ActionBtn>
@@ -540,56 +555,53 @@ export function Home({
                 </>
               )}
 
-              {/* Separador */}
-              <div className="w-px h-5 bg-gray-200 mx-0.5" />
-
-              {/* Admin */}
-              {isAdmin ? (
-                <div className="relative group/admin">
-                  <button
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors"
-                    title="Logado como Admin"
-                  >
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Admin</span>
-                  </button>
-                  <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 pointer-events-none group-hover/admin:opacity-100 group-hover/admin:pointer-events-auto transition-opacity z-50">
+              {/* Admin — dropdown apenas quando logado como admin */}
+              {isAdmin && (
+                <>
+                  {/* Separador */}
+                  <div className="w-px h-5 bg-gray-200 mx-0.5" />
+                  <div className="relative group/admin">
                     <button
-                      onClick={() => setShowAutomationFolderModal(true)}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-t-lg transition-colors"
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors"
+                      title="Logado como Admin"
                     >
-                      <FolderOpen className="w-3.5 h-3.5 shrink-0" />
-                      <span className="truncate">
-                        {automationFolders.config
-                          ? `${automationFolders.config.relatoriosFolderName} / ${automationFolders.config.medidasFolderName}`
-                          : "Pastas de automação"}
-                      </span>
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Admin</span>
                     </button>
-                    <button
-                      onClick={onGerenciarNomes}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                    >
-                      <BookMarked className="w-3.5 h-3.5 shrink-0" />
-                      Nomes padronizados
-                    </button>
-                    <button
-                      onClick={logout}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-b-lg transition-colors"
-                    >
-                      <LogOut className="w-3.5 h-3.5" />
-                      Sair da conta admin
-                    </button>
+                    <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 pointer-events-none group-hover/admin:opacity-100 group-hover/admin:pointer-events-auto transition-opacity z-50">
+                      <button
+                        onClick={() => setShowAutomationFolderModal(true)}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-t-lg transition-colors"
+                      >
+                        <FolderOpen className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate">
+                          {automationFolders.config
+                            ? `${automationFolders.config.relatoriosFolderName} / ${automationFolders.config.medidasFolderName}`
+                            : "Pastas de automação"}
+                        </span>
+                      </button>
+                      <button
+                        onClick={onGerenciarNomes}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                      >
+                        <BookMarked className="w-3.5 h-3.5 shrink-0" />
+                        Nomes padronizados
+                      </button>
+                      <button
+                        onClick={logout}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-b-lg transition-colors"
+                      >
+                        <LogOut className="w-3.5 h-3.5" />
+                        Sair da conta admin
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setShowAdminLogin(true)}
-                  className="p-1.5 rounded-lg text-gray-300 hover:text-gray-500 hover:bg-gray-100 transition-colors"
-                  title="Entrar como Admin"
-                >
-                  <Lock className="w-3.5 h-3.5" />
-                </button>
+                </>
               )}
+
+              {/* Perfil do usuário logado (Supabase) — sempre visível */}
+              <div className="w-px h-5 bg-gray-200 mx-0.5" />
+              <UserMenu />
             </div>
           </div>
         </div>
