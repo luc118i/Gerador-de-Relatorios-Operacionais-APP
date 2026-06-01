@@ -41,6 +41,8 @@ import { reportsDriveApi } from "../../api/reportsDrive.api";
 import { getApiErrorMessage } from "../../api/http";
 import { useAdminAuth } from "../context/AdminAuthContext";
 import { AdminLoginModal } from "../components/AdminLoginModal";
+import { ApuracaoPodium } from "../components/ApuracaoPodium";
+import { EmptyReportScene } from "../components/EmptyReportScene";
 import { registerDisciplinaryOccurrence, fillMedidaLink } from "../../api/automation.api";
 import type { BatchOverlay } from "../components/OccurrenceCardDTO";
 import { useAutomationFolders } from "../../hooks/useAutomationFolders";
@@ -677,20 +679,23 @@ export function Home({
             <SkeletonCard />
           </div>
         ) : ocorrencias.length === 0 ? (
-          <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Nenhuma ocorrência registrada
-            </h3>
-            <p className="text-sm text-gray-600 mb-6">
-              Clique no botão "Nova Ocorrência" para registrar um descumprimento
-              operacional
-            </p>
-            <button
-              onClick={onNovaOcorrencia}
-              className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-            >
-              <Plus className="w-5 h-5" /> Nova Ocorrência
-            </button>
+          <div className="space-y-4">
+            <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Nenhuma ocorrência registrada
+              </h3>
+              <p className="text-sm text-gray-600 mb-6">
+                Clique no botão "Nova Ocorrência" para registrar um descumprimento
+                operacional
+              </p>
+              <button
+                onClick={onNovaOcorrencia}
+                className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              >
+                <Plus className="w-5 h-5" /> Nova Ocorrência
+              </button>
+            </div>
+            <EmptyReportScene />
           </div>
         ) : grouped ? (
           /* ── Agrupado por assunto ─────────────────────────────────── */
@@ -882,6 +887,11 @@ export function Home({
               />
             ))}
           </div>
+        )}
+
+        {/* ── Pódio de apuração (tempo real) ───────────────────────── */}
+        {!isLoading && !isError && ocorrencias.length > 0 && (
+          <ApuracaoPodium occurrences={ocorrencias} className="mt-16 w-full" />
         )}
 
         <OccurrencePreviewModal

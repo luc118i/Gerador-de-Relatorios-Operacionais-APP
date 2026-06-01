@@ -37,6 +37,8 @@ import { reportsDriveApi } from "../../api/reportsDrive.api";
 import { registerDisciplinaryOccurrence } from "../../api/automation.api";
 import { useAdminAuth } from "../context/AdminAuthContext";
 import { AdminLoginModal } from "../components/AdminLoginModal";
+import { ApuracaoPodium } from "../components/ApuracaoPodium";
+import { EmptyReportScene } from "../components/EmptyReportScene";
 import {
   BarChart,
   Bar,
@@ -150,6 +152,12 @@ function abbrevType(code: string, title: string): string {
   return map[code] ?? (title.length > 18 ? title.slice(0, 16) + "…" : title);
 }
 
+// Nome de exibição da ocorrência (mesma regra usada na lista do relatório):
+// GENÉRICO usa o título customizado (reportTitle); demais usam o título do tipo.
+function occDisplayName(o: OccurrenceDTO): string {
+  return o.typeCode === "GENERICO" && o.reportTitle ? o.reportTitle : o.typeTitle;
+}
+
 function firstName(name: string): string {
   const parts = name.trim().split(" ");
   return parts.length <= 2 ? name : `${parts[0]} ${parts[1]}`;
@@ -177,7 +185,7 @@ export function RelatorioDiario({ onVoltar }: RelatorioDiarioProps) {
   const [exportingPdf, setExportingPdf] = useState(false);
   const [apuracaoSaving, setApuracaoSaving] = useState(false);
   const [showFilterPanel, setShowFilterPanel] = useState(false);
-  const [reportExcludedCodes, setReportExcludedCodes] = useState<Set<string>>(new Set());
+  const [reportExcludedNames, setReportExcludedNames] = useState<Set<string>>(new Set());
   const [showDrivePicker, setShowDrivePicker] = useState(false);
   const [sendingToDrive, setSendingToDrive] = useState(false);
   const [driveSent, setDriveSent] = useState(false);
@@ -220,20 +228,25 @@ export function RelatorioDiario({ onVoltar }: RelatorioDiarioProps) {
     return () => { alive = false; };
   }, [dataSelecionada]);
 
-  const typeCodesInDay = useMemo(() => {
-    const seen = new Map<string, string>();
+  const occNamesInDay = useMemo(() => {
+    const seen = new Map<string, { typeCode: string; count: number }>();
     for (const o of occurrences) {
-      if (!seen.has(o.typeCode)) seen.set(o.typeCode, o.typeTitle);
+      const name = occDisplayName(o);
+      const prev = seen.get(name);
+      if (prev) prev.count += 1;
+      else seen.set(name, { typeCode: o.typeCode, count: 1 });
     }
-    return [...seen.entries()].map(([code, title]) => ({ code, title }));
+    return [...seen.entries()]
+      .map(([name, { typeCode, count }]) => ({ name, typeCode, count }))
+      .sort((a, b) => b.count - a.count);
   }, [occurrences]);
 
   const reportOccurrences = useMemo(
     () =>
-      reportExcludedCodes.size === 0
+      reportExcludedNames.size === 0
         ? occurrences
-        : occurrences.filter((o) => !reportExcludedCodes.has(o.typeCode)),
-    [occurrences, reportExcludedCodes],
+        : occurrences.filter((o) => !reportExcludedNames.has(occDisplayName(o))),
+    [occurrences, reportExcludedNames],
   );
 
   const report = useMemo(() => buildDailyReport(reportOccurrences, dataSelecionada), [reportOccurrences, dataSelecionada]);
@@ -562,29 +575,30 @@ export function RelatorioDiario({ onVoltar }: RelatorioDiarioProps) {
                   title="Filtrar tipos de ocorrência no relatório"
                 >
                   <SlidersHorizontal className="w-3.5 h-3.5" />
-                  {reportExcludedCodes.size > 0 && (
+                  {reportExcludedNames.size > 0 && (
                     <span className="w-1.5 h-1.5 rounded-full bg-orange-500 shrink-0" />
                   )}
                 </button>
 
                 {showFilterPanel && canActions && (
-                  <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-2 min-w-[220px]">
-                    <div className="px-3 pb-2 border-b border-gray-100 mb-1">
+                  <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-2 min-w-[260px] max-w-[340px] flex flex-col max-h-[340px]">
+                    <div className="px-3 pb-2 border-b border-gray-100 mb-1 shrink-0">
                       <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
-                        Tipos no relatório
+                        Ocorrências no relatório
                       </p>
                     </div>
-                    {typeCodesInDay.map(({ code, title }) => {
-                      const included = !reportExcludedCodes.has(code);
+                    <div className="flex-1 overflow-y-auto min-h-0">
+                    {occNamesInDay.map(({ name, count }) => {
+                      const included = !reportExcludedNames.has(name);
                       return (
                         <button
-                          key={code}
+                          key={name}
                           type="button"
                           onClick={() =>
-                            setReportExcludedCodes((prev) => {
+                            setReportExcludedNames((prev) => {
                               const next = new Set(prev);
-                              if (included) next.add(code);
-                              else next.delete(code);
+                              if (included) next.add(name);
+                              else next.delete(name);
                               return next;
                             })
                           }
@@ -603,20 +617,21 @@ export function RelatorioDiario({ onVoltar }: RelatorioDiarioProps) {
                               </svg>
                             )}
                           </div>
-                          <span className="text-gray-700 font-medium flex-1 truncate">
-                            {abbrevType(code, title)}
+                          <span className="text-gray-700 font-medium flex-1 truncate" title={name}>
+                            {name}
                           </span>
-                          <span className="text-gray-400 text-[10px] tabular-nums">
-                            {occurrences.filter((o) => o.typeCode === code).length}
+                          <span className="text-gray-400 text-[10px] tabular-nums shrink-0">
+                            {count}
                           </span>
                         </button>
                       );
                     })}
-                    {reportExcludedCodes.size > 0 && (
-                      <div className="px-3 pt-2 border-t border-gray-100 mt-1">
+                    </div>
+                    {reportExcludedNames.size > 0 && (
+                      <div className="px-3 pt-2 border-t border-gray-100 mt-1 shrink-0">
                         <button
                           type="button"
-                          onClick={() => setReportExcludedCodes(new Set())}
+                          onClick={() => setReportExcludedNames(new Set())}
                           className="cursor-pointer text-[11px] text-blue-600 hover:text-blue-800 font-medium"
                         >
                           Incluir todos
@@ -679,13 +694,7 @@ export function RelatorioDiario({ onVoltar }: RelatorioDiarioProps) {
 
         {/* Vazio */}
         {!loading && !errorMsg && occurrences.length === 0 && (
-          <div className="bg-white border border-gray-200 rounded-xl p-16 text-center">
-            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-              <FileText className="w-6 h-6 text-gray-400" />
-            </div>
-            <p className="font-medium text-gray-600">Nenhuma ocorrência</p>
-            <p className="text-sm text-gray-400 mt-1">Sem registros para {displayDate}</p>
-          </div>
+          <EmptyReportScene subtitle={`sem registros para ${displayDate}`} />
         )}
 
         {!loading && !errorMsg && occurrences.length > 0 && (
@@ -748,6 +757,9 @@ export function RelatorioDiario({ onVoltar }: RelatorioDiarioProps) {
                 small
               />
             </div>
+
+            {/* ── Pódio de apuração ─────────────────────────────────────── */}
+            <ApuracaoPodium occurrences={occurrences} />
 
             {/* ── Bloco 2: Gráficos (modo gestor) ──────────────────────── */}
             {mode === "gestor" && (
@@ -1358,13 +1370,16 @@ function TratativaSelect({
 
 function ApuracaoRow({
   occurrence: o,
+  index,
   onSavingStart,
   onSavingEnd,
 }: {
   occurrence: OccurrenceDTO;
+  index: number;
   onSavingStart: () => void;
   onSavingEnd: () => void;
 }) {
+  const zebra = index % 2 === 1 ? "bg-gray-50" : "bg-white";
   const [tratativa, setTratativa]               = useState<TratativaKey | null>((o.tratativa as TratativaKey) ?? null);
   const [analista, setAnalista]                 = useState(o.analisadoPor ?? "");
   const [justificativa, setJustificativa]       = useState(o.justificativaRegistro ?? "");
@@ -1404,7 +1419,7 @@ function ApuracaoRow({
 
   return (
     <>
-      <tr className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+      <tr className={`border-b border-gray-50 ${zebra} hover:bg-blue-50/40 transition-colors`}>
         {/* Prefixo */}
         <td className="px-4 py-3 align-middle text-xs font-mono font-semibold text-gray-700 whitespace-nowrap">
           {o.vehicleNumber}
@@ -1477,7 +1492,7 @@ function ApuracaoRow({
 
       {/* Sub-linha de justificativa — recolhida por padrão */}
       {tratativa !== null && showJustificativa && (
-        <tr className="border-b border-gray-50 bg-gray-50/40">
+        <tr className={`border-b border-gray-50 ${zebra}`}>
           <td />
           <td colSpan={4} className="px-4 pb-3 pt-1">
             <div className="flex items-center gap-2">
@@ -1540,10 +1555,11 @@ function ApuracaoTable({
             </tr>
           </thead>
           <tbody>
-            {sorted.map((o) => (
+            {sorted.map((o, i) => (
               <ApuracaoRow
                 key={o.id}
                 occurrence={o}
+                index={i}
                 onSavingStart={handleSavingStart}
                 onSavingEnd={handleSavingEnd}
               />
