@@ -39,6 +39,7 @@ import { useAdminAuth } from "../context/AdminAuthContext";
 import { AdminLoginModal } from "../components/AdminLoginModal";
 import { ApuracaoPodium } from "../components/ApuracaoPodium";
 import { EmptyReportScene } from "../components/EmptyReportScene";
+import { useAuth } from "../context/AuthContext";
 import {
   BarChart,
   Bar,
@@ -1379,17 +1380,24 @@ function ApuracaoRow({
   onSavingStart: () => void;
   onSavingEnd: () => void;
 }) {
+  const { profileName } = useAuth();
   const zebra = index % 2 === 1 ? "bg-gray-50" : "bg-white";
   const [tratativa, setTratativa]               = useState<TratativaKey | null>((o.tratativa as TratativaKey) ?? null);
   const [analista, setAnalista]                 = useState(o.analisadoPor ?? "");
   const [justificativa, setJustificativa]       = useState(o.justificativaRegistro ?? "");
   const [showJustificativa, setShowJustificativa] = useState(() => (o.justificativaRegistro ?? "").trim().length > 0);
   const [saveState, setSaveState]               = useState<"idle" | "saving" | "saved">("idle");
-  const [analistaDirty, setAnalistaDirty]       = useState(false);
   const [justificativaDirty, setJustificativaDirty] = useState(false);
 
   const driver = o.drivers[0];
   const title  = o.typeCode === "GENERICO" && o.reportTitle ? o.reportTitle : o.typeTitle;
+
+  // Apuração automatizada: o "Quem apurou" reflete o usuário logado.
+  // Linhas ainda sem apurador exibem o seu nome; linhas já apuradas mantêm o histórico até você agir.
+  useEffect(() => {
+    if (!analista && profileName) setAnalista(profileName);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileName]);
 
   async function save(t: TratativaKey | null, a: string, j: string) {
     onSavingStart();
@@ -1405,16 +1413,17 @@ function ApuracaoRow({
     }
   }
 
-  function handleAnalistaBlur() {
-    if (!analistaDirty) return;
-    setAnalistaDirty(false);
-    void save(tratativa, analista, justificativa);
+  // Ao apurar (definir tratativa/justificativa), grava automaticamente o usuário logado como analista.
+  function persist(t: TratativaKey | null, j: string) {
+    const apurador = (profileName || analista).trim();
+    setAnalista(apurador);
+    void save(t, apurador, j);
   }
 
   function handleJustificativaBlur() {
     if (!justificativaDirty) return;
     setJustificativaDirty(false);
-    void save(tratativa, analista, justificativa);
+    persist(tratativa, justificativa);
   }
 
   return (
@@ -1446,7 +1455,7 @@ function ApuracaoRow({
               onChange={(val) => {
                 setTratativa(val);
                 if (val === null) setShowJustificativa(false);
-                void save(val, analista, justificativa);
+                persist(val, justificativa);
               }}
             />
             {tratativa !== null && (
@@ -1469,16 +1478,15 @@ function ApuracaoRow({
         {/* Analista */}
         <td className="px-4 py-3 align-middle">
           <div className="flex items-center gap-1.5">
-            <div className="relative">
+            <div
+              className="relative w-36"
+              title="Preenchido automaticamente pelo seu perfil"
+            >
               <UserCheck className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-300 pointer-events-none" />
-              <input
-                type="text"
-                value={analista}
-                placeholder="Quem apurou"
-                onChange={(e) => { setAnalista(e.target.value); setAnalistaDirty(true); }}
-                onBlur={handleAnalistaBlur}
-                className="text-xs pl-6 pr-2 py-1.5 border border-gray-200 rounded-lg w-36 focus:outline-none focus:ring-1 focus:ring-blue-400 focus:border-blue-400 placeholder:text-gray-300 bg-white"
-              />
+              <div className="text-xs pl-6 pr-6 py-1.5 border border-gray-100 rounded-lg w-full bg-gray-50 text-gray-600 truncate">
+                {analista || <span className="text-gray-300">Quem apurou</span>}
+              </div>
+              <Lock className="absolute right-2 top-1/2 -translate-y-1/2 w-2.5 h-2.5 text-gray-300 pointer-events-none" />
             </div>
             {saveState === "saving" && (
               <Loader2 className="w-3 h-3 text-gray-300 animate-spin shrink-0" />

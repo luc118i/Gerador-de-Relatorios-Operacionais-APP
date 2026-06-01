@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { X, Route, MapPin, BarChart2 } from "lucide-react";
+import { X, Route, MapPin, BarChart2, LogOut, UserCircle2 } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 export type DrawerPage = "analise-viagem" | "esquemas-rota" | "locais";
 
@@ -32,6 +33,7 @@ const ITEMS: { id: DrawerPage; label: string; description: string; icon: React.R
 ];
 
 export function AppDrawer({ open, currentPage, onClose, onNavigate }: AppDrawerProps) {
+  const { profileName, user, signOut } = useAuth();
   // Bloqueia scroll do body quando o drawer está aberto
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
@@ -101,11 +103,24 @@ export function AppDrawer({ open, currentPage, onClose, onNavigate }: AppDrawerP
           })}
         </nav>
 
-        {/* Footer */}
-        <div className="px-5 py-4 border-t border-gray-100">
-          <p className="text-xs text-gray-400">
-            Gerador de Relatórios Operacionais
-          </p>
+        {/* Footer — perfil logado */}
+        <div className="px-3 py-4 border-t border-gray-100">
+          <div className="flex items-center gap-3 px-2 py-2">
+            <UserCircle2 className="w-8 h-8 text-gray-300 shrink-0" />
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-gray-700 truncate">
+                {profileName || "Analista"}
+              </p>
+              <p className="text-xs text-gray-400 truncate">{user?.email ?? ""}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => { void signOut(); }}
+            className="cursor-pointer mt-1 w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
+            Sair
+          </button>
         </div>
       </aside>
     </>

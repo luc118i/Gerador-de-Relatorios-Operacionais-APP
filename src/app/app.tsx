@@ -9,6 +9,9 @@ import { OccurrencePreviewPage } from "./pages/occurrences/preview/OccurrencePre
 import { DriversPage } from "./pages/DriversPage";
 import { GerenciarNomesPage } from "./pages/GerenciarNomesPage";
 import { AdminAuthProvider } from "./context/AdminAuthContext";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import { LoginScreen } from "./components/LoginScreen";
+import { Loader2 } from "lucide-react";
 import { AppDrawer, type DrawerPage } from "./components/AppDrawer";
 import { AnaliseTelemetriaPage } from "./pages/AnaliseTelemetriaPage";
 import { EsquemasRotaPage } from "./pages/EsquemasRotaPage";
@@ -23,7 +26,7 @@ type Page =
   | "gerenciar-nomes"
   | DrawerPage;
 
-export default function App() {
+function AppShell() {
   const [currentPage, setCurrentPage] = useState<Page>("home");
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -127,5 +130,29 @@ export default function App() {
         </footer>
       </div>
     </AdminAuthProvider>
+  );
+}
+
+function AuthGate() {
+  const { loading, session } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!session) return <LoginScreen />;
+
+  return <AppShell />;
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AuthGate />
+    </AuthProvider>
   );
 }
