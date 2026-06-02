@@ -44,13 +44,14 @@ import { AdminLoginModal } from "../components/AdminLoginModal";
 import { ApuracaoPodium } from "../components/ApuracaoPodium";
 import { EmptyReportScene } from "../components/EmptyReportScene";
 import { UserMenu } from "../components/UserMenu";
-import { registerDisciplinaryOccurrence, fillMedidaLink } from "../../api/automation.api";
+import { registerDisciplinaryOccurrence, fillMedidaLink, updateRizerOccurrence } from "../../api/automation.api";
 import type { BatchOverlay } from "../components/OccurrenceCardDTO";
 import { useAutomationFolders } from "../../hooks/useAutomationFolders";
 import { AutomationFoldersModal } from "../components/AutomationFoldersModal";
-import { FolderOpen, Cpu } from "lucide-react";
+import { FolderOpen, Cpu, RefreshCw } from "lucide-react";
 import { useAgentStatus } from "../../hooks/useAgentStatus";
 import { BatchRizerModal, type BatchRizerItem } from "../components/BatchRizerModal";
+import { AgentProgressDock, type AgentJob } from "../components/AgentProgressDock";
 
 interface HomeProps {
   onNovaOcorrencia: () => void;
@@ -85,6 +86,10 @@ export function Home({
   const [batchTratativaState, setBatchTratativaState] = useState<BatchState | null>(null);
   const batchTrataivaCancelRef = useRef(false);
   const [batchTratativaConfirm, setBatchTratativaConfirm] = useState<{ subject: string; ids: string[] } | null>(null);
+
+  const [batchRevisarState, setBatchRevisarState] = useState<BatchState | null>(null);
+  const batchRevisarCancelRef = useRef(false);
+  const [batchRevisarConfirm, setBatchRevisarConfirm] = useState<{ subject: string; ids: string[] } | null>(null);
 
   // ── Estados ──────────────────────────────────────────────
   const [selectedDate, setSelectedDate] = useState(() =>
@@ -330,6 +335,83 @@ export function Home({
     if (batchTratativaState.ids.indexOf(occId) > batchTratativaState.ids.indexOf(batchTratativaState.currentId ?? "")) return "queued";
     return undefined;
   }
+
+  async function startBatchRevisar(subject: string, ids: string[]) {
+    if (!isAdmin || ids.length === 0) return;
+    if (!automationFolders.config) { setShowAutomationFolderModal(true); return; }
+    batchRevisarCancelRef.current = false;
+    setBatchRevisarState({ subject, ids, currentId: null, doneCount: 0, cancelRequested: false });
+
+    for (let i = 0; i < ids.length; i++) {
+      if (batchRevisarCancelRef.current) break;
+      const id = ids[i];
+      setBatchRevisarState(prev => prev ? { ...prev, currentId: id } : null);
+      try {
+        await updateRizerOccurrence(
+          id,
+          automationFolders.config?.relatoriosFolderId,
+          automationFolders.config?.medidasFolderId,
+          { useAgent: agentAvailable },
+        );
+      } catch {
+        // falha individual não para a fila
+      }
+      setBatchRevisarState(prev => prev ? { ...prev, doneCount: i + 1, currentId: null } : null);
+    }
+
+    await queryClient.invalidateQueries({ queryKey: ["occurrences", "byCreationDate", selectedDate] });
+    setBatchRevisarState(null);
+    batchRevisarCancelRef.current = false;
+  }
+
+  function cancelBatchRevisar() {
+    batchRevisarCancelRef.current = true;
+    setBatchRevisarState(prev => prev ? { ...prev, cancelRequested: true } : null);
+  }
+
+  function getRevisarOverlay(occId: string, subject: string): BatchOverlay | undefined {
+    if (!batchRevisarState || batchRevisarState.subject !== subject) return undefined;
+    if (batchRevisarState.currentId === occId) return "processing";
+    if (batchRevisarState.ids.indexOf(occId) > batchRevisarState.ids.indexOf(batchRevisarState.currentId ?? "")) return "queued";
+    return undefined;
+  }
+
+  // ── Jobs ativos para o dock flutuante global ──────────────
+  const agentJobs = useMemo<AgentJob[]>(() => {
+    const jobs: AgentJob[] = [];
+    if (batchState) {
+      jobs.push({
+        kind: "registro",
+        subject: batchState.subject,
+        doneCount: batchState.doneCount,
+        total: batchState.ids.length,
+        cancelRequested: batchState.cancelRequested,
+        onCancel: cancelBatch,
+      });
+    }
+    if (batchTratativaState) {
+      jobs.push({
+        kind: "tratativa",
+        subject: batchTratativaState.subject,
+        doneCount: batchTratativaState.doneCount,
+        total: batchTratativaState.ids.length,
+        cancelRequested: batchTratativaState.cancelRequested,
+        onCancel: cancelBatchTratativa,
+      });
+    }
+    if (batchRevisarState) {
+      jobs.push({
+        kind: "revisar",
+        subject: batchRevisarState.subject,
+        doneCount: batchRevisarState.doneCount,
+        total: batchRevisarState.ids.length,
+        cancelRequested: batchRevisarState.cancelRequested,
+        onCancel: cancelBatchRevisar,
+      });
+    }
+    return jobs;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [batchState, batchTratativaState, batchRevisarState]);
 
   async function handleEditar(occ: OccurrenceDTO) {
     try {
@@ -716,8 +798,11 @@ export function Home({
               const collapsed = collapsedSubjects.has(subject);
               const unregistered = occs.filter(o => !o.rizerRegistered);
               const pendingTratativa = occs.filter(o => o.faltaTratativa);
+              const registered = occs.filter(o => o.rizerRegistered);
               const isBatchRunning = batchState?.subject === subject;
               const isBatchTratativaRunning = batchTratativaState?.subject === subject;
+              const isBatchRevisarRunning = batchRevisarState?.subject === subject;
+              const anyBatchRunning = !!batchState || !!batchTratativaState || !!batchRevisarState;
               return (
                 <div key={subject}>
                   <div className="flex items-center gap-2 mb-2">
@@ -729,7 +814,7 @@ export function Home({
                     </span>
 
                     {/* Botão "Registrar todas" */}
-                    {isAdmin && !batchState && !batchTratativaState && unregistered.length > 0 && (
+                    {isAdmin && !anyBatchRunning && unregistered.length > 0 && (
                       <button
                         onClick={() => setBatchConfirm({ subject, occs: unregistered })}
                         className="cursor-pointer inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border border-orange-200 bg-orange-50 text-orange-600 hover:bg-orange-100 transition-colors"
@@ -740,13 +825,24 @@ export function Home({
                     )}
 
                     {/* Botão "Enviar tratativas" */}
-                    {isAdmin && !batchState && !batchTratativaState && pendingTratativa.length > 0 && (
+                    {isAdmin && !anyBatchRunning && pendingTratativa.length > 0 && (
                       <button
                         onClick={() => setBatchTratativaConfirm({ subject, ids: pendingTratativa.map(o => o.id) })}
                         className="cursor-pointer inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border border-amber-200 bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors"
                       >
                         <AlertTriangle className="w-3 h-3" />
                         Enviar tratativas ({pendingTratativa.length})
+                      </button>
+                    )}
+
+                    {/* Botão "Revisar todas" */}
+                    {isAdmin && !anyBatchRunning && registered.length > 0 && (
+                      <button
+                        onClick={() => setBatchRevisarConfirm({ subject, ids: registered.map(o => o.id) })}
+                        className="cursor-pointer inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors"
+                      >
+                        <RefreshCw className="w-3 h-3" />
+                        Revisar todas ({registered.length})
                       </button>
                     )}
 
@@ -801,6 +897,26 @@ export function Home({
                       )}
                     </div>
                   )}
+
+                  {/* Banner de progresso — revisão */}
+                  {isBatchRevisarRunning && batchRevisarState && (
+                    <div className="mb-2 flex items-center gap-3 px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-lg">
+                      <Loader2 className="w-3.5 h-3.5 text-emerald-500 animate-spin shrink-0" />
+                      <span className="text-xs font-medium text-emerald-700 flex-1">
+                        {batchRevisarState.cancelRequested
+                          ? "Cancelando após item atual..."
+                          : `Revisando no RIZER… ${batchRevisarState.doneCount} de ${batchRevisarState.ids.length}`}
+                      </span>
+                      {!batchRevisarState.cancelRequested && (
+                        <button
+                          onClick={cancelBatchRevisar}
+                          className="cursor-pointer flex items-center gap-1 text-[10px] font-medium text-emerald-500 hover:text-emerald-700 transition-colors"
+                        >
+                          <X className="w-3 h-3" /> Cancelar
+                        </button>
+                      )}
+                    </div>
+                  )}
                   {!collapsed && (viewMode === "list" ? (
                     <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
                       <div className="flex items-center gap-0 bg-gray-50 border-b border-gray-200 text-[11px] font-semibold text-gray-400 uppercase tracking-wide" style={{ borderLeft: "3px solid transparent" }}>
@@ -823,6 +939,7 @@ export function Home({
                           onSendToDrive={() => handleSendToDrive(occ.id)}
                           batchOverlay={getBatchOverlay(occ.id, subject)}
                           tratativaOverlay={getTratativaOverlay(occ.id, subject)}
+                          revisarOverlay={getRevisarOverlay(occ.id, subject)}
                           relatoriosFolderId={automationFolders.config?.relatoriosFolderId}
                           medidasFolderId={automationFolders.config?.medidasFolderId}
                           onNeedFolderConfig={() => setShowAutomationFolderModal(true)}
@@ -842,6 +959,7 @@ export function Home({
                           onSendToDrive={() => handleSendToDrive(occ.id)}
                           batchOverlay={getBatchOverlay(occ.id, subject)}
                           tratativaOverlay={getTratativaOverlay(occ.id, subject)}
+                          revisarOverlay={getRevisarOverlay(occ.id, subject)}
                           relatoriosFolderId={automationFolders.config?.relatoriosFolderId}
                           medidasFolderId={automationFolders.config?.medidasFolderId}
                           onNeedFolderConfig={() => setShowAutomationFolderModal(true)}
@@ -1062,6 +1180,54 @@ export function Home({
         </div>
       )}
 
+      {/* Modal de Confirmação do Batch de Revisão */}
+      {batchRevisarConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setBatchRevisarConfirm(null)}
+          />
+          <div className="relative bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm mx-4">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 rounded-lg bg-emerald-50">
+                <RefreshCw className="w-5 h-5 text-emerald-500" />
+              </div>
+              <h3 className="text-base font-semibold text-gray-900">
+                Revisar todas no RIZER?
+              </h3>
+            </div>
+            <p className="text-sm text-gray-600 mb-1">
+              Você está prestes a reabrir e reescrever todos os campos de{" "}
+              <span className="font-semibold text-gray-800">
+                {batchRevisarConfirm.ids.length} ocorrência{batchRevisarConfirm.ids.length !== 1 ? "s" : ""}
+              </span>{" "}
+              já enviada{batchRevisarConfirm.ids.length !== 1 ? "s" : ""} do assunto:
+            </p>
+            <p className="text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2 mb-5">
+              {batchRevisarConfirm.subject}
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setBatchRevisarConfirm(null)}
+                className="px-4 py-2 text-sm rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  const { subject, ids } = batchRevisarConfirm;
+                  setBatchRevisarConfirm(null);
+                  startBatchRevisar(subject, ids);
+                }}
+                className="px-4 py-2 text-sm rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 transition-colors font-medium"
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal de Confirmação de Exclusão */}
       {excluindoId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -1095,6 +1261,9 @@ export function Home({
           </div>
         </div>
       )}
+
+      {/* Dock flutuante global — progresso do agente */}
+      <AgentProgressDock jobs={agentJobs} />
     </div>
   );
 }
