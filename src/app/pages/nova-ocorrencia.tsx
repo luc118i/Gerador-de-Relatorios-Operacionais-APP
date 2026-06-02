@@ -11,10 +11,13 @@ import { SecaoDadosViagem } from "./nova-ocorrencia/sections/SecaoDadosViagem";
 import { SecaoTripulacao } from "./nova-ocorrencia/sections/SecaoTripulacao";
 import { SecaoDadosEvento } from "./nova-ocorrencia/sections/SecaoDadosEvento";
 import { SecaoGenerico } from "./nova-ocorrencia/sections/SecaoGenerico";
+import { SecaoTratativa } from "./nova-ocorrencia/sections/SecaoTratativa";
 import { SaveStatusOverlay } from "./nova-ocorrencia/sections/SaveStatusOverlay";
 import { occurrencesApi } from "../../api/occurrences.api";
 import { presetsApi } from "../../api/presets.api";
 import { useAdminAuth } from "../context/AdminAuthContext";
+import { useAuth } from "../context/AuthContext";
+import { useEffect } from "react";
 
 interface NovaOcorrenciaProps {
   onVoltar: () => void;
@@ -26,6 +29,15 @@ export function NovaOcorrencia({ onVoltar, onSaved, edicao }: NovaOcorrenciaProp
   const form = useNovaOcorrenciaForm({ onVoltar, onSaved, edicao });
   const typeConfig = getOccurrenceTypeConfig(form.typeCode);
   const { isAdmin } = useAdminAuth();
+  const { profileName } = useAuth();
+
+  // Em registro novo, pré-preenche o analista responsável com o usuário logado.
+  useEffect(() => {
+    if (!edicao && !form.analisadoPor && profileName) {
+      form.setAnalisadoPor(profileName);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileName]);
 
   const { data: reportTitleSuggestions = [] } = useQuery({
     queryKey: ["occurrences", "report-titles"],
@@ -257,6 +269,14 @@ export function NovaOcorrencia({ onVoltar, onSaved, edicao }: NovaOcorrenciaProp
               </h2>
               <EvidenciasGrid evidencias={form.evidencias} onChange={form.setEvidencias} />
             </section>
+
+            {/* 5.5 — Análise e Tratativa */}
+            <SecaoTratativa
+              tratativa={form.tratativa}
+              onTratativaChange={form.setTratativa}
+              analisadoPor={form.analisadoPor}
+              onAnalisadoPorChange={form.setAnalisadoPor}
+            />
 
             {/* 6 — Ações */}
             <section className="pt-4 border-t border-gray-200">

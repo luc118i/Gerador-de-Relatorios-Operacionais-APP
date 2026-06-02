@@ -1,12 +1,14 @@
-import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { X, FileText, MapPin, Clock, User } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { X, FileText, MapPin, Clock, User, UserCheck, Lock, ChevronDown, Loader2, Check } from "lucide-react";
 import { toast } from "sonner";
 
 import { occurrencesApi } from "../../../../api/occurrences.api";
 import type { OccurrenceDTO } from "../../../../domain/occurrences";
 import { useGetOccurrencePdf } from "../../../../features/reportsPdf/queries/reportsPdf.queries";
 import { getApiErrorMessage } from "../../../../api/http";
+import { TratativaSelect, type TratativaKey } from "../../../components/TratativaSelect";
+import { useAuth } from "../../../context/AuthContext";
 
 import { formatTimeRangeWithDuration } from "../../../utils/time";
 
@@ -234,6 +236,8 @@ export function OccurrencePreviewModal({ occurrenceId, open, onClose }: Props) {
                     </span>
                   </div>
                 </div>
+
+                <TratativaBlock occ={occ} />
               </>
             ) : null}
           </div>
@@ -249,6 +253,128 @@ export function OccurrencePreviewModal({ occurrenceId, open, onClose }: Props) {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Bloco de Análise e Tratativa dentro do preview da ocorrência.
+ * Permite definir a tratativa (Suspensão / Advertência / Vale / Só o Registro)
+ * e uma justificativa opcional, persistindo via PATCH /occurrences/:id/tratativa.
+ * O analista é preenchido automaticamente com o usuário logado.
+ */
+function TratativaBlock({ occ }: { occ: OccurrenceDTO }) {
+  const { profileName } = useAuth();
+  const qc = useQueryClient();
+
+  const [tratativa, setTratativa] = useState<TratativaKey | null>(
+    (occ.tratativa as TratativaKey) ?? null,
+  );
+  const [analista, setAnalista] = useState(occ.analisadoPor ?? "");
+  const [justificativa, setJustificativa] = useState(occ.justificativaRegistro ?? "");
+  const [showJustificativa, setShowJustificativa] = useState(
+    () => (occ.justificativaRegistro ?? "").trim().length > 0,
+  );
+  const [justificativaDirty, setJustificativaDirty] = useState(false);
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
+
+  // Preenche o analista com o usuário logado quando ainda não há um.
+  useEffect(() => {
+    if (!analista && profileName) setAnalista(profileName);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileName]);
+
+  async function persist(t: TratativaKey | null, j: string) {
+    const apurador = (profileName || analista).trim();
+    setAnalista(apurador);
+    setSaveState("saving");
+    try {
+      await occurrencesApi.patchTratativa(occ.id, t, apurador || null, j.trim() || null);
+      setSaveState("saved");
+      void qc.invalidateQueries({ queryKey: ["occurrence", occ.id] });
+      void qc.invalidateQueries({ queryKey: ["occurrences"] });
+      setTimeout(() => setSaveState("idle"), 1800);
+    } catch (e) {
+      setSaveState("idle");
+      toast.error(getApiErrorMessage(e, "Falha ao salvar tratativa"));
+    }
+  }
+
+  function handleJustificativaBlur() {
+    if (!justificativaDirty) return;
+    setJustificativaDirty(false);
+    void persist(tratativa, justificativa);
+  }
+
+  return (
+    <div className="rounded-xl bg-white border border-black/10 p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-gray-500">Análise e Tratativa</p>
+        {saveState === "saving" && (
+          <Loader2 className="w-3.5 h-3.5 text-gray-300 animate-spin" />
+        )}
+        {saveState === "saved" && (
+          <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600">
+            <Check className="w-3.5 h-3.5" /> Salvo
+          </span>
+        )}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <TratativaSelect
+          value={tratativa}
+          onChange={(val) => {
+            setTratativa(val);
+            if (val === null) setShowJustificativa(false);
+            void persist(val, justificativa);
+          }}
+        />
+
+        <div
+          className="relative w-44"
+          title="Preenchido automaticamente pelo seu perfil"
+        >
+          <UserCheck className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-300 pointer-events-none" />
+          <div className="text-xs pl-6 pr-6 py-1.5 border border-gray-100 rounded-lg w-full bg-gray-50 text-gray-600 truncate">
+            {analista || <span className="text-gray-300">Quem apurou</span>}
+          </div>
+          <Lock className="absolute right-2 top-1/2 -translate-y-1/2 w-2.5 h-2.5 text-gray-300 pointer-events-none" />
+        </div>
+
+        {tratativa !== null && (
+          <button
+            type="button"
+            onClick={() => setShowJustificativa((v) => !v)}
+            className={`flex items-center gap-0.5 text-[11px] transition-colors cursor-pointer ${
+              justificativa.trim()
+                ? "text-amber-600 hover:text-amber-800 font-medium"
+                : "text-gray-400 hover:text-gray-500"
+            }`}
+          >
+            <ChevronDown
+              className={`w-3 h-3 transition-transform duration-150 ${showJustificativa ? "rotate-180" : ""}`}
+            />
+            Justificativa
+          </button>
+        )}
+      </div>
+
+      {tratativa !== null && showJustificativa && (
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] text-gray-400 shrink-0">Justificativa:</span>
+          <input
+            type="text"
+            value={justificativa}
+            placeholder="Ex: falha do comercial, veículo quebrado..."
+            onChange={(e) => {
+              setJustificativa(e.target.value);
+              setJustificativaDirty(true);
+            }}
+            onBlur={handleJustificativaBlur}
+            className="flex-1 text-xs px-2.5 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400 placeholder:text-gray-300 bg-white"
+          />
+        </div>
+      )}
     </div>
   );
 }
