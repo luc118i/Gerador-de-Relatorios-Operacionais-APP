@@ -125,7 +125,7 @@ export function DriverPicker({
       </button>
 
       {isOpen && !disabled ? (
-        <div className="absolute z-20 w-full mt-2 rounded-xl border border-white/30 bg-white/75 backdrop-blur-xl shadow-xl shadow-black/10 overflow-hidden">
+        <div className="absolute z-50 w-full mt-2 rounded-xl border border-white/30 bg-white/75 backdrop-blur-xl shadow-xl shadow-black/10 overflow-hidden">
           <div className="p-2 border-b border-white/20 space-y-2">
             <input
               type="text"

@@ -140,7 +140,7 @@ export function AutocompleteViagem({
       </button>
 
       {isOpen && (
-        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-80 overflow-hidden">
+        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-80 overflow-hidden">
           <div className="p-2 border-b border-gray-200 space-y-2">
             <input
               type="text"

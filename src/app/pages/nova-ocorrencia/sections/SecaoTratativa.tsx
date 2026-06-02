@@ -65,10 +65,6 @@ export function SecaoTratativa({
 
   return (
     <section className="animate-in fade-in slide-in-from-top-2 duration-300">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
-        Análise e Tratativa
-      </h2>
-
       <div className="grid grid-cols-2 gap-4">
         {/* Dropdown de tratativa */}
         <div>

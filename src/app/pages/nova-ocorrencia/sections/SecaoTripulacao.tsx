@@ -39,9 +39,6 @@ export function SecaoTripulacao({
 }: SecaoTripulacaoProps) {
   return (
     <section className={isGeneric ? "animate-in fade-in slide-in-from-top-2 duration-300" : ""}>
-      <h2 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
-        Tripulação
-      </h2>
       <div className="space-y-4">
         {driver1Id && driver1 ? (
           <DriverRecurrenceCard
