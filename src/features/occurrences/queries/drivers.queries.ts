@@ -16,6 +16,17 @@ export function useDriversSearch(term: string) {
   });
 }
 
+export function useDriverStats(id: string | null) {
+  return useQuery({
+    queryKey: driversKeys.stats(id ?? ""),
+    queryFn: () => driversApi.getDriverStats(id as string),
+    enabled: !!id,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+}
+
 export function useCreateDriver() {
   const qc = useQueryClient();
 

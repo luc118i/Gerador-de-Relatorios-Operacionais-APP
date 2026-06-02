@@ -18,7 +18,7 @@ const TRATATIVA_OPTIONS: {
 }[] = [
   {
     value: "SUSPEICAO",
-    label: "Suspeição",
+    label: "Suspensão",
     description: "Em investigação — aguardando confirmação",
     dot: "bg-violet-500",
     badge: "bg-violet-50 text-violet-700 border border-violet-200",

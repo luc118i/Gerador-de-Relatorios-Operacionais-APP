@@ -1,6 +1,7 @@
 import { AlertCircle, Plus, X } from "lucide-react";
 import { DriverPicker } from "../../../components/DriverPicker/DriverPicker";
 import { DriverCreateModal } from "../../../components/DriverCreateModal/DriverCreateModal";
+import { DriverRecurrenceCard } from "../../../components/DriverRecurrenceCard";
 import type { Driver } from "../../../../domain/drivers";
 
 interface SecaoTripulacaoProps {
@@ -42,43 +43,62 @@ export function SecaoTripulacao({
         Tripulação
       </h2>
       <div className="space-y-4">
-        <DriverPicker
-          label="Motorista 01"
-          required
-          value={driver1Id}
-          initialDriver={
-            driver1
-              ? { id: driver1.id, code: driver1.code, name: driver1.name, base: driver1.base ?? "" }
-              : undefined
-          }
-          excludedIds={driver2Id ? [driver2Id] : []}
-          onChange={(id, d) => onDriver1Change(id, d ?? null)}
-          onCreateRequested={() => {
-            onCreateTargetChange(1);
-            onDriverModalOpenChange(true);
-          }}
-        />
+        {driver1Id && driver1 ? (
+          <DriverRecurrenceCard
+            label="Motorista 01"
+            required
+            driverId={driver1Id}
+            driver={driver1}
+            onChangeRequested={() => onDriver1Change(null, null)}
+          />
+        ) : (
+          <DriverPicker
+            label="Motorista 01"
+            required
+            value={driver1Id}
+            initialDriver={
+              driver1
+                ? { id: driver1.id, code: driver1.code, name: driver1.name, base: driver1.base ?? "" }
+                : undefined
+            }
+            excludedIds={driver2Id ? [driver2Id] : []}
+            onChange={(id, d) => onDriver1Change(id, d ?? null)}
+            onCreateRequested={() => {
+              onCreateTargetChange(1);
+              onDriverModalOpenChange(true);
+            }}
+          />
+        )}
 
         {motorista2Ativo ? (
           <div className="relative">
-            <DriverPicker
-              label="Motorista 02"
-              value={driver2Id}
-              initialDriver={
-                driver2
-                  ? { id: driver2.id, code: driver2.code, name: driver2.name, base: driver2.base ?? "" }
-                  : undefined
-              }
-              excludedIds={driver1Id ? [driver1Id] : []}
-              onChange={(id, d) => onDriver2Change(id, d ?? null)}
-              onCreateRequested={() => {
-                onCreateTargetChange(2);
-                onDriverModalOpenChange(true);
-              }}
-            />
+            {driver2Id && driver2 ? (
+              <DriverRecurrenceCard
+                label="Motorista 02"
+                driverId={driver2Id}
+                driver={driver2}
+                onChangeRequested={() => onDriver2Change(null, null)}
+              />
+            ) : (
+              <DriverPicker
+                label="Motorista 02"
+                value={driver2Id}
+                initialDriver={
+                  driver2
+                    ? { id: driver2.id, code: driver2.code, name: driver2.name, base: driver2.base ?? "" }
+                    : undefined
+                }
+                excludedIds={driver1Id ? [driver1Id] : []}
+                onChange={(id, d) => onDriver2Change(id, d ?? null)}
+                onCreateRequested={() => {
+                  onCreateTargetChange(2);
+                  onDriverModalOpenChange(true);
+                }}
+              />
+            )}
             <button
               onClick={() => onToggleMotorista2(false)}
-              className="cursor-pointer absolute top-2 right-2 p-1 text-red-500 hover:bg-red-50 rounded transition-colors"
+              className="cursor-pointer absolute top-0 right-0 p-1 text-red-500 hover:bg-red-50 rounded transition-colors"
               title="Remover Motorista 02"
             >
               <X className="w-4 h-4" />

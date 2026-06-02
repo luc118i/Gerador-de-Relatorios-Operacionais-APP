@@ -13,7 +13,7 @@ export type ReportAnchor = {
 // ── Rótulos de tratativa ──────────────────────────────────────────────────────
 
 const TRATATIVA_LABEL: Record<string, string> = {
-  SUSPEICAO:   "Suspeição",
+  SUSPEICAO:   "Suspensão",
   ADVERTENCIA: "Advertência",
   VALE:        "Vale",
   REGISTRO:    "Só o Registro",

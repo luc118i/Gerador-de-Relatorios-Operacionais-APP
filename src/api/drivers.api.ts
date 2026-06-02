@@ -1,5 +1,5 @@
 import { request } from "./http";
-import type { Driver, CreateDriverInput } from "../domain/drivers";
+import type { Driver, CreateDriverInput, DriverStats } from "../domain/drivers";
 
 type DriversSearchResponse = { data: Driver[] };
 
@@ -56,5 +56,13 @@ export const driversApi = {
       method: "DELETE",
       path: `/drivers/${id}`,
     });
+  },
+
+  // Recorrência do motorista no período retido pelo banco (mês corrente).
+  getDriverStats(id: string) {
+    return request<{ data: DriverStats }>({
+      method: "GET",
+      path: `/drivers/${id}/stats`,
+    }).then((res) => res.data);
   },
 };

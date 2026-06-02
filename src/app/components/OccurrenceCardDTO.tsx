@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { registerDisciplinaryOccurrence, fillMedidaLink, verifyRizerOccurrence } from "../../api/automation.api";
+import { registerDisciplinaryOccurrence, fillMedidaLink, verifyRizerOccurrence, updateRizerOccurrence } from "../../api/automation.api";
 import { getApiErrorMessage } from "../../api/http";
 import { useAgentStatus } from "../../hooks/useAgentStatus";
 import { toast } from "sonner";
@@ -39,7 +39,7 @@ import { RizerRegisterModal, type TipoMedida } from "./RizerRegisterModal";
 
 // ── TratativaBadge ────────────────────────────────────────────────────────────
 const TRATATIVA_META: Record<string, { label: string; dot: string; cls: string }> = {
-  SUSPEICAO:   { label: "Suspeição",      dot: "bg-violet-500", cls: "bg-violet-50 text-violet-700 border border-violet-200" },
+  SUSPEICAO:   { label: "Suspensão",      dot: "bg-violet-500", cls: "bg-violet-50 text-violet-700 border border-violet-200" },
   ADVERTENCIA: { label: "Advertência",    dot: "bg-amber-400",  cls: "bg-amber-50 text-amber-700 border border-amber-200"   },
   VALE:        { label: "Vale",           dot: "bg-red-500",    cls: "bg-red-50 text-red-700 border border-red-200"         },
   REGISTRO:    { label: "Só o Registro",  dot: "bg-gray-400",   cls: "bg-gray-100 text-gray-600 border border-gray-200"     },
@@ -85,6 +85,7 @@ interface OccurrenceCardProps {
   onSendToDrive?: () => void;
   batchOverlay?: BatchOverlay;
   tratativaOverlay?: BatchOverlay;
+  revisarOverlay?: BatchOverlay;
   relatoriosFolderId?: string;
   medidasFolderId?: string;
   onNeedFolderConfig?: () => void;
@@ -159,6 +160,7 @@ export function OccurrenceCard({
   onSendToDrive,
   batchOverlay,
   tratativaOverlay,
+  revisarOverlay,
   relatoriosFolderId,
   medidasFolderId,
   onNeedFolderConfig,
@@ -184,7 +186,7 @@ export function OccurrenceCard({
   const [fillMedidaState, setFillMedidaState] = useState<"idle" | "loading" | "success">("idle");
   const [showRizerModal, setShowRizerModal] = useState(false);
   const [tipoMedida, setTipoMedida] = useState<TipoMedida>("advertencia");
-  const [disciplinaryAction, setDisciplinaryAction] = useState<"registering" | "verifying" | null>(null);
+  const [disciplinaryAction, setDisciplinaryAction] = useState<"registering" | "verifying" | "updating" | null>(null);
 
   // Sincroniza estado local quando o servidor atualiza (após refetch)
   useEffect(() => {
@@ -219,9 +221,9 @@ export function OccurrenceCard({
     if (!isAdmin) { setShowAdminLogin(true); return; }
     if (disciplinaryState === "loading") return;
 
-    // Já registrado no banco → verificar/sincronizar status no RIZER
+    // Já registrado no banco → reabre no RIZER e reescreve todos os campos
     if (disciplinaryState === "success") {
-      void doVerify(e);
+      void doUpdate(e);
       return;
     }
 
@@ -249,35 +251,30 @@ export function OccurrenceCard({
     setShowRizerModal(true);
   }
 
-  async function doVerify(e: React.MouseEvent) {
+  async function doUpdate(e: React.MouseEvent) {
     e.stopPropagation();
+    if (!relatoriosFolderId || !medidasFolderId) { onNeedFolderConfig?.(); return; }
     setDisciplinaryState("loading");
-    setDisciplinaryAction("verifying");
+    setDisciplinaryAction("updating");
     try {
-      const res = await verifyRizerOccurrence(occurrence.id, { useAgent: agentAvailable });
-      if (!res.registered) {
-        // Não invalida queries aqui: o re-fetch reverteria o estado para "success"
-        // via useEffect e o modal nunca abriria.
-        setDisciplinaryState("idle");
-        toast.warning("Não encontrado no RIZER — selecione a tratativa para registrar.");
-        if (relatoriosFolderId && medidasFolderId) {
-          setShowRizerModal(true);
-        } else {
-          onNeedFolderConfig?.();
-        }
+      const res = await updateRizerOccurrence(
+        occurrence.id,
+        relatoriosFolderId,
+        medidasFolderId,
+        { useAgent: agentAvailable },
+      );
+      setDisciplinaryState("success");
+      if (res.faltaTratativa) {
+        setLocalFaltaTratativa(true);
+        toast.warning("Campos atualizados no RIZER, mas a medida não foi encontrada no Drive.");
       } else {
-        await queryClient.invalidateQueries({ queryKey: ["occurrences"] });
-        setDisciplinaryState("success");
-        if (res.hasTratativa) {
-          setLocalFaltaTratativa(false);
-          toast.success("Registrado no RIZER — tratativa preenchida.");
-        } else {
-          toast.info("Registrado no RIZER — tratativa ainda pendente.");
-        }
+        setLocalFaltaTratativa(false);
+        toast.success("Campos atualizados no RIZER com sucesso!");
       }
+      queryClient.invalidateQueries({ queryKey: ["occurrences"] });
     } catch (err: unknown) {
       setDisciplinaryState("success");
-      toast.error(getApiErrorMessage(err, "Erro ao verificar no RIZER."));
+      toast.error(getApiErrorMessage(err, "Erro ao atualizar campos no RIZER."));
     } finally {
       setDisciplinaryAction(null);
     }
@@ -454,7 +451,7 @@ export function OccurrenceCard({
       />
       <div
         className={`group relative flex items-center gap-0 bg-white border-b border-gray-100 transition-colors cursor-pointer ${
-          batchOverlay || tratativaOverlay || disciplinaryState === "loading" || fillMedidaState === "loading"
+          batchOverlay || tratativaOverlay || revisarOverlay || disciplinaryState === "loading" || fillMedidaState === "loading"
             ? "pointer-events-none"
             : localFaltaTratativa
               ? "hover:bg-amber-50/30"
@@ -486,9 +483,19 @@ export function OccurrenceCard({
             </span>
           </div>
         )}
+        {revisarOverlay && !batchOverlay && !tratativaOverlay && disciplinaryState !== "loading" && (
+          <div className="absolute inset-0 z-10 flex items-center gap-1.5 px-3 bg-emerald-50/90 backdrop-blur-[1px] pointer-events-none">
+            {revisarOverlay === "queued"
+              ? <Clock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              : <Loader2 className="w-3.5 h-3.5 text-emerald-500 animate-spin shrink-0" />}
+            <span className="text-xs font-medium text-emerald-700">
+              {revisarOverlay === "queued" ? "Aguardando revisão..." : "Revisando no RIZER..."}
+            </span>
+          </div>
+        )}
 
         {/* Overlay "Completar tratativa" — aparece no hover, cobre até o limite das AÇÕES */}
-        {localFaltaTratativa && !batchOverlay && !tratativaOverlay && (
+        {localFaltaTratativa && !batchOverlay && !tratativaOverlay && !revisarOverlay && (
           <div
             className={`absolute inset-y-0 left-0 right-[148px] z-10 flex items-center justify-center transition-opacity backdrop-blur-[1px] ${
               fillMedidaState !== "idle" ? "opacity-100" : "opacity-0 group-hover:opacity-100"
@@ -756,6 +763,16 @@ export function OccurrenceCard({
           </span>
         </div>
       )}
+      {revisarOverlay && !batchOverlay && !tratativaOverlay && disciplinaryState !== "loading" && (
+        <div className="absolute inset-0 z-10 rounded-lg flex flex-col items-center justify-center gap-2 bg-emerald-50/90 backdrop-blur-[2px] pointer-events-none">
+          {revisarOverlay === "queued"
+            ? <Clock className="w-5 h-5 text-emerald-400" />
+            : <Loader2 className="w-6 h-6 text-emerald-500 animate-spin" />}
+          <span className="text-xs font-medium text-emerald-700">
+            {revisarOverlay === "queued" ? "Aguardando revisão..." : "Revisando no RIZER..."}
+          </span>
+        </div>
+      )}
       {/* Cabeçalho */}
       <div className="flex items-start justify-between mb-3">
         <div>
@@ -960,7 +977,7 @@ export function OccurrenceCard({
             }`}
           >
             {disciplinaryState === "loading" ? (
-              <><Loader2 className="w-3.5 h-3.5 animate-spin" />{disciplinaryAction === "verifying" ? "Verificando no RIZER..." : "Enviando ao RIZER..."}</>
+              <><Loader2 className="w-3.5 h-3.5 animate-spin" />{disciplinaryAction === "verifying" ? "Verificando no RIZER..." : disciplinaryAction === "updating" ? "Atualizando no RIZER..." : "Enviando ao RIZER..."}</>
             ) : disciplinaryState === "success" ? (
               <><Check className="w-3.5 h-3.5" />Enviado ao RIZER <RefreshCw className="w-3 h-3 opacity-40" /></>
             ) : disciplinaryState === "error" ? (
