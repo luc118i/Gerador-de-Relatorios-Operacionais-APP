@@ -20,6 +20,7 @@ import {
   BookMarked,
   Menu,
   Clock,
+  Search,
 } from "lucide-react";
 import { useMemo, useState, useRef, useEffect, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -38,6 +39,7 @@ import { ptBR } from "date-fns/locale";
 import { useDriveFolder } from "../../hooks/useDriveFolder";
 import { requestDriveToken } from "../../utils/googleAuth";
 import { reportsDriveApi } from "../../api/reportsDrive.api";
+import { setDriveLink } from "../../utils/driveLinkCache";
 import { getApiErrorMessage } from "../../api/http";
 import { useAdminAuth } from "../context/AdminAuthContext";
 import { AdminLoginModal } from "../components/AdminLoginModal";
@@ -106,6 +108,7 @@ export function Home({
   const [groupBySubject, setGroupBySubject] = useState<boolean>(
     () => localStorage.getItem("home_groupBySubject") === "true",
   );
+  const [search, setSearch] = useState("");
   const [collapsedSubjects, setCollapsedSubjects] = useState<Set<string>>(() => {
     try {
       const raw = localStorage.getItem("home_collapsedSubjects");
@@ -179,14 +182,48 @@ export function Home({
 
   const ocorrencias: OccurrenceDTO[] = data ?? [];
 
+  // ── Busca universal ───────────────────────────────────────
+  // Normaliza removendo acentos e caixa, para casar "São Paulo" com "sao paulo".
+  const normalizeText = (s: string) =>
+    s
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .toLowerCase()
+      .trim();
+
+  const filteredOcorrencias = useMemo(() => {
+    const q = normalizeText(search);
+    if (!q) return ocorrencias;
+    // cada termo (separado por espaço) precisa casar em algum campo (AND entre termos)
+    const terms = q.split(/\s+/).filter(Boolean);
+    return ocorrencias.filter((occ) => {
+      const haystack = normalizeText(
+        [
+          occ.vehicleNumber,
+          occ.lineLabel ?? "",
+          occ.typeTitle,
+          (occ as any).reportTitle ?? "",
+          occ.occurrenceName ?? "",
+          occ.place ?? "",
+          occ.baseCode ?? "",
+          occ.startTime ?? "",
+          occ.endTime ?? "",
+          ...(occ.drivers ?? []).flatMap((d) => [d.registry, d.name, d.baseCode]),
+        ].join(" "),
+      );
+      return terms.every((t) => haystack.includes(t));
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ocorrencias, search]);
+
   const TYPO_CORRECTIONS: [RegExp, string][] = [
     [/\bOPERCIONAL\b/g, "OPERACIONAL"],
   ];
 
   const grouped = useMemo(() => {
-    if (!groupBySubject || ocorrencias.length === 0) return null;
+    if (!groupBySubject || filteredOcorrencias.length === 0) return null;
     const map = new Map<string, OccurrenceDTO[]>();
-    for (const occ of ocorrencias) {
+    for (const occ of filteredOcorrencias) {
       const raw =
         occ.typeCode === "GENERICO"
           ? (occ as any).reportTitle || occ.typeTitle
@@ -204,7 +241,7 @@ export function Home({
       map.get(subject)!.push(occ);
     }
     return map;
-  }, [ocorrencias, groupBySubject]);
+  }, [filteredOcorrencias, groupBySubject]);
 
   // ── Efeitos ───────────────────────────────────────────────
   useEffect(() => {
@@ -478,6 +515,7 @@ export function Home({
       setDriveNeedsUpdateIds((prev) => { const s = new Set(prev); s.delete(occurrenceId); return s; });
 
       const { webViewLink } = res.data.drive;
+      setDriveLink(occurrenceId, webViewLink);
       toast.success(
         <span>
           PDF {needsUpdate ? "atualizado" : "enviado"} no Drive!{" "}
@@ -697,7 +735,27 @@ export function Home({
               Ocorrências do Dia
             </h2>
             {!isLoading && !isError && ocorrencias.length > 0 && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Busca universal */}
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Buscar prefixo, carro, tipo, motorista…"
+                    className="w-56 sm:w-72 pl-8 pr-7 py-1.5 rounded-lg border border-gray-200 text-xs text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-400 focus:border-blue-400 transition-all"
+                  />
+                  {search && (
+                    <button
+                      onClick={() => setSearch("")}
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                      aria-label="Limpar busca"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
                 {/* Toggle agrupamento */}
                 <button
                   onClick={() => setGroupBySubject((v) => { const next = !v; localStorage.setItem("home_groupBySubject", String(next)); return next; })}
@@ -746,7 +804,9 @@ export function Home({
             </p>
           ) : (
             <p className="text-sm text-gray-600">
-              {ocorrencias.length} registro{ocorrencias.length !== 1 ? "s" : ""}
+              {search.trim()
+                ? `${filteredOcorrencias.length} de ${ocorrencias.length} registro${ocorrencias.length !== 1 ? "s" : ""}`
+                : `${ocorrencias.length} registro${ocorrencias.length !== 1 ? "s" : ""}`}
             </p>
           )}
         </div>
@@ -790,6 +850,22 @@ export function Home({
               </button>
             </div>
             <EmptyReportScene />
+          </div>
+        ) : filteredOcorrencias.length === 0 ? (
+          <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
+            <Search className="w-8 h-8 text-gray-300 mx-auto mb-3" />
+            <h3 className="text-base font-medium text-gray-900 mb-1">
+              Nenhum resultado para “{search.trim()}”
+            </h3>
+            <p className="text-sm text-gray-600 mb-6">
+              Tente outro prefixo, motorista, base ou tipo de ocorrência.
+            </p>
+            <button
+              onClick={() => setSearch("")}
+              className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium text-sm"
+            >
+              <X className="w-4 h-4" /> Limpar busca
+            </button>
           </div>
         ) : grouped ? (
           /* ── Agrupado por assunto ─────────────────────────────────── */
@@ -983,7 +1059,7 @@ export function Home({
               <div className="w-[170px] flex-shrink-0 px-2 py-2 hidden lg:block">Motorista</div>
               <div className="w-[140px] flex-shrink-0 px-1 py-2">Ações</div>
             </div>
-            {ocorrencias.map((occ) => (
+            {filteredOcorrencias.map((occ) => (
               <OccurrenceCard
                 key={occ.id}
                 compact
@@ -1002,7 +1078,7 @@ export function Home({
         ) : (
           /* ── Grid de cards ───────────────────────────────────────── */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {ocorrencias.map((occ) => (
+            {filteredOcorrencias.map((occ) => (
               <OccurrenceCard
                 key={occ.id}
                 occurrence={occ}
