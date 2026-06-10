@@ -42,6 +42,7 @@ import { reportsDriveApi } from "../../api/reportsDrive.api";
 import { setDriveLink } from "../../utils/driveLinkCache";
 import { getApiErrorMessage } from "../../api/http";
 import { useAdminAuth } from "../context/AdminAuthContext";
+import { useAuth } from "../context/AuthContext";
 import { AdminLoginModal } from "../components/AdminLoginModal";
 import { ApuracaoPodium } from "../components/ApuracaoPodium";
 import { EmptyReportScene } from "../components/EmptyReportScene";
@@ -72,6 +73,7 @@ export function Home({
 }: HomeProps) {
   const queryClient = useQueryClient();
   const { isAdmin, logout } = useAdminAuth();
+  const { profileName } = useAuth();
   const [showAdminLogin, setShowAdminLogin] = useState(false);
 
   type BatchState = {
@@ -180,7 +182,7 @@ export function Home({
     staleTime: 30_000,
   });
 
-  const ocorrencias: OccurrenceDTO[] = data ?? [];
+  const allOcorrencias: OccurrenceDTO[] = data ?? [];
 
   // ── Busca universal ───────────────────────────────────────
   // Normaliza removendo acentos e caixa, para casar "São Paulo" com "sao paulo".
@@ -190,6 +192,20 @@ export function Home({
       .replace(/[̀-ͯ]/g, "")
       .toLowerCase()
       .trim();
+
+  // ── Visibilidade por autor ────────────────────────────────
+  // Cada analista vê apenas as ocorrências que ele mesmo registrou
+  // (campo `analisadoPor`, pré-preenchido com o nome do usuário logado).
+  // O Admin (PIN) enxerga as ocorrências de todos.
+  const ocorrencias = useMemo<OccurrenceDTO[]>(() => {
+    if (isAdmin) return allOcorrencias;
+    const me = normalizeText(profileName);
+    if (!me) return [];
+    return allOcorrencias.filter(
+      (o) => normalizeText(o.analisadoPor ?? "") === me,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allOcorrencias, isAdmin, profileName]);
 
   const filteredOcorrencias = useMemo(() => {
     const q = normalizeText(search);
