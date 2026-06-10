@@ -1112,8 +1112,10 @@ export function Home({
         )}
 
         {/* ── Pódio de apuração (tempo real) ───────────────────────── */}
-        {!isLoading && !isError && ocorrencias.length > 0 && (
-          <ApuracaoPodium occurrences={ocorrencias} className="mt-16 w-full" />
+        {/* O ranking conta as apurações de TODOS os analistas, mesmo que a
+            lista acima esteja filtrada para mostrar só as do usuário logado. */}
+        {!isLoading && !isError && allOcorrencias.length > 0 && (
+          <ApuracaoPodium occurrences={allOcorrencias} className="mt-16 w-full" />
         )}
 
         <OccurrencePreviewModal
