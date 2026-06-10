@@ -1416,7 +1416,7 @@ function dtoToOcorrencia(
       id: dto.tripId ?? "",
       linha: dto.lineLabel ?? "",
       prefixo: dto.vehicleNumber ?? "",
-      horario: dto.tripDepartureTime ?? "",
+      horario: dto.tripTime ?? "",
       codigoLinha: dto.tripLineCode ?? "",
       nomeLinha: dto.tripLineName ?? "",
       sentido: dto.tripDirection ?? "",
@@ -1468,6 +1468,12 @@ function dtoToOcorrencia(
     showSectionTripulacao: dto.showSectionTripulacao ?? true,
     showSectionPassageiros: dto.showSectionPassageiros ?? true,
     devolutivaBeforeEvidences: dto.devolutivaBeforeEvidences ?? false,
+
+    // Análise e tratativa — precisam ser carregados senão o save (overwrite total)
+    // grava null no banco e apaga os dados refletidos nos relatórios.
+    occurrenceName: dto.occurrenceName ?? null,
+    tratativa: dto.tratativa ?? null,
+    analisadoPor: dto.analisadoPor ?? null,
 
     createdAt: dto.createdAt ?? "",
   };

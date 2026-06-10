@@ -59,6 +59,7 @@ export interface Ocorrencia {
   devolutivaBeforeEvidences?: boolean; // Devolutiva antes das evidências no PDF
   tratativa?: "SUSPEICAO" | "ADVERTENCIA" | "VALE" | "REGISTRO" | null;
   analisadoPor?: string | null;
+  occurrenceName?: string | null;    // Nome da ocorrência no RIZER
 }
 
 export type ApiError = {

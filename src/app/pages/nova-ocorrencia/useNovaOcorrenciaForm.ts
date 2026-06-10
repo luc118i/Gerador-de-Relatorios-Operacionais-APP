@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import type {
   Viagem,
@@ -84,6 +84,8 @@ export function useNovaOcorrenciaForm({ onSaved, edicao }: NovaOcorrenciaProps) 
   const [showPreview, setShowPreview] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "success">("idle");
   const [triedSave, setTriedSave] = useState(false);
+  // Trava síncrona contra submit duplicado (clique duplo, re-trigger do drag, etc.)
+  const savingRef = useRef(false);
 
   // ── Mutations ────────────────────────────────────────────────────────────
   const createOccurrence = useCreateOccurrence();
@@ -393,6 +395,10 @@ export function useNovaOcorrenciaForm({ onSaved, edicao }: NovaOcorrenciaProps) 
     const typeConfig = getOccurrenceTypeConfig(typeCode);
     if (!typeConfig.isGeneric && !viagemSelecionada) return;
 
+    // Evita que um segundo disparo reenvie as mesmas evidências e estoure o limite
+    if (savingRef.current) return;
+    savingRef.current = true;
+
     setSaveStatus("saving");
     await new Promise((resolve) => setTimeout(resolve, 500));
 
@@ -453,6 +459,9 @@ export function useNovaOcorrenciaForm({ onSaved, edicao }: NovaOcorrenciaProps) 
 
       if (evidencesToUpload.length) {
         await occurrencesApi.uploadEvidences(resultId, evidencesToUpload);
+        // Marca as fotos como já enviadas para que um eventual novo save não
+        // as reenvie (o que duplicaria as evidências e estouraria o limite).
+        setEvidencias((prev) => prev.map((e) => (e.file ? { ...e, file: undefined } : e)));
       }
 
       const existingEvidences = evidencias.filter((e) => !e.file && e.id);
@@ -495,15 +504,18 @@ export function useNovaOcorrenciaForm({ onSaved, edicao }: NovaOcorrenciaProps) 
         devolutivaBeforeEvidences: typeConfig.isGeneric ? devolutivaBeforeEvidences : false,
         tratativa: tratativa ?? null,
         analisadoPor: analisadoPor.trim() || null,
+        occurrenceName: occurrenceName ?? null,
       };
 
       setSaveStatus("success");
       setTimeout(() => {
+        savingRef.current = false; // libera caso o formulário siga montado
         onSaved({ id: resultId, view: novaOcorrenciaView });
       }, 1500);
     } catch (e) {
       console.error(e);
       setSaveStatus("idle");
+      savingRef.current = false; // libera para nova tentativa após erro
       toast.error(getApiErrorMessage(e));
     }
   }
