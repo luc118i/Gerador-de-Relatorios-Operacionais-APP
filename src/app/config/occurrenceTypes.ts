@@ -28,6 +28,15 @@ export const OCCURRENCE_TYPES: OccurrenceTypeConfig[] = [
     isGeneric: false,
   },
   {
+    code: "EXCESSO_PERMANENCIA",
+    title: "Excesso de Permanência",
+    description: "Permanência acima do tempo permitido em ponto de parada",
+    showPlace: true,
+    showSpeed: false,
+    singleTime: false,
+    isGeneric: false,
+  },
+  {
     code: "GENERICO",
     title: "Genérico (CCO)",
     description: "Relatório livre com relato e devolutiva",

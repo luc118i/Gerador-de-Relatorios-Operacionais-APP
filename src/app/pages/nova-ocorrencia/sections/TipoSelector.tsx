@@ -15,7 +15,7 @@ export function TipoSelector({ value, onChange }: TipoSelectorProps) {
       <p className="text-xs text-gray-500 mb-3">
         Selecione o tipo antes de preencher os dados — o formulário se adapta automaticamente.
       </p>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {OCCURRENCE_TYPES.map((t) => {
           const selected = value === t.code;
           return (

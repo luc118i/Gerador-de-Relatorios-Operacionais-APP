@@ -149,6 +149,7 @@ function abbrevType(code: string, title: string): string {
   const map: Record<string, string> = {
     EXCESSO_VELOCIDADE: "Excesso vel.",
     DESCUMP_OP_PARADA_FORA: "Parada irreg.",
+    EXCESSO_PERMANENCIA: "Excesso perm.",
     GENERICO: "Genérico",
   };
   return map[code] ?? (title.length > 18 ? title.slice(0, 16) + "…" : title);
@@ -1141,12 +1142,14 @@ function OccurrenceRow({
   const typeBadgeStyle: Record<string, string> = {
     EXCESSO_VELOCIDADE: "bg-red-100 text-red-700",
     DESCUMP_OP_PARADA_FORA: "bg-orange-100 text-orange-700",
+    EXCESSO_PERMANENCIA: "bg-amber-100 text-amber-700",
     GENERICO: "bg-blue-100 text-blue-700",
   };
 
   const typeLabel: Record<string, string> = {
     EXCESSO_VELOCIDADE: "Excesso vel.",
     DESCUMP_OP_PARADA_FORA: "Parada irreg.",
+    EXCESSO_PERMANENCIA: "Excesso perm.",
     GENERICO: "Genérico",
   };
 
