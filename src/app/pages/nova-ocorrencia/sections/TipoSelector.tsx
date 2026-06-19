@@ -29,7 +29,9 @@ export function TipoSelector({ value, onChange }: TipoSelectorProps) {
                     ? "border-orange-500 bg-orange-50 shadow-sm"
                     : t.code === "EXCESSO_VELOCIDADE"
                       ? "border-red-500 bg-red-50 shadow-sm"
-                      : "border-blue-600 bg-blue-50 shadow-sm"
+                      : t.code === "EXCESSO_PERMANENCIA"
+                        ? "border-amber-500 bg-amber-50 shadow-sm"
+                        : "border-blue-600 bg-blue-50 shadow-sm"
                   : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
               }`}
             >
@@ -40,7 +42,9 @@ export function TipoSelector({ value, onChange }: TipoSelectorProps) {
                       ? "text-orange-700"
                       : t.code === "EXCESSO_VELOCIDADE"
                         ? "text-red-700"
-                        : "text-blue-700"
+                        : t.code === "EXCESSO_PERMANENCIA"
+                          ? "text-amber-700"
+                          : "text-blue-700"
                     : "text-gray-800"
                 }`}
               >
@@ -56,7 +60,9 @@ export function TipoSelector({ value, onChange }: TipoSelectorProps) {
                       ? "text-orange-600"
                       : t.code === "EXCESSO_VELOCIDADE"
                         ? "text-red-600"
-                        : "text-blue-600"
+                        : t.code === "EXCESSO_PERMANENCIA"
+                          ? "text-amber-600"
+                          : "text-blue-600"
                   }`}
                 >
                   <Check className="w-3 h-3" />
