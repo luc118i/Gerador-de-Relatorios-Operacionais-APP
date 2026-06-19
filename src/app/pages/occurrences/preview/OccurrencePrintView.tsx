@@ -1,4 +1,5 @@
 import type { Ocorrencia } from "../../../types";
+import { formatPermanencia } from "../../../utils/relatorio";
 
 interface Props {
   occurrence: Ocorrencia;
@@ -43,6 +44,20 @@ function buildRelatoHtml(o: Ocorrencia): string {
         `<br/><br/>` +
         `Essa conduta irresponsável representou um potencial risco de acidente ou colisão, ` +
         `configurando um flagrante de violação das normas de trânsito do CTB e um sério desrespeito à segurança viária.`
+      );
+    }
+    case "EXCESSO_PERMANENCIA": {
+      const local = o.localParada || "ponto de parada";
+      const perm = formatPermanencia(o.horarioInicial, o.horarioFinal);
+      const periodo = o.horarioFinal && o.horarioFinal !== o.horarioInicial
+        ? `, no período de ${b(horario)} às ${b(o.horarioFinal)}`
+        : "";
+      const permInfo = perm ? ` (tempo de permanência de ${b(perm)})` : "";
+      return (
+        `Durante a análise das atividades do veículo ${b(prefixo)}${b(linha)} na viagem do dia ${b(dataViagem)}, ` +
+        `identificamos a permanência superior ao tempo previsto em ${b(local)}${periodo}${permInfo}.` +
+        `<br/><br/>` +
+        `Tal conduta caracteriza descumprimento operacional, impactando a programação da viagem e a qualidade do serviço prestado aos passageiros.`
       );
     }
     default: {

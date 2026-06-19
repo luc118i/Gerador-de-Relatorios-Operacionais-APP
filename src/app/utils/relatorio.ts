@@ -37,6 +37,21 @@ function htmlParaTexto(html: string): string {
     .trim();
 }
 
+/** Tempo de permanência (saída − entrada) como "1h 40min" / "40min". Trata virada de meia-noite. */
+export function formatPermanencia(inicio?: string | null, fim?: string | null): string | null {
+  if (!inicio || !fim) return null;
+  const [hi, mi] = inicio.split(":").map(Number);
+  const [hf, mf] = fim.split(":").map(Number);
+  if ([hi, mi, hf, mf].some((n) => Number.isNaN(n))) return null;
+  let mins = hf * 60 + mf - (hi * 60 + mi);
+  if (mins <= 0) mins += 24 * 60;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  if (h && m) return `${h}h ${m}min`;
+  if (h) return `${h}h`;
+  return `${m}min`;
+}
+
 export function gerarTextoRelatorioIndividual(ocorrencia: Ocorrencia): string {
   const data = formatarData(ocorrencia.dataEvento);
   const v = ocorrencia.viagem;
@@ -67,6 +82,15 @@ export function gerarTextoRelatorioIndividual(ocorrencia: Ocorrencia): string {
       const velocidade = ocorrencia.speedKmh ? `${ocorrencia.speedKmh} km/h` : "velocidade não informada";
       const horarioEvento = ocorrencia.horarioInicial || "";
       return `Em viagem realizada pelo veículo ${prefixo}${linhaInfo} iniciada no dia ${formatarData(ocorrencia.dataViagem)}, identificamos que o motorista excedeu o limite de velocidade pré-estabelecido por diversas vezes. No dia ${data}, às ${horarioEvento} chegou a atingir a velocidade de ${velocidade}, colocando em perigo não somente a própria integridade física, mas também a dos demais passageiros e usuários da rodovia.\n\nEssa conduta irresponsável representou um potencial risco de acidente ou colisão, configurando um flagrante de violação das normas de trânsito do CTB e um sério desrespeito à segurança viária.`;
+    }
+
+    case "EXCESSO_PERMANENCIA": {
+      const local = ocorrencia.localParada
+        ? `no ponto de parada ${ocorrencia.localParada}`
+        : "em ponto de parada";
+      const perm = formatPermanencia(ocorrencia.horarioInicial, ocorrencia.horarioFinal);
+      const permInfo = perm ? ` (tempo de permanência de ${perm})` : "";
+      return `Durante a análise das atividades do veículo de número ${prefixo}${linhaInfo} na viagem do dia ${formatarData(ocorrencia.dataViagem || ocorrencia.dataEvento)}, identificamos o descumprimento operacional por parte do condutor, em razão da permanência superior ao tempo previsto ${local}${horario ? `, no período de ${horario}` : ""}${permInfo}.\n\nEsta conduta caracteriza uma violação dos procedimentos operacionais estabelecidos, impactando diretamente a programação da viagem, gerando atrasos e comprometendo a qualidade do serviço prestado aos passageiros.`;
     }
 
     case "DESCUMP_OP_PARADA_FORA":
@@ -150,6 +174,25 @@ ${motoristas}
 📅 *DATA:* ${formatarData(ocorrencia.dataEvento)}
 🕐 *HORÁRIO DO EVENTO:* ${ocorrencia.horarioInicial}
 🏎️ *VELOCIDADE ATINGIDA:* ${ocorrencia.speedKmh ? `${ocorrencia.speedKmh} km/h` : "—"}`;
+  }
+
+  // ── EXCESSO DE PERMANÊNCIA ──────────────────────────────────────────────────
+  if (ocorrencia.typeCode === "EXCESSO_PERMANENCIA") {
+    const perm = formatPermanencia(ocorrencia.horarioInicial, ocorrencia.horarioFinal);
+    return `🚨 *EXCESSO DE PERMANÊNCIA*
+
+📋 *LINHA:* ${getLinha(v)}
+🚌 *PREFIXO:* ${getPrefixo(v)}
+⏰ *HORÁRIO DA VIAGEM:* ${getHorario(v)}
+📍 *ORIGEM x DESTINO:* ${getOrigem(v)} x ${getDestino(v)}
+
+👤 *MOTORISTA(S):*
+${motoristas}
+
+📅 *DATA:* ${formatarData(ocorrencia.dataEvento)}
+🕐 *ENTRADA:* ${ocorrencia.horarioInicial}
+🕐 *SAÍDA:* ${ocorrencia.horarioFinal}
+📍 *LOCAL:* ${ocorrencia.localParada}${perm ? `\n⏱️ *PERMANÊNCIA:* ${perm}` : ""}`;
   }
 
   // ── PARADA FORA DO PROGRAMADO (padrão) ─────────────────────────────────────
