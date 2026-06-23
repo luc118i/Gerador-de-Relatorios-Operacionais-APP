@@ -30,10 +30,15 @@ import {
   Eye,
   EyeOff,
   ShieldCheck,
+  Mail,
 } from "lucide-react";
 import { DrivePickerModal } from "./occurrences/preview/components/DrivePickerModal";
 import { useDriveFolder, type DriveFolderConfig } from "../../hooks/useDriveFolder";
 import { reportsDriveApi } from "../../api/reportsDrive.api";
+import { EmailLoginModal } from "../../features/emailReports/components/EmailLoginModal";
+import { EmailComposerModal } from "../../features/emailReports/components/EmailComposerModal";
+import { SenderBadge } from "../../features/emailReports/components/SenderBadge";
+import { useEmailAccount } from "../../features/emailReports/hooks/useEmailAccount";
 import { registerDisciplinaryOccurrence } from "../../api/automation.api";
 import { useAdminAuth } from "../context/AdminAuthContext";
 import { AdminLoginModal } from "../components/AdminLoginModal";
@@ -193,6 +198,11 @@ export function RelatorioDiario({ onVoltar }: RelatorioDiarioProps) {
   const [sendingToDrive, setSendingToDrive] = useState(false);
   const [driveSent, setDriveSent] = useState(false);
   const { config: driveConfig, save: saveDriveConfig } = useDriveFolder();
+  const [showEmailLogin, setShowEmailLogin] = useState(false);
+  const [showEmailComposer, setShowEmailComposer] = useState(false);
+  const [emailPdfBlob, setEmailPdfBlob] = useState<Blob | null>(null);
+  const [fetchingEmailPdf, setFetchingEmailPdf] = useState(false);
+  const { account: emailAccount } = useEmailAccount();
   const filterPanelRef = useRef<HTMLDivElement>(null);
   const copyMenuRef    = useRef<HTMLDivElement>(null);
 
@@ -388,6 +398,24 @@ export function RelatorioDiario({ onVoltar }: RelatorioDiarioProps) {
       alert(`Falha ao gerar PDF: ${e?.message ?? "erro desconhecido"}`);
     } finally {
       setExportingPdf(false);
+    }
+  }
+
+  async function handleSendByEmail() {
+    if (!canActions || fetchingEmailPdf) return;
+    setFetchingEmailPdf(true);
+    try {
+      const blob = await getDailyReportPdf(dataSelecionada);
+      setEmailPdfBlob(blob);
+      if (emailAccount) {
+        setShowEmailComposer(true);
+      } else {
+        setShowEmailLogin(true);
+      }
+    } catch (e: any) {
+      alert(`Falha ao gerar PDF: ${e?.message ?? "erro desconhecido"}`);
+    } finally {
+      setFetchingEmailPdf(false);
     }
   }
 
@@ -678,6 +706,32 @@ export function RelatorioDiario({ onVoltar }: RelatorioDiarioProps) {
                 )}
                 {sendingToDrive ? "Enviando..." : driveSent ? "Enviado!" : "Drive"}
               </button>
+
+              {/* E-mail */}
+              <div className="flex items-center gap-2 pl-1 border-l border-gray-200">
+                <SenderBadge />
+                <button
+                  onClick={() => void handleSendByEmail()}
+                  disabled={!canActions || fetchingEmailPdf || apuracaoSaving}
+                  className={`cursor-pointer h-8 px-3 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors ${
+                    !canActions || apuracaoSaving
+                      ? "bg-gray-100 text-gray-300 cursor-not-allowed"
+                      : fetchingEmailPdf
+                        ? "bg-violet-500 text-white cursor-not-allowed"
+                        : "bg-violet-600 text-white hover:bg-violet-700"
+                  }`}
+                  title="Enviar relatório diário por e-mail"
+                >
+                  {fetchingEmailPdf ? (
+                    <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeDasharray="32" strokeDashoffset="12" />
+                    </svg>
+                  ) : (
+                    <Mail className="w-3.5 h-3.5" />
+                  )}
+                  {fetchingEmailPdf ? "Preparando..." : "E-mail"}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1013,6 +1067,30 @@ export function RelatorioDiario({ onVoltar }: RelatorioDiarioProps) {
           currentConfig={driveConfig}
           onConfirm={handleSendToDrive}
           onClose={() => setShowDrivePicker(false)}
+        />
+      )}
+
+      {/* Email login modal */}
+      {showEmailLogin && (
+        <EmailLoginModal
+          onClose={() => setShowEmailLogin(false)}
+          onSaved={() => {
+            setShowEmailLogin(false);
+            setShowEmailComposer(true);
+          }}
+        />
+      )}
+
+      {/* Email composer modal */}
+      {showEmailComposer && emailPdfBlob && (
+        <EmailComposerModal
+          pdfBlob={emailPdfBlob}
+          pdfFileName={(() => {
+            const [yy, mm, dd] = dataSelecionada.split("-");
+            return `${dd}.${mm}.${yy} - RELATORIO DIARIO MONITORAMENTO.pdf`;
+          })()}
+          defaultSubject={`Relatório Diário de Monitoramento — ${formatDateDisplay(dataSelecionada)}`}
+          onClose={() => setShowEmailComposer(false)}
         />
       )}
     </div>
