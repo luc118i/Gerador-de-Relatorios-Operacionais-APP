@@ -207,13 +207,17 @@ export function useNovaOcorrenciaForm({ onSaved, edicao }: NovaOcorrenciaProps) 
     setTratativa((edicao as any).tratativa ?? null);
     setAnalisadoPor((edicao as any).analisadoPor ?? "");
 
-    const [codigo, ...resto] = (viagemSalva.linha || "").split(" - ");
+    // Prefere os campos canônicos da viagem (tripLineCode/Name/Direction vindos
+    // do join trips na API); só cai para o parse do label em ocorrências antigas
+    // sem viagem vinculada. O sentido NUNCA fica embutido no nome da linha.
+    const vs = viagemSalva as any;
+    const [codigoFallback, ...restoFallback] = (viagemSalva.linha || "").split(" - ");
     setViagemSelecionada({
       id: viagemSalva.id,
-      codigoLinha: codigo || "",
-      nomeLinha: resto.join(" - ") || "",
+      codigoLinha: vs.codigoLinha || codigoFallback || "",
+      nomeLinha: vs.nomeLinha || restoFallback.join(" - ") || "",
       horaPartida: viagemSalva.horario,
-      sentido: "",
+      sentido: vs.sentido || "",
     } as ViagemCatalog);
 
     if (edicao.motorista1) {
