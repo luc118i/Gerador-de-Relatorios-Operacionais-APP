@@ -89,6 +89,10 @@ interface OccurrenceCardProps {
   relatoriosFolderId?: string;
   medidasFolderId?: string;
   onNeedFolderConfig?: () => void;
+  /** Ocorrências com 2 motoristas viram 2 cards (um por motorista); ações só no slot 1. */
+  driverSlot?: 1 | 2;
+  /** Quantas ocorrências deste veículo existem no dia (para destacar prefixo repetido). */
+  duplicateVehicleCount?: number;
 }
 
 export type OccurrenceDetailDTO = OccurrenceDTO & {
@@ -164,6 +168,8 @@ export function OccurrenceCard({
   relatoriosFolderId,
   medidasFolderId,
   onNeedFolderConfig,
+  driverSlot = 1,
+  duplicateVehicleCount = 1,
 }: OccurrenceCardProps) {
   const [loadingEdit, setLoadingEdit] = useState(false);
   const [copiedWpp, setCopiedWpp] = useState(false);
@@ -316,6 +322,9 @@ export function OccurrenceCard({
   );
   const driver1 = occurrence.drivers?.find((d) => d.position === 1);
   const driver2 = occurrence.drivers?.find((d) => d.position === 2);
+  const isSecondDriverCard = driverSlot === 2;
+  const hasSecondDriverCard = !!driver2?.name;
+  const isDuplicateVehicle = duplicateVehicleCount > 1;
 
   // No card: GENERICO → reportTitle, demais → linha (contexto da viagem)
   const subject =
@@ -450,7 +459,9 @@ export function OccurrenceCard({
         onCancel={() => setShowRizerModal(false)}
       />
       <div
-        className={`group relative flex items-center gap-0 bg-white border-b border-gray-100 transition-colors cursor-pointer ${
+        className={`group relative flex items-center gap-0 border-b border-gray-100 transition-colors cursor-pointer ${
+          isSecondDriverCard ? "bg-gray-50/60" : "bg-white"
+        } ${
           batchOverlay || tratativaOverlay || revisarOverlay || disciplinaryState === "loading" || fillMedidaState === "loading"
             ? "pointer-events-none"
             : localFaltaTratativa
@@ -527,10 +538,22 @@ export function OccurrenceCard({
           </div>
         )}
         {/* Prefixo */}
-        <div className="w-[70px] flex-shrink-0 px-3 py-2.5">
-          <span className="font-bold text-sm text-gray-900 tabular-nums">
-            {occurrence.vehicleNumber}
-          </span>
+        <div className="w-[70px] flex-shrink-0 px-3 py-2.5 flex items-center gap-1">
+          {isSecondDriverCard ? (
+            <span className="text-gray-300 text-sm" title="Mesma ocorrência do card acima">↳</span>
+          ) : (
+            <>
+              <span className="font-bold text-sm text-gray-900 tabular-nums">
+                {occurrence.vehicleNumber}
+              </span>
+              {isDuplicateVehicle && (
+                <span
+                  className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0"
+                  title={`Este veículo tem ${duplicateVehicleCount} ocorrências hoje`}
+                />
+              )}
+            </>
+          )}
         </div>
 
         {/* Base (abreviada) */}
@@ -546,42 +569,56 @@ export function OccurrenceCard({
 
         {/* Assunto */}
         <div className="flex-1 min-w-0 px-2 py-2.5">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-sm text-gray-800 truncate leading-tight">
-              {subjectTitle}
+          {isSecondDriverCard ? (
+            <span className="text-xs text-gray-400 italic truncate block leading-tight">
+              Mesma ocorrência acima — Motorista 02
             </span>
-            {occurrence.typeCode === "EXCESSO_VELOCIDADE" && occurrence.speedKmh != null && (
-              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-bold text-[10px] leading-none whitespace-nowrap flex-shrink-0">
-                <Zap className="w-2.5 h-2.5" />
-                {occurrence.speedKmh} km/h
-              </span>
-            )}
-            {occurrence.typeCode === "DESCUMP_OP_PARADA_FORA" && (occurrence.evidenceCount ?? 0) === 0 && (
-              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-orange-100 text-orange-600 font-semibold text-[10px] leading-none whitespace-nowrap flex-shrink-0">
-                <ImageOff className="w-2.5 h-2.5" />
-                Sem evidência
-              </span>
-            )}
-            {disciplinaryState === "idle" && (
-              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 font-semibold text-[10px] leading-none whitespace-nowrap flex-shrink-0">
-                <Gavel className="w-2.5 h-2.5" />
-                Pendente RIZER
-              </span>
-            )}
-            {localFaltaTratativa && (
-              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-semibold text-[10px] leading-none whitespace-nowrap flex-shrink-0">
-                <AlertTriangle className="w-2.5 h-2.5" />
-                Falta a tratativa
-              </span>
-            )}
-            {occurrence.tratativa && (
-              <TratativaBadge value={occurrence.tratativa} size="xs" />
-            )}
-          </div>
-          {subjectDetail && (
-            <span className="text-[11px] text-gray-400 truncate block leading-tight">
-              {subjectDetail}
-            </span>
+          ) : (
+            <>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-sm text-gray-800 truncate leading-tight">
+                  {subjectTitle}
+                </span>
+                {hasSecondDriverCard && (
+                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 font-semibold text-[10px] leading-none whitespace-nowrap flex-shrink-0">
+                    <UserCheck className="w-2.5 h-2.5" />
+                    2 motoristas
+                  </span>
+                )}
+                {occurrence.typeCode === "EXCESSO_VELOCIDADE" && occurrence.speedKmh != null && (
+                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-bold text-[10px] leading-none whitespace-nowrap flex-shrink-0">
+                    <Zap className="w-2.5 h-2.5" />
+                    {occurrence.speedKmh} km/h
+                  </span>
+                )}
+                {occurrence.typeCode === "DESCUMP_OP_PARADA_FORA" && (occurrence.evidenceCount ?? 0) === 0 && (
+                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-orange-100 text-orange-600 font-semibold text-[10px] leading-none whitespace-nowrap flex-shrink-0">
+                    <ImageOff className="w-2.5 h-2.5" />
+                    Sem evidência
+                  </span>
+                )}
+                {disciplinaryState === "idle" && (
+                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 font-semibold text-[10px] leading-none whitespace-nowrap flex-shrink-0">
+                    <Gavel className="w-2.5 h-2.5" />
+                    Pendente RIZER
+                  </span>
+                )}
+                {localFaltaTratativa && (
+                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-semibold text-[10px] leading-none whitespace-nowrap flex-shrink-0">
+                    <AlertTriangle className="w-2.5 h-2.5" />
+                    Falta a tratativa
+                  </span>
+                )}
+                {occurrence.tratativa && (
+                  <TratativaBadge value={occurrence.tratativa} size="xs" />
+                )}
+              </div>
+              {subjectDetail && (
+                <span className="text-[11px] text-gray-400 truncate block leading-tight">
+                  {subjectDetail}
+                </span>
+              )}
+            </>
           )}
         </div>
 
@@ -597,9 +634,11 @@ export function OccurrenceCard({
 
         {/* Motorista(s) */}
         <div className="w-[170px] flex-shrink-0 px-2 py-2.5 hidden lg:block">
-          <span className="text-xs text-gray-500 truncate block">
-            {driver1?.name ?? "—"}
-            {driver2?.name ? ` · ${driver2.name}` : ""}
+          <span
+            className={`text-xs truncate block ${isSecondDriverCard ? "text-gray-700 font-medium" : "text-gray-500"}`}
+            title={(isSecondDriverCard ? driver2?.name : driver1?.name) ?? undefined}
+          >
+            {(isSecondDriverCard ? driver2?.name : driver1?.name) ?? "—"}
           </span>
         </div>
 
@@ -665,7 +704,7 @@ export function OccurrenceCard({
                   ? "Apenas administradores podem registrar no RIZER"
                   : "Enviar ocorrência ao RIZER"
             }
-            className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium border transition-all disabled:opacity-60 ${
+            className={`w-[108px] flex-shrink-0 flex items-center justify-center gap-1 px-1 py-1 rounded-md text-[10px] font-medium border transition-all disabled:opacity-60 overflow-hidden whitespace-nowrap ${
               disciplinaryState === "success"
                 ? "text-emerald-700 bg-emerald-50 border-emerald-200 hover:bg-emerald-100"
                 : disciplinaryState === "loading"
@@ -678,13 +717,13 @@ export function OccurrenceCard({
             }`}
           >
             {disciplinaryState === "loading" ? (
-              <><Loader2 className="w-3 h-3 animate-spin" />{disciplinaryAction === "verifying" ? "Verificando..." : "Enviando..."}</>
+              <><Loader2 className="w-3 h-3 animate-spin flex-shrink-0" />{disciplinaryAction === "verifying" ? "Verificando..." : "Enviando..."}</>
             ) : disciplinaryState === "success" ? (
-              <><Check className="w-3 h-3" />No RIZER<RefreshCw className="w-2.5 h-2.5 opacity-50" /></>
+              <><Check className="w-3 h-3 flex-shrink-0" />No RIZER<RefreshCw className="w-2.5 h-2.5 opacity-50 flex-shrink-0" /></>
             ) : disciplinaryState === "error" ? (
-              <><Gavel className="w-3 h-3" />Tentar novamente</>
+              <><Gavel className="w-3 h-3 flex-shrink-0" />Tentar novo</>
             ) : (
-              <><Gavel className="w-3 h-3" />Enviar ao RIZER</>
+              <><Gavel className="w-3 h-3 flex-shrink-0" />Enviar RIZER</>
             )}
           </button>
           <button
@@ -777,13 +816,34 @@ export function OccurrenceCard({
       <div className="flex items-start justify-between mb-3">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="font-semibold text-lg text-gray-900">
-              {occurrence.vehicleNumber}
-            </span>
-            <BaseChip base={driver1?.baseCode ?? occurrence.baseCode} />
+            {isSecondDriverCard ? (
+              <span className="text-gray-300 text-base" title="Mesma ocorrência do card acima">↳</span>
+            ) : (
+              <>
+                <span className="font-semibold text-lg text-gray-900">
+                  {occurrence.vehicleNumber}
+                </span>
+                {isDuplicateVehicle && (
+                  <span
+                    className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0"
+                    title={`Este veículo tem ${duplicateVehicleCount} ocorrências hoje`}
+                  />
+                )}
+                <BaseChip base={driver1?.baseCode ?? occurrence.baseCode} />
+                {hasSecondDriverCard && (
+                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 font-semibold text-[10px] leading-none whitespace-nowrap">
+                    <UserCheck className="w-2.5 h-2.5" />
+                    2 motoristas
+                  </span>
+                )}
+              </>
+            )}
           </div>
-          <p className="text-sm text-gray-600">{subject}</p>
+          <p className="text-sm text-gray-600">
+            {isSecondDriverCard ? "Mesma ocorrência acima — Motorista 02" : subject}
+          </p>
         </div>
+        {!isSecondDriverCard && (
         <div className="flex items-center gap-1.5 flex-wrap">
           {occurrence.typeCode === "DESCUMP_OP_PARADA_FORA" && (occurrence.evidenceCount ?? 0) === 0 ? (
             <div className="flex items-center gap-1 bg-orange-50 border border-orange-200 text-orange-600 px-2 py-1 rounded">
@@ -812,10 +872,13 @@ export function OccurrenceCard({
             <TratativaBadge value={occurrence.tratativa} size="sm" />
           )}
         </div>
+        )}
       </div>
 
       {/* Corpo */}
       <div className="space-y-2">
+        {!isSecondDriverCard && (
+        <>
         <div className="flex items-center gap-2 text-sm text-gray-700">
           <Clock className="w-4 h-4 text-gray-400" />
           {occurrence.typeCode === "EXCESSO_VELOCIDADE" || occurrence.startTime === occurrence.endTime ? (
@@ -842,11 +905,12 @@ export function OccurrenceCard({
         ) : (
           <p className="text-sm text-gray-600">📍 {occurrence.place}</p>
         )}
+        </>
+        )}
 
         <div className="text-xs text-gray-500 pt-2 border-t border-gray-100 flex items-center justify-between gap-2">
-          <span>
-            {driver1?.name ?? "—"}
-            {driver2?.name ? ` • ${driver2.name}` : ""}
+          <span className={isSecondDriverCard ? "text-gray-700 font-medium" : undefined}>
+            {isSecondDriverCard ? (driver2?.name ?? "—") : (driver1?.name ?? "—")}
           </span>
           {occurrence.analisadoPor && (
             <span className="text-[11px] text-gray-400 flex items-center gap-1 flex-shrink-0">

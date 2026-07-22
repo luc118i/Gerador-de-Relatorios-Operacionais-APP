@@ -259,6 +259,28 @@ export function Home({
     return map;
   }, [filteredOcorrencias, groupBySubject]);
 
+  // ── Prefixos repetidos no dia ─────────────────────────────
+  // Quando o mesmo veículo aparece em mais de uma ocorrência do dia,
+  // destacamos isso na lista (não é a mesma ocorrência — são registros distintos).
+  const vehicleOccurrenceCount = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const o of ocorrencias) {
+      map.set(o.vehicleNumber, (map.get(o.vehicleNumber) ?? 0) + 1);
+    }
+    return map;
+  }, [ocorrencias]);
+
+  // ── Divisão por motorista ──────────────────────────────────
+  // Ocorrências com 2 motoristas viram 2 cards na tela (um por motorista),
+  // mantendo o mesmo id/ocorrência por trás — as ações só aparecem no card
+  // do Motorista 01 para evitar disparo duplicado (excluir 2x, RIZER 2x etc).
+  function splitByDriver(occ: OccurrenceDTO): Array<{ occ: OccurrenceDTO; driverSlot: 1 | 2 }> {
+    const hasDriver2 = (occ.drivers ?? []).some((d) => d.position === 2 && d.name);
+    return hasDriver2
+      ? [{ occ, driverSlot: 1 }, { occ, driverSlot: 2 }]
+      : [{ occ, driverSlot: 1 }];
+  }
+
   // ── Efeitos ───────────────────────────────────────────────
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -1019,11 +1041,13 @@ export function Home({
                         <div className="w-[170px] flex-shrink-0 px-2 py-2 hidden lg:block">Motorista</div>
                         <div className="w-[140px] flex-shrink-0 px-1 py-2">Ações</div>
                       </div>
-                      {occs.map((occ) => (
+                      {occs.flatMap(splitByDriver).map(({ occ, driverSlot }) => (
                         <OccurrenceCard
-                          key={occ.id}
+                          key={driverSlot === 2 ? `${occ.id}-2` : occ.id}
                           compact
                           occurrence={occ}
+                          driverSlot={driverSlot}
+                          duplicateVehicleCount={vehicleOccurrenceCount.get(occ.vehicleNumber) ?? 1}
                           onOpen={() => setPreviewId(occ.id)}
                           onEditar={() => handleEditar(occ)}
                           onExcluir={() => setExcluindoId(occ.id)}
@@ -1040,10 +1064,12 @@ export function Home({
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {occs.map((occ) => (
+                      {occs.flatMap(splitByDriver).map(({ occ, driverSlot }) => (
                         <OccurrenceCard
-                          key={occ.id}
+                          key={driverSlot === 2 ? `${occ.id}-2` : occ.id}
                           occurrence={occ}
+                          driverSlot={driverSlot}
+                          duplicateVehicleCount={vehicleOccurrenceCount.get(occ.vehicleNumber) ?? 1}
                           onOpen={() => setPreviewId(occ.id)}
                           onEditar={() => handleEditar(occ)}
                           onExcluir={() => setExcluindoId(occ.id)}
@@ -1075,11 +1101,13 @@ export function Home({
               <div className="w-[170px] flex-shrink-0 px-2 py-2 hidden lg:block">Motorista</div>
               <div className="w-[140px] flex-shrink-0 px-1 py-2">Ações</div>
             </div>
-            {filteredOcorrencias.map((occ) => (
+            {filteredOcorrencias.flatMap(splitByDriver).map(({ occ, driverSlot }) => (
               <OccurrenceCard
-                key={occ.id}
+                key={driverSlot === 2 ? `${occ.id}-2` : occ.id}
                 compact
                 occurrence={occ}
+                driverSlot={driverSlot}
+                duplicateVehicleCount={vehicleOccurrenceCount.get(occ.vehicleNumber) ?? 1}
                 onOpen={() => setPreviewId(occ.id)}
                 onEditar={() => handleEditar(occ)}
                 onExcluir={() => setExcluindoId(occ.id)}
@@ -1094,10 +1122,12 @@ export function Home({
         ) : (
           /* ── Grid de cards ───────────────────────────────────────── */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredOcorrencias.map((occ) => (
+            {filteredOcorrencias.flatMap(splitByDriver).map(({ occ, driverSlot }) => (
               <OccurrenceCard
-                key={occ.id}
+                key={driverSlot === 2 ? `${occ.id}-2` : occ.id}
                 occurrence={occ}
+                driverSlot={driverSlot}
+                duplicateVehicleCount={vehicleOccurrenceCount.get(occ.vehicleNumber) ?? 1}
                 onOpen={() => setPreviewId(occ.id)}
                 onEditar={() => handleEditar(occ)}
                 onExcluir={() => setExcluindoId(occ.id)}
