@@ -102,6 +102,22 @@ export function Home({
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [calendarVisible, setCalendarVisible] = useState(false);
   const [editando, setEditando] = useState<Ocorrencia | null>(null);
+  // Controla a transição (drawer deslizando + fundo recolhendo), separado de
+  // `editando` para que o conteúdo continue montado durante a animação de saída.
+  const [panelOpen, setPanelOpen] = useState(false);
+
+  useEffect(() => {
+    if (editando) {
+      const raf = requestAnimationFrame(() => setPanelOpen(true));
+      return () => cancelAnimationFrame(raf);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editando]);
+
+  function closeDrawer() {
+    setPanelOpen(false);
+    setTimeout(() => setEditando(null), 320);
+  }
   const [excluindoId, setExcluindoId] = useState<string | null>(null);
   const [excluindo, setExcluindo] = useState(false);
   const [viewMode, setViewMode] = useState<"cards" | "list">(
@@ -602,6 +618,12 @@ export function Home({
         <ReminderModal onConfirm={handleConfirmReminder} />
       )}
 
+      {/* Recolhe suavemente ao abrir o drawer de edição (efeito "iOS") */}
+      <div
+        className={`origin-top transition-all duration-[320ms] ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform ${
+          panelOpen ? "scale-[0.97] rounded-2xl overflow-hidden brightness-[0.92]" : "scale-100"
+        }`}
+      >
       {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -1154,20 +1176,27 @@ export function Home({
           onClose={() => setPreviewId(null)}
         />
       </main>
+      </div>
 
       {/* Drawer de Edição */}
       {editando && (
         <div className="fixed inset-0 z-50 flex justify-end">
           <div
-            className="absolute inset-0 bg-black/40"
-            onClick={() => setEditando(null)}
+            className={`absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-[320ms] ease-[cubic-bezier(0.32,0.72,0,1)] ${
+              panelOpen ? "opacity-100" : "opacity-0"
+            }`}
+            onClick={closeDrawer}
           />
-          <div className="relative w-full max-w-3xl bg-white h-full overflow-y-auto shadow-2xl">
+          <div
+            className={`relative w-full max-w-6xl bg-white h-full overflow-y-auto shadow-2xl transition-transform duration-[320ms] ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform ${
+              panelOpen ? "translate-x-0" : "translate-x-full"
+            }`}
+          >
             <NovaOcorrencia
-              edicao={editando}
-              onVoltar={() => setEditando(null)}
+              edicao={editando ?? undefined}
+              onVoltar={closeDrawer}
               onSaved={(args) => {
-                setEditando(null);
+                closeDrawer();
                 toast.success("Ocorrência atualizada!");
 
                 // Se o arquivo estava no Drive, marca para reenvio (force=true)
