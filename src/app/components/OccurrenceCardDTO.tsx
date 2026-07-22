@@ -644,7 +644,7 @@ export function OccurrenceCard({
 
         {/* Ações */}
         <div
-          className="flex items-center gap-0 flex-shrink-0 px-1 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="flex items-center gap-0 flex-shrink-0 px-1"
           onClick={(e) => e.stopPropagation()}
         >
           <button
@@ -656,11 +656,11 @@ export function OccurrenceCard({
             }`}
           >
             {loadingAiWpp ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              <Loader2 className="w-4 h-4 animate-spin" />
             ) : isAnaliseOp ? (
-              <Sparkles className="w-3.5 h-3.5" />
+              <Sparkles className="w-4 h-4" />
             ) : (
-              <MessageCircle className="w-3.5 h-3.5" />
+              <MessageCircle className="w-4 h-4" />
             )}
           </button>
           <button
@@ -672,9 +672,9 @@ export function OccurrenceCard({
             }`}
           >
             {loadingAiRelat ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
-              <FileText className="w-3.5 h-3.5" />
+              <FileText className="w-4 h-4" />
             )}
           </button>
           <button
@@ -684,15 +684,15 @@ export function OccurrenceCard({
             className="p-2 rounded text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors disabled:opacity-50"
           >
             {loadingEdit
-              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              : <Pencil className="w-3.5 h-3.5" />}
+              ? <Loader2 className="w-4 h-4 animate-spin" />
+              : <Pencil className="w-4 h-4" />}
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); setShowSuspensaoModal(true); }}
             title={localSuspensao ? `Suspensão: ${localSuspensao.dias}d a partir de ${fmtDdMmCompact(localSuspensao.dataInicio)}` : "Gerar Suspensão Disciplinar"}
             className={`p-2 rounded transition-colors ${localSuspensao ? "text-amber-500 hover:text-amber-700 hover:bg-amber-50" : "text-gray-400 hover:text-red-700 hover:bg-red-50"}`}
           >
-            <ShieldAlert className="w-3.5 h-3.5" />
+            <ShieldAlert className="w-4 h-4" />
           </button>
           <button
             onClick={handleRizerClick}
@@ -731,7 +731,7 @@ export function OccurrenceCard({
             title="Excluir"
             className="p-2 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
           >
-            <Trash2 className="w-3.5 h-3.5" />
+            <Trash2 className="w-4 h-4" />
           </button>
           {onSendToDrive && (
             <button
@@ -747,11 +747,11 @@ export function OccurrenceCard({
               }`}
             >
               {driveStatus === "sending" ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin" />
               ) : driveStatus === "sent" ? (
-                <Check className="w-3.5 h-3.5" />
+                <Check className="w-4 h-4" />
               ) : (
-                <DriveIcon className="w-3.5 h-3.5" />
+                <DriveIcon className="w-4 h-4" />
               )}
             </button>
           )}
