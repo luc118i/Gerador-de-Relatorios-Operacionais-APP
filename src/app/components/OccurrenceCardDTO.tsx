@@ -510,7 +510,13 @@ export function OccurrenceCard({
         {disciplinaryState === "loading" && !batchOverlay && (
           <div className="absolute inset-0 z-10 flex items-center gap-1.5 px-3 bg-white/80 backdrop-blur-[1px] pointer-events-none">
             <Loader2 className="w-3.5 h-3.5 text-orange-400 animate-spin shrink-0" />
-            <span className="text-xs font-medium text-orange-600">Registrando no RIZER...</span>
+            <span className="text-xs font-medium text-orange-600">
+              {disciplinaryAction === "verifying"
+                ? "Verificando no RIZER..."
+                : disciplinaryAction === "updating"
+                ? "Atualizando no RIZER..."
+                : "Registrando no RIZER..."}
+            </span>
           </div>
         )}
         {(tratativaOverlay || fillMedidaState === "loading") && !batchOverlay && disciplinaryState !== "loading" && (
@@ -824,7 +830,13 @@ export function OccurrenceCard({
       {disciplinaryState === "loading" && !batchOverlay && (
         <div className="absolute inset-0 z-10 rounded-lg flex flex-col items-center justify-center gap-2 bg-white/80 backdrop-blur-[2px] pointer-events-none">
           <Loader2 className="w-6 h-6 text-orange-400 animate-spin" />
-          <span className="text-xs font-medium text-orange-600">Registrando no RIZER...</span>
+          <span className="text-xs font-medium text-orange-600">
+            {disciplinaryAction === "verifying"
+              ? "Verificando no RIZER..."
+              : disciplinaryAction === "updating"
+              ? "Atualizando no RIZER..."
+              : "Registrando no RIZER..."}
+          </span>
         </div>
       )}
       {(tratativaOverlay || fillMedidaState === "loading") && !batchOverlay && disciplinaryState !== "loading" && (
