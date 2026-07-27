@@ -55,6 +55,7 @@ import { FolderOpen, Cpu, RefreshCw } from "lucide-react";
 import { useAgentStatus } from "../../hooks/useAgentStatus";
 import { BatchRizerModal, type BatchRizerItem } from "../components/BatchRizerModal";
 import { AgentProgressDock, type AgentJob } from "../components/AgentProgressDock";
+import { buildDriverPdfFileName } from "../../utils/pdfDownload";
 
 interface HomeProps {
   onNovaOcorrencia: () => void;
@@ -542,7 +543,9 @@ export function Home({
     });
   }
 
-  const handleSendToDrive = useCallback(async (occurrenceId: string) => {
+  const handleSendToDrive = useCallback(async (occ: OccurrenceDTO) => {
+    const occurrenceId = occ.id;
+
     if (!driveFolder.config) {
       setShowDriveModal(true);
       return;
@@ -557,11 +560,22 @@ export function Home({
         setDriveToken(token);
       }
 
+      const d1 = occ.drivers?.[0];
+      const fileName = buildDriverPdfFileName({
+        registry: d1?.registry,
+        name: d1?.name,
+        base: d1?.baseCode,
+        occurrenceTitle:
+          occ.typeCode === "GENERICO" && occ.reportTitle ? occ.reportTitle : occ.typeTitle,
+        eventDate: occ.eventDate,
+      });
+
       const needsUpdate = driveNeedsUpdateIds.has(occurrenceId);
       const res = await reportsDriveApi.sendOccurrenceToDrive({
         occurrenceId,
         accessToken: token,
         folderId: driveFolder.config.folderId,
+        fileName,
         force: needsUpdate,
       });
 
@@ -1074,7 +1088,7 @@ export function Home({
                           onEditar={() => handleEditar(occ)}
                           onExcluir={() => setExcluindoId(occ.id)}
                           driveStatus={getDriveStatus(occ.id)}
-                          onSendToDrive={() => handleSendToDrive(occ.id)}
+                          onSendToDrive={() => handleSendToDrive(occ)}
                           batchOverlay={getBatchOverlay(occ.id, subject)}
                           tratativaOverlay={getTratativaOverlay(occ.id, subject)}
                           revisarOverlay={getRevisarOverlay(occ.id, subject)}
@@ -1096,7 +1110,7 @@ export function Home({
                           onEditar={() => handleEditar(occ)}
                           onExcluir={() => setExcluindoId(occ.id)}
                           driveStatus={getDriveStatus(occ.id)}
-                          onSendToDrive={() => handleSendToDrive(occ.id)}
+                          onSendToDrive={() => handleSendToDrive(occ)}
                           batchOverlay={getBatchOverlay(occ.id, subject)}
                           tratativaOverlay={getTratativaOverlay(occ.id, subject)}
                           revisarOverlay={getRevisarOverlay(occ.id, subject)}
@@ -1134,7 +1148,7 @@ export function Home({
                 onEditar={() => handleEditar(occ)}
                 onExcluir={() => setExcluindoId(occ.id)}
                 driveStatus={getDriveStatus(occ.id)}
-                onSendToDrive={() => handleSendToDrive(occ.id)}
+                onSendToDrive={() => handleSendToDrive(occ)}
                 relatoriosFolderId={automationFolders.config?.relatoriosFolderId}
                 medidasFolderId={automationFolders.config?.medidasFolderId}
                 onNeedFolderConfig={() => setShowAutomationFolderModal(true)}
@@ -1154,7 +1168,7 @@ export function Home({
                 onEditar={() => handleEditar(occ)}
                 onExcluir={() => setExcluindoId(occ.id)}
                 driveStatus={getDriveStatus(occ.id)}
-                onSendToDrive={() => handleSendToDrive(occ.id)}
+                onSendToDrive={() => handleSendToDrive(occ)}
                 relatoriosFolderId={automationFolders.config?.relatoriosFolderId}
                 medidasFolderId={automationFolders.config?.medidasFolderId}
                 onNeedFolderConfig={() => setShowAutomationFolderModal(true)}
