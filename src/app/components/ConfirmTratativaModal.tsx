@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { ShieldAlert, ShieldOff, ClipboardList } from "lucide-react";
 import type { TipoMedida } from "./RizerRegisterModal";
 
@@ -36,10 +38,16 @@ interface Props {
 }
 
 export function ConfirmTratativaModal({ open, tipo, onConfirm, onCancel }: Props) {
+  // Bloqueia scroll do body enquanto o modal está aberto
+  useEffect(() => {
+    document.body.style.overflow = open ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [open]);
+
   if (!open) return null;
   const meta = META[tipo];
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
       onClick={onCancel}
@@ -78,6 +86,7 @@ export function ConfirmTratativaModal({ open, tipo, onConfirm, onCancel }: Props
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

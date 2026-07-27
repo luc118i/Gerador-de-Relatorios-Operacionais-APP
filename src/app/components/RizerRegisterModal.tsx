@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { ShieldAlert, ShieldOff, ClipboardList } from "lucide-react";
 
 export type TipoMedida = "advertencia" | "suspensao" | "nenhum";
@@ -51,9 +53,15 @@ interface Props {
 }
 
 export function RizerRegisterModal({ open, onConfirm, onCancel, selected, onSelect }: Props) {
+  // Bloqueia scroll do body enquanto o modal está aberto
+  useEffect(() => {
+    document.body.style.overflow = open ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [open]);
+
   if (!open) return null;
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
       onClick={onCancel}
@@ -113,6 +121,7 @@ export function RizerRegisterModal({ open, onConfirm, onCancel, selected, onSele
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
