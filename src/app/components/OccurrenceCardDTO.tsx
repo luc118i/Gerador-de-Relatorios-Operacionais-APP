@@ -36,6 +36,7 @@ import { BaseChip } from "./base-chip";
 import { aiApi } from "../../api/ai.api";
 import { SuspensaoModal } from "./SuspensaoModal";
 import { RizerRegisterModal, type TipoMedida } from "./RizerRegisterModal";
+import { ConfirmTratativaModal } from "./ConfirmTratativaModal";
 
 // ── TratativaBadge ────────────────────────────────────────────────────────────
 const TRATATIVA_META: Record<string, { label: string; dot: string; cls: string }> = {
@@ -44,6 +45,20 @@ const TRATATIVA_META: Record<string, { label: string; dot: string; cls: string }
   VALE:        { label: "Vale",           dot: "bg-red-500",    cls: "bg-red-50 text-red-700 border border-red-200"         },
   REGISTRO:    { label: "Só o Registro",  dot: "bg-gray-400",   cls: "bg-gray-100 text-gray-600 border border-gray-200"     },
 };
+
+// Mapeia a tratativa já escolhida na criação da ocorrência para a opção
+// correspondente do modal de envio ao RIZER, evitando perguntar de novo o que
+// o analista já definiu. VALE não tem equivalente no RIZER (é desconto em
+// folha, não medida disciplinar) — cai em "nenhum" (apenas registrar).
+function tratativaToTipoMedida(tratativa: string | null | undefined): TipoMedida | null {
+  switch (tratativa) {
+    case "SUSPEICAO": return "suspensao";
+    case "ADVERTENCIA": return "advertencia";
+    case "VALE": return "nenhum";
+    case "REGISTRO": return "nenhum";
+    default: return null;
+  }
+}
 
 function TratativaBadge({ value, size = "sm" }: { value: string; size?: "xs" | "sm" }) {
   const meta = TRATATIVA_META[value];
@@ -191,6 +206,7 @@ export function OccurrenceCard({
   );
   const [fillMedidaState, setFillMedidaState] = useState<"idle" | "loading" | "success">("idle");
   const [showRizerModal, setShowRizerModal] = useState(false);
+  const [showConfirmTratativaModal, setShowConfirmTratativaModal] = useState(false);
   const [tipoMedida, setTipoMedida] = useState<TipoMedida>("advertencia");
   const [disciplinaryAction, setDisciplinaryAction] = useState<"registering" | "verifying" | "updating" | null>(null);
 
@@ -254,7 +270,13 @@ export function OccurrenceCard({
     }
 
     setDisciplinaryState("idle");
-    setShowRizerModal(true);
+    const mapped = tratativaToTipoMedida(occurrence.tratativa);
+    if (mapped) {
+      setTipoMedida(mapped);
+      setShowConfirmTratativaModal(true);
+    } else {
+      setShowRizerModal(true);
+    }
   }
 
   async function doUpdate(e: React.MouseEvent) {
@@ -288,6 +310,7 @@ export function OccurrenceCard({
 
   async function submitRizerRegister(tipo: TipoMedida) {
     setShowRizerModal(false);
+    setShowConfirmTratativaModal(false);
     const advertencia = tipo === "advertencia";
     const suspensao = tipo === "suspensao";
     setDisciplinaryState("loading");
@@ -457,6 +480,12 @@ export function OccurrenceCard({
         onSelect={setTipoMedida}
         onConfirm={submitRizerRegister}
         onCancel={() => setShowRizerModal(false)}
+      />
+      <ConfirmTratativaModal
+        open={showConfirmTratativaModal}
+        tipo={tipoMedida}
+        onConfirm={() => submitRizerRegister(tipoMedida)}
+        onCancel={() => setShowConfirmTratativaModal(false)}
       />
       <div
         className={`group relative flex items-center gap-0 border-b border-gray-100 transition-colors cursor-pointer ${
@@ -774,6 +803,12 @@ export function OccurrenceCard({
       onSelect={setTipoMedida}
       onConfirm={submitRizerRegister}
       onCancel={() => setShowRizerModal(false)}
+    />
+    <ConfirmTratativaModal
+      open={showConfirmTratativaModal}
+      tipo={tipoMedida}
+      onConfirm={() => submitRizerRegister(tipoMedida)}
+      onCancel={() => setShowConfirmTratativaModal(false)}
     />
     <div
       className={`group relative bg-white border border-gray-200 rounded-lg p-4 transition-shadow cursor-pointer ${batchOverlay ? "pointer-events-none" : "hover:shadow-md"}`}
