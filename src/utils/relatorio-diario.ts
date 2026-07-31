@@ -1,4 +1,4 @@
-import type { OccurrenceDTO } from "../../domain/occurrences";
+import type { OccurrenceDTO } from "../domain/occurrences";
 
 export type ReportAnchor = {
   key: string;

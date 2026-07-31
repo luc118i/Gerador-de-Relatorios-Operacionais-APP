@@ -63,6 +63,11 @@ guidelines/
 src/app/components/figma/
 
 # =========================
+# Supabase
+# =========================
+supabase/.temp/
+
+# =========================
 # Misc
 # =========================
 *.local

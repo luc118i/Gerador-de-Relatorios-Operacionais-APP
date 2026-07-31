@@ -51,7 +51,7 @@ import {
 } from "recharts";
 import { getOccurrencesByDay, getDailyReportPdf, occurrencesApi } from "../../api/occurrences.api";
 import type { OccurrenceDTO } from "../../domain/occurrences";
-import { buildDailyReport } from "../utils/relatorio-diario";
+import { buildDailyReport } from "../../utils/relatorio-diario";
 import { TratativaSelect, type TratativaKey } from "../components/TratativaSelect";
 
 // ── Score / status ────────────────────────────────────────────────────────────

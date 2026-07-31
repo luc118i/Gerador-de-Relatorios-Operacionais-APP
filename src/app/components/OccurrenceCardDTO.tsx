@@ -30,8 +30,8 @@ import type { Ocorrencia } from "../types";
 import {
   gerarTextoRelatorioIndividual,
   gerarTextoWhatsApp,
-} from "../utils/relatorio";
-import { getBaseCanonicalKey, resolveBaseSigla } from "../utils/base";
+} from "../../utils/relatorio";
+import { getBaseCanonicalKey, resolveBaseSigla } from "../../utils/base";
 import { BaseChip } from "./base-chip";
 import { aiApi } from "../../api/ai.api";
 import { SuspensaoModal } from "./SuspensaoModal";

@@ -1,7 +1,7 @@
 import { ArrowLeft, AlertCircle, Save, Loader2, X, CheckCircle2, AlertTriangle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { EvidenciasGrid } from "../components/evidencias-grid";
-import { gerarTextoRelatorioIndividual } from "../utils/relatorio";
+import { gerarTextoRelatorioIndividual } from "../../utils/relatorio";
 import { getOccurrenceTypeConfig } from "../config/occurrenceTypes";
 import type { Ocorrencia } from "../types";
 import { useNovaOcorrenciaForm } from "./nova-ocorrencia/useNovaOcorrenciaForm";

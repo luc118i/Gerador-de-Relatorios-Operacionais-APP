@@ -1,5 +1,10 @@
 import { toZonedTime } from "date-fns-tz";
 
+/** "2026-07-27" a partir de um Date local (sem conversão de fuso). */
+export function getLocalDateString(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
 export function formatToLocalDate(
   date: string, // Espera "YYYY-MM-DD"
   timeZone = "America/Sao_Paulo",

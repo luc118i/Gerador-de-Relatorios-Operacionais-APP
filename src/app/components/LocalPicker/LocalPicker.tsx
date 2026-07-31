@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, MapPin } from "lucide-react";
 import { useLocaisSearch } from "../../../features/occurrences/queries/locais/locais.queries";
-import { useDebouncedValue } from "../../../shared/hooks/useDebouncedValue";
+import { useDebouncedValue } from "../../../hooks/useDebouncedValue";
 import { inputAceso } from "../DriverPicker/DriverPicker";
 import type { Local } from "../../../api/locais.api";
 

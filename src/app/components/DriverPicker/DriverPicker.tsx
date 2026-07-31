@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, UserPlus, User } from "lucide-react";
 import type { Driver } from "../../../domain/drivers";
 import { useDriversSearch } from "../../../features/occurrences/queries/drivers.queries";
-import { useDebouncedValue } from "../../../shared/hooks/useDebouncedValue";
+import { useDebouncedValue } from "../../../hooks/useDebouncedValue";
 import type { DriverPickerProps } from "./driverPicker.types";
 
 function driverLabel(d: Driver) {

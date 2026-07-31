@@ -4,7 +4,7 @@ import type { Ocorrencia } from "../../../types";
 import {
   gerarTextoRelatorioIndividual,
   gerarTextoWhatsApp,
-} from "../../../utils/relatorio";
+} from "../../../../utils/relatorio";
 import { useGetOccurrencePdf } from "../../../../features/reportsPdf/queries/reportsPdf.queries";
 
 import { toast } from "sonner";

@@ -1,41 +1,25 @@
-import type { ReactNode } from "react";
 import {
   AlertTriangle,
-  Plus,
-  FileText,
-  ChevronLeft,
-  ChevronRight,
-  Users,
   LayoutGrid,
   List,
-  Tag,
-  Eye,
-  EyeOff,
-  Lock,
-  ShieldCheck,
-  LogOut,
-  Gavel,
-  Loader2,
-  X,
-  BookMarked,
-  Menu,
-  Clock,
+  Plus,
+  RefreshCw,
   Search,
+  Tag,
+  X,
 } from "lucide-react";
 import { useMemo, useState, useRef, useEffect, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { occurrencesApi } from "../../api/occurrences.api";
 import type { OccurrenceDTO } from "../../domain/occurrences";
 import type { Ocorrencia } from "../types";
-import { OccurrenceCard, type DriveStatus } from "../components/OccurrenceCardDTO";
+import type { DriveStatus, BatchOverlay } from "../components/OccurrenceCardDTO";
 import { OccurrencePreviewModal } from "./occurrences/preview/OccurrencePreviewModal";
 import { DrivePickerModal } from "./occurrences/preview/components/DrivePickerModal";
-import { formatToLocalDate } from "../utils/dateUtils";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { formatToLocalDate, getLocalDateString } from "../../utils/dateUtils";
+import { dtoToOcorrencia } from "../../utils/occurrenceMapper";
 import { NovaOcorrencia } from "./nova-ocorrencia";
 import { toast } from "sonner";
-import { Calendar } from "../components/ui/calendar";
-import { ptBR } from "date-fns/locale";
 import { useDriveFolder } from "../../hooks/useDriveFolder";
 import { requestDriveToken } from "../../utils/googleAuth";
 import { reportsDriveApi } from "../../api/reportsDrive.api";
@@ -46,16 +30,19 @@ import { useAuth } from "../context/AuthContext";
 import { AdminLoginModal } from "../components/AdminLoginModal";
 import { ApuracaoPodium } from "../components/ApuracaoPodium";
 import { EmptyReportScene } from "../components/EmptyReportScene";
-import { UserMenu } from "../components/UserMenu";
 import { registerDisciplinaryOccurrence, fillMedidaLink, updateRizerOccurrence } from "../../api/automation.api";
-import type { BatchOverlay } from "../components/OccurrenceCardDTO";
 import { useAutomationFolders } from "../../hooks/useAutomationFolders";
 import { AutomationFoldersModal } from "../components/AutomationFoldersModal";
-import { FolderOpen, Cpu, RefreshCw } from "lucide-react";
 import { useAgentStatus } from "../../hooks/useAgentStatus";
 import { BatchRizerModal, type BatchRizerItem } from "../components/BatchRizerModal";
 import { AgentProgressDock, type AgentJob } from "../components/AgentProgressDock";
 import { buildDriverPdfFileName } from "../../utils/pdfDownload";
+import { HomeHeader } from "./home/HomeHeader";
+import { ReminderModal } from "./home/ReminderModal";
+import { SkeletonCard } from "./home/SkeletonCard";
+import { ConfirmActionModal } from "./home/ConfirmActionModal";
+import { SubjectGroup } from "./home/SubjectGroup";
+import { OccurrenceCardsView } from "./home/OccurrenceCardsView";
 
 interface HomeProps {
   onNovaOcorrencia: () => void;
@@ -287,17 +274,6 @@ export function Home({
     return map;
   }, [ocorrencias]);
 
-  // ── Divisão por motorista ──────────────────────────────────
-  // Ocorrências com 2 motoristas viram 2 cards na tela (um por motorista),
-  // mantendo o mesmo id/ocorrência por trás — as ações só aparecem no card
-  // do Motorista 01 para evitar disparo duplicado (excluir 2x, RIZER 2x etc).
-  function splitByDriver(occ: OccurrenceDTO): Array<{ occ: OccurrenceDTO; driverSlot: 1 | 2 }> {
-    const hasDriver2 = (occ.drivers ?? []).some((d) => d.position === 2 && d.name);
-    return hasDriver2
-      ? [{ occ, driverSlot: 1 }, { occ, driverSlot: 2 }]
-      : [{ occ, driverSlot: 1 }];
-  }
-
   // ── Efeitos ───────────────────────────────────────────────
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -505,12 +481,12 @@ export function Home({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [batchState, batchTratativaState, batchRevisarState]);
 
-  async function handleEditar(occ: OccurrenceDTO) {
+  async function handleEditar(id: string) {
     try {
-      const full = await occurrencesApi.getOccurrenceById(occ.id);
+      const full = await occurrencesApi.getOccurrenceById(id);
 
       // ✅ busca as URLs assinadas
-      const signedRes = await occurrencesApi.getEvidenceSignedUrls(occ.id);
+      const signedRes = await occurrencesApi.getEvidenceSignedUrls(id);
 
       setEditando(dtoToOcorrencia(full as any, signedRes));
     } catch {
@@ -622,6 +598,8 @@ export function Home({
     return "idle";
   }
 
+  const anyBatchRunning = !!batchState || !!batchTratativaState || !!batchRevisarState;
+
   // ── Render ────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gray-50">
@@ -638,168 +616,28 @@ export function Home({
           panelOpen ? "scale-[0.97] rounded-2xl overflow-hidden brightness-[0.92]" : "scale-100"
         }`}
       >
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="relative flex items-center gap-3">
-
-              {isAdmin && (
-                <NavBtn onClick={onOpenDrawer} tooltip="Módulos">
-                  <Menu className="w-4 h-4" />
-                </NavBtn>
-              )}
-
-              <img src="/favicon.svg" alt="Logo" className="w-10 h-10 rounded-xl shrink-0 block" />
-
-              <div>
-                <h1 className="text-2xl font-semibold text-gray-900">
-                  Gerador de Relatórios Operacionais
-                </h1>
-              </div>
-              {/* Navegação de datas */}
-              <div
-                ref={calendarRef}
-                className="relative flex items-center gap-1 ml-2"
-              >
-                <NavBtn onClick={() => setCalendarVisible((v) => !v)} tooltip="Abrir calendário">
-                  <CalendarIcon className="w-4 h-4" />
-                </NavBtn>
-                <NavBtn onClick={() => changeDay(-1)} tooltip="Dia anterior">
-                  <ChevronLeft className="w-4 h-4" />
-                </NavBtn>
-                <span className="text-sm text-gray-700 font-medium px-1 select-none capitalize whitespace-nowrap">
-                  {formattedDate}
-                </span>
-                <NavBtn onClick={() => changeDay(1)} tooltip="Próximo dia">
-                  <ChevronRight className="w-4 h-4" />
-                </NavBtn>
-                <button
-                  onClick={goToday}
-                  className="cursor-pointer ml-1 text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700 transition font-medium"
-                  title={dateDiffLabel}
-                >
-                  {dateDiffLabel}
-                </button>
-                {calendarVisible && (
-                  <div className="absolute top-9 left-0 bg-white shadow-lg border border-gray-200 rounded-xl z-50">
-                    <Calendar
-                      mode="single"
-                      selected={selectedDateObj}
-                      onSelect={handleSelect}
-                      locale={ptBR}
-                      initialFocus
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Ações — icon-only com tooltip */}
-            <div className="flex items-center gap-1.5">
-              {isAdmin && (
-                <ActionBtn onClick={onGerarRelatorio} tooltip="Relatorio Diario">
-                  <FileText className="w-4 h-4" />
-                </ActionBtn>
-              )}
-              {isAdmin && (
-                <ActionBtn onClick={onGerenciarMotoristas} tooltip="Motoristas">
-                  <Users className="w-4 h-4" />
-                </ActionBtn>
-              )}
-
-              {/* Login de Admin — à esquerda do +, apenas quando não é admin */}
-              {!isAdmin && (
-                <button
-                  onClick={() => setShowAdminLogin(true)}
-                  className="p-1.5 rounded-lg text-gray-300 hover:text-gray-500 hover:bg-gray-100 transition-colors"
-                  title="Entrar como Admin"
-                >
-                  <Lock className="w-3.5 h-3.5" />
-                </button>
-              )}
-
-              <ActionBtn onClick={onNovaOcorrencia} tooltip="Nova Ocorrência" primary>
-                <Plus className="w-4 h-4" />
-              </ActionBtn>
-
-              {/* Indicador do agente local — visível apenas para admin */}
-              {isAdmin && (
-                <>
-                  <div className="w-px h-5 bg-gray-200 mx-0.5" />
-                  {agentAvailable ? (
-                    <div
-                      title="Agente local conectado — automações rodam na sua máquina"
-                      className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium text-emerald-700 bg-emerald-50"
-                    >
-                      <Cpu className="w-3 h-3" />
-                      <span className="hidden sm:inline">Agente</span>
-                    </div>
-                  ) : (
-                    <a
-                      href="https://github.com/luc118i/rizer-agent/releases/latest/download/RIZER.Agent.Setup.exe"
-                      title="Baixar agente local — automações rodarão na sua máquina"
-                      className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium text-gray-400 bg-gray-100 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                      download
-                    >
-                      <Cpu className="w-3 h-3" />
-                      <span className="hidden sm:inline">Servidor</span>
-                    </a>
-                  )}
-                </>
-              )}
-
-              {/* Admin — dropdown apenas quando logado como admin */}
-              {isAdmin && (
-                <>
-                  {/* Separador */}
-                  <div className="w-px h-5 bg-gray-200 mx-0.5" />
-                  <div className="relative group/admin">
-                    <button
-                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors"
-                      title="Logado como Admin"
-                    >
-                      <ShieldCheck className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">Admin</span>
-                    </button>
-                    <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 pointer-events-none group-hover/admin:opacity-100 group-hover/admin:pointer-events-auto transition-opacity z-50">
-                      <button
-                        onClick={() => setShowAutomationFolderModal(true)}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-t-lg transition-colors"
-                      >
-                        <FolderOpen className="w-3.5 h-3.5 shrink-0" />
-                        <span className="truncate">
-                          {automationFolders.config
-                            ? `${automationFolders.config.relatoriosFolderName} / ${automationFolders.config.medidasFolderName}`
-                            : "Pastas de automação"}
-                        </span>
-                      </button>
-                      <button
-                        onClick={onGerenciarNomes}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                      >
-                        <BookMarked className="w-3.5 h-3.5 shrink-0" />
-                        Nomes padronizados
-                      </button>
-                      <button
-                        onClick={logout}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-b-lg transition-colors"
-                      >
-                        <LogOut className="w-3.5 h-3.5" />
-                        Sair da conta admin
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* Perfil do usuário logado (Supabase) — sempre visível */}
-              <div className="w-px h-5 bg-gray-200 mx-0.5" />
-              <UserMenu />
-            </div>
-          </div>
-        </div>
-      </header>
+      <HomeHeader
+        isAdmin={isAdmin}
+        onOpenDrawer={onOpenDrawer}
+        calendarRef={calendarRef}
+        calendarVisible={calendarVisible}
+        onToggleCalendar={() => setCalendarVisible((v) => !v)}
+        changeDay={changeDay}
+        formattedDate={formattedDate}
+        dateDiffLabel={dateDiffLabel}
+        goToday={goToday}
+        selectedDateObj={selectedDateObj}
+        onSelectDate={handleSelect}
+        onGerarRelatorio={onGerarRelatorio}
+        onGerenciarMotoristas={onGerenciarMotoristas}
+        onGerenciarNomes={onGerenciarNomes}
+        onNovaOcorrencia={onNovaOcorrencia}
+        onShowAdminLogin={() => setShowAdminLogin(true)}
+        logout={logout}
+        agentAvailable={agentAvailable}
+        automationFolders={automationFolders.config}
+        onShowAutomationFolderModal={() => setShowAutomationFolderModal(true)}
+      />
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -944,211 +782,49 @@ export function Home({
         ) : grouped ? (
           /* ── Agrupado por assunto ─────────────────────────────────── */
           <div className="space-y-6">
-            {Array.from(grouped.entries()).map(([subject, occs]) => {
-              const collapsed = collapsedSubjects.has(subject);
-              const unregistered = occs.filter(o => !o.rizerRegistered);
-              const pendingTratativa = occs.filter(o => o.faltaTratativa);
-              const registered = occs.filter(o => o.rizerRegistered);
-              const isBatchRunning = batchState?.subject === subject;
-              const isBatchTratativaRunning = batchTratativaState?.subject === subject;
-              const isBatchRevisarRunning = batchRevisarState?.subject === subject;
-              const anyBatchRunning = !!batchState || !!batchTratativaState || !!batchRevisarState;
-              return (
-                <div key={subject}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-                      {subject}
-                    </h3>
-                    <span className="text-xs text-gray-400 font-normal">
-                      ({occs.length})
-                    </span>
-
-                    {/* Botão "Registrar todas" */}
-                    {isAdmin && !anyBatchRunning && unregistered.length > 0 && (
-                      <button
-                        onClick={() => setBatchConfirm({ subject, occs: unregistered })}
-                        className="cursor-pointer inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border border-orange-200 bg-orange-50 text-orange-600 hover:bg-orange-100 transition-colors"
-                      >
-                        <Gavel className="w-3 h-3" />
-                        Registrar todas ({unregistered.length})
-                      </button>
-                    )}
-
-                    {/* Botão "Enviar tratativas" */}
-                    {isAdmin && !anyBatchRunning && pendingTratativa.length > 0 && (
-                      <button
-                        onClick={() => setBatchTratativaConfirm({ subject, ids: pendingTratativa.map(o => o.id) })}
-                        className="cursor-pointer inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border border-amber-200 bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors"
-                      >
-                        <AlertTriangle className="w-3 h-3" />
-                        Enviar tratativas ({pendingTratativa.length})
-                      </button>
-                    )}
-
-                    {/* Botão "Revisar todas" */}
-                    {isAdmin && !anyBatchRunning && registered.length > 0 && (
-                      <button
-                        onClick={() => setBatchRevisarConfirm({ subject, ids: registered.map(o => o.id) })}
-                        className="cursor-pointer inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors"
-                      >
-                        <RefreshCw className="w-3 h-3" />
-                        Revisar todas ({registered.length})
-                      </button>
-                    )}
-
-                    <button
-                      onClick={() => toggleSubjectCollapse(subject)}
-                      title={collapsed ? "Mostrar ocorrências" : "Ocultar ocorrências"}
-                      className="cursor-pointer ml-auto p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-                    >
-                      {collapsed
-                        ? <EyeOff className="w-3.5 h-3.5" />
-                        : <Eye className="w-3.5 h-3.5" />
-                      }
-                    </button>
-                  </div>
-
-                  {/* Banner de progresso — registro */}
-                  {isBatchRunning && batchState && (
-                    <div className="mb-2 flex items-center gap-3 px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg">
-                      <Loader2 className="w-3.5 h-3.5 text-orange-500 animate-spin shrink-0" />
-                      <span className="text-xs font-medium text-orange-700 flex-1">
-                        {batchState.cancelRequested
-                          ? "Cancelando após item atual..."
-                          : `Registrando no RIZER… ${batchState.doneCount} de ${batchState.ids.length}`}
-                      </span>
-                      {!batchState.cancelRequested && (
-                        <button
-                          onClick={cancelBatch}
-                          className="cursor-pointer flex items-center gap-1 text-[10px] font-medium text-orange-500 hover:text-orange-700 transition-colors"
-                        >
-                          <X className="w-3 h-3" /> Cancelar
-                        </button>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Banner de progresso — tratativas */}
-                  {isBatchTratativaRunning && batchTratativaState && (
-                    <div className="mb-2 flex items-center gap-3 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
-                      <Loader2 className="w-3.5 h-3.5 text-amber-500 animate-spin shrink-0" />
-                      <span className="text-xs font-medium text-amber-700 flex-1">
-                        {batchTratativaState.cancelRequested
-                          ? "Cancelando após item atual..."
-                          : `Preenchendo tratativas… ${batchTratativaState.doneCount} de ${batchTratativaState.ids.length}`}
-                      </span>
-                      {!batchTratativaState.cancelRequested && (
-                        <button
-                          onClick={cancelBatchTratativa}
-                          className="cursor-pointer flex items-center gap-1 text-[10px] font-medium text-amber-500 hover:text-amber-700 transition-colors"
-                        >
-                          <X className="w-3 h-3" /> Cancelar
-                        </button>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Banner de progresso — revisão */}
-                  {isBatchRevisarRunning && batchRevisarState && (
-                    <div className="mb-2 flex items-center gap-3 px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-lg">
-                      <Loader2 className="w-3.5 h-3.5 text-emerald-500 animate-spin shrink-0" />
-                      <span className="text-xs font-medium text-emerald-700 flex-1">
-                        {batchRevisarState.cancelRequested
-                          ? "Cancelando após item atual..."
-                          : `Revisando no RIZER… ${batchRevisarState.doneCount} de ${batchRevisarState.ids.length}`}
-                      </span>
-                      {!batchRevisarState.cancelRequested && (
-                        <button
-                          onClick={cancelBatchRevisar}
-                          className="cursor-pointer flex items-center gap-1 text-[10px] font-medium text-emerald-500 hover:text-emerald-700 transition-colors"
-                        >
-                          <X className="w-3 h-3" /> Cancelar
-                        </button>
-                      )}
-                    </div>
-                  )}
-                  {!collapsed && (viewMode === "list" ? (
-                    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-                      <div className="flex items-center gap-0 bg-gray-50 border-b border-gray-200 text-[11px] font-semibold text-gray-400 uppercase tracking-wide" style={{ borderLeft: "3px solid transparent" }}>
-                        <div className="w-[70px] flex-shrink-0 px-3 py-2">Prefixo</div>
-                        <div className="w-[80px] flex-shrink-0 px-1 py-2 hidden sm:block">Base</div>
-                        <div className="flex-1 px-2 py-2">Ocorrência</div>
-                        <div className="w-[115px] flex-shrink-0 px-2 py-2 hidden sm:block">Horário</div>
-                        <div className="w-[170px] flex-shrink-0 px-2 py-2 hidden lg:block">Motorista</div>
-                        <div className="w-[310px] flex-shrink-0 px-1 py-2">Ações</div>
-                      </div>
-                      {occs.flatMap(splitByDriver).map(({ occ, driverSlot }) => (
-                        <OccurrenceCard
-                          key={driverSlot === 2 ? `${occ.id}-2` : occ.id}
-                          compact
-                          occurrence={occ}
-                          driverSlot={driverSlot}
-                          duplicateVehicleCount={vehicleOccurrenceCount.get(occ.vehicleNumber) ?? 1}
-                          onOpen={() => setPreviewId(occ.id)}
-                          onEditar={() => handleEditar(occ)}
-                          onExcluir={() => setExcluindoId(occ.id)}
-                          driveStatus={getDriveStatus(occ.id)}
-                          onSendToDrive={() => handleSendToDrive(occ)}
-                          batchOverlay={getBatchOverlay(occ.id, subject)}
-                          tratativaOverlay={getTratativaOverlay(occ.id, subject)}
-                          revisarOverlay={getRevisarOverlay(occ.id, subject)}
-                          relatoriosFolderId={automationFolders.config?.relatoriosFolderId}
-                          medidasFolderId={automationFolders.config?.medidasFolderId}
-                          onNeedFolderConfig={() => setShowAutomationFolderModal(true)}
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {occs.flatMap(splitByDriver).map(({ occ, driverSlot }) => (
-                        <OccurrenceCard
-                          key={driverSlot === 2 ? `${occ.id}-2` : occ.id}
-                          occurrence={occ}
-                          driverSlot={driverSlot}
-                          duplicateVehicleCount={vehicleOccurrenceCount.get(occ.vehicleNumber) ?? 1}
-                          onOpen={() => setPreviewId(occ.id)}
-                          onEditar={() => handleEditar(occ)}
-                          onExcluir={() => setExcluindoId(occ.id)}
-                          driveStatus={getDriveStatus(occ.id)}
-                          onSendToDrive={() => handleSendToDrive(occ)}
-                          batchOverlay={getBatchOverlay(occ.id, subject)}
-                          tratativaOverlay={getTratativaOverlay(occ.id, subject)}
-                          revisarOverlay={getRevisarOverlay(occ.id, subject)}
-                          relatoriosFolderId={automationFolders.config?.relatoriosFolderId}
-                          medidasFolderId={automationFolders.config?.medidasFolderId}
-                          onNeedFolderConfig={() => setShowAutomationFolderModal(true)}
-                        />
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              );
-            })}
-          </div>
-        ) : viewMode === "list" ? (
-          /* ── Lista compacta ──────────────────────────────────────── */
-          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-            {/* Cabeçalho da lista */}
-            <div className="flex items-center gap-0 bg-gray-50 border-b border-gray-200 text-[11px] font-semibold text-gray-400 uppercase tracking-wide" style={{ borderLeft: "3px solid transparent" }}>
-              <div className="w-[70px] flex-shrink-0 px-3 py-2">Prefixo</div>
-              <div className="w-[80px] flex-shrink-0 px-1 py-2 hidden sm:block">Base</div>
-              <div className="flex-1 px-2 py-2">Ocorrência</div>
-              <div className="w-[115px] flex-shrink-0 px-2 py-2 hidden sm:block">Horário</div>
-              <div className="w-[170px] flex-shrink-0 px-2 py-2 hidden lg:block">Motorista</div>
-              <div className="w-[310px] flex-shrink-0 px-1 py-2">Ações</div>
-            </div>
-            {filteredOcorrencias.flatMap(splitByDriver).map(({ occ, driverSlot }) => (
-              <OccurrenceCard
-                key={driverSlot === 2 ? `${occ.id}-2` : occ.id}
-                compact
-                occurrence={occ}
-                driverSlot={driverSlot}
-                duplicateVehicleCount={vehicleOccurrenceCount.get(occ.vehicleNumber) ?? 1}
-                onOpen={() => setPreviewId(occ.id)}
-                onEditar={() => handleEditar(occ)}
-                onExcluir={() => setExcluindoId(occ.id)}
-                driveStatus={getDriveStatus(occ.id)}
-                onSendToDrive={() => handleSendToDrive(occ)}
+            {Array.from(grouped.entries()).map(([subject, occs]) => (
+              <SubjectGroup
+                key={subject}
+                subject={subject}
+                occs={occs}
+                viewMode={viewMode}
+                isAdmin={isAdmin}
+                collapsed={collapsedSubjects.has(subject)}
+                onToggleCollapse={() => toggleSubjectCollapse(subject)}
+                anyBatchRunning={anyBatchRunning}
+                onRequestRegistrarTodas={(unregistered) => setBatchConfirm({ subject, occs: unregistered })}
+                onRequestEnviarTratativas={(ids) => setBatchTratativaConfirm({ subject, ids })}
+                onRequestRevisarTodas={(ids) => setBatchRevisarConfirm({ subject, ids })}
+                registroBatch={{
+                  running: batchState?.subject === subject,
+                  cancelRequested: batchState?.cancelRequested ?? false,
+                  doneCount: batchState?.doneCount ?? 0,
+                  total: batchState?.ids.length ?? 0,
+                  onCancel: cancelBatch,
+                }}
+                tratativaBatch={{
+                  running: batchTratativaState?.subject === subject,
+                  cancelRequested: batchTratativaState?.cancelRequested ?? false,
+                  doneCount: batchTratativaState?.doneCount ?? 0,
+                  total: batchTratativaState?.ids.length ?? 0,
+                  onCancel: cancelBatchTratativa,
+                }}
+                revisarBatch={{
+                  running: batchRevisarState?.subject === subject,
+                  cancelRequested: batchRevisarState?.cancelRequested ?? false,
+                  doneCount: batchRevisarState?.doneCount ?? 0,
+                  total: batchRevisarState?.ids.length ?? 0,
+                  onCancel: cancelBatchRevisar,
+                }}
+                vehicleOccurrenceCount={vehicleOccurrenceCount}
+                onOpen={setPreviewId}
+                onEditar={handleEditar}
+                onExcluir={setExcluindoId}
+                getDriveStatus={getDriveStatus}
+                onSendToDrive={handleSendToDrive}
+                getBatchOverlay={(occId) => getBatchOverlay(occId, subject)}
+                getTratativaOverlay={(occId) => getTratativaOverlay(occId, subject)}
+                getRevisarOverlay={(occId) => getRevisarOverlay(occId, subject)}
                 relatoriosFolderId={automationFolders.config?.relatoriosFolderId}
                 medidasFolderId={automationFolders.config?.medidasFolderId}
                 onNeedFolderConfig={() => setShowAutomationFolderModal(true)}
@@ -1156,25 +832,20 @@ export function Home({
             ))}
           </div>
         ) : (
-          /* ── Grid de cards ───────────────────────────────────────── */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredOcorrencias.flatMap(splitByDriver).map(({ occ, driverSlot }) => (
-              <OccurrenceCard
-                key={driverSlot === 2 ? `${occ.id}-2` : occ.id}
-                occurrence={occ}
-                driverSlot={driverSlot}
-                duplicateVehicleCount={vehicleOccurrenceCount.get(occ.vehicleNumber) ?? 1}
-                onOpen={() => setPreviewId(occ.id)}
-                onEditar={() => handleEditar(occ)}
-                onExcluir={() => setExcluindoId(occ.id)}
-                driveStatus={getDriveStatus(occ.id)}
-                onSendToDrive={() => handleSendToDrive(occ)}
-                relatoriosFolderId={automationFolders.config?.relatoriosFolderId}
-                medidasFolderId={automationFolders.config?.medidasFolderId}
-                onNeedFolderConfig={() => setShowAutomationFolderModal(true)}
-              />
-            ))}
-          </div>
+          /* ── Lista simples (sem agrupamento) ─────────────────────── */
+          <OccurrenceCardsView
+            occurrences={filteredOcorrencias}
+            viewMode={viewMode}
+            vehicleOccurrenceCount={vehicleOccurrenceCount}
+            onOpen={setPreviewId}
+            onEditar={handleEditar}
+            onExcluir={setExcluindoId}
+            getDriveStatus={getDriveStatus}
+            onSendToDrive={handleSendToDrive}
+            relatoriosFolderId={automationFolders.config?.relatoriosFolderId}
+            medidasFolderId={automationFolders.config?.medidasFolderId}
+            onNeedFolderConfig={() => setShowAutomationFolderModal(true)}
+          />
         )}
 
         {/* ── Pódio de apuração (tempo real) ───────────────────────── */}
@@ -1301,338 +972,79 @@ export function Home({
 
       {/* Modal de Confirmação do Batch de Tratativas */}
       {batchTratativaConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/40"
-            onClick={() => setBatchTratativaConfirm(null)}
-          />
-          <div className="relative bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm mx-4">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 rounded-lg bg-amber-50">
-                <AlertTriangle className="w-5 h-5 text-amber-500" />
-              </div>
-              <h3 className="text-base font-semibold text-gray-900">
-                Enviar tratativas no RIZER?
-              </h3>
-            </div>
-            <p className="text-sm text-gray-600 mb-1">
-              Você está prestes a preencher a tratativa de{" "}
-              <span className="font-semibold text-gray-800">
-                {batchTratativaConfirm.ids.length} ocorrência{batchTratativaConfirm.ids.length !== 1 ? "s" : ""}
-              </span>{" "}
-              do assunto:
-            </p>
-            <p className="text-xs font-medium text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 mb-5">
-              {batchTratativaConfirm.subject}
-            </p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setBatchTratativaConfirm(null)}
-                className="px-4 py-2 text-sm rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => {
-                  const { subject, ids } = batchTratativaConfirm;
-                  setBatchTratativaConfirm(null);
-                  startBatchTratativa(subject, ids);
-                }}
-                className="px-4 py-2 text-sm rounded-lg bg-amber-500 text-white hover:bg-amber-600 transition-colors font-medium"
-              >
-                Confirmar
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmActionModal
+          icon={<AlertTriangle className="w-5 h-5 text-amber-500" />}
+          iconBg="bg-amber-50"
+          title="Enviar tratativas no RIZER?"
+          confirmLabel="Confirmar"
+          confirmClassName="bg-amber-500 hover:bg-amber-600"
+          onCancel={() => setBatchTratativaConfirm(null)}
+          onConfirm={() => {
+            const { subject, ids } = batchTratativaConfirm;
+            setBatchTratativaConfirm(null);
+            startBatchTratativa(subject, ids);
+          }}
+        >
+          <p className="text-sm text-gray-600 mb-1">
+            Você está prestes a preencher a tratativa de{" "}
+            <span className="font-semibold text-gray-800">
+              {batchTratativaConfirm.ids.length} ocorrência{batchTratativaConfirm.ids.length !== 1 ? "s" : ""}
+            </span>{" "}
+            do assunto:
+          </p>
+          <p className="text-xs font-medium text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 mb-5">
+            {batchTratativaConfirm.subject}
+          </p>
+        </ConfirmActionModal>
       )}
 
       {/* Modal de Confirmação do Batch de Revisão */}
       {batchRevisarConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/40"
-            onClick={() => setBatchRevisarConfirm(null)}
-          />
-          <div className="relative bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm mx-4">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 rounded-lg bg-emerald-50">
-                <RefreshCw className="w-5 h-5 text-emerald-500" />
-              </div>
-              <h3 className="text-base font-semibold text-gray-900">
-                Revisar todas no RIZER?
-              </h3>
-            </div>
-            <p className="text-sm text-gray-600 mb-1">
-              Você está prestes a reabrir e reescrever todos os campos de{" "}
-              <span className="font-semibold text-gray-800">
-                {batchRevisarConfirm.ids.length} ocorrência{batchRevisarConfirm.ids.length !== 1 ? "s" : ""}
-              </span>{" "}
-              já enviada{batchRevisarConfirm.ids.length !== 1 ? "s" : ""} do assunto:
-            </p>
-            <p className="text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2 mb-5">
-              {batchRevisarConfirm.subject}
-            </p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setBatchRevisarConfirm(null)}
-                className="px-4 py-2 text-sm rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => {
-                  const { subject, ids } = batchRevisarConfirm;
-                  setBatchRevisarConfirm(null);
-                  startBatchRevisar(subject, ids);
-                }}
-                className="px-4 py-2 text-sm rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 transition-colors font-medium"
-              >
-                Confirmar
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmActionModal
+          icon={<RefreshCw className="w-5 h-5 text-emerald-500" />}
+          iconBg="bg-emerald-50"
+          title="Revisar todas no RIZER?"
+          confirmLabel="Confirmar"
+          confirmClassName="bg-emerald-500 hover:bg-emerald-600"
+          onCancel={() => setBatchRevisarConfirm(null)}
+          onConfirm={() => {
+            const { subject, ids } = batchRevisarConfirm;
+            setBatchRevisarConfirm(null);
+            startBatchRevisar(subject, ids);
+          }}
+        >
+          <p className="text-sm text-gray-600 mb-1">
+            Você está prestes a reabrir e reescrever todos os campos de{" "}
+            <span className="font-semibold text-gray-800">
+              {batchRevisarConfirm.ids.length} ocorrência{batchRevisarConfirm.ids.length !== 1 ? "s" : ""}
+            </span>{" "}
+            já enviada{batchRevisarConfirm.ids.length !== 1 ? "s" : ""} do assunto:
+          </p>
+          <p className="text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2 mb-5">
+            {batchRevisarConfirm.subject}
+          </p>
+        </ConfirmActionModal>
       )}
 
       {/* Modal de Confirmação de Exclusão */}
       {excluindoId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/40"
-            onClick={() => !excluindo && setExcluindoId(null)}
-          />
-          <div className="relative bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Excluir ocorrência?
-            </h3>
-            <p className="text-sm text-gray-600 mb-6">
-              Essa ação não pode ser desfeita.
-            </p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setExcluindoId(null)}
-                disabled={excluindo}
-                className="px-4 py-2 text-sm rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors disabled:opacity-50"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleConfirmarExclusao}
-                disabled={excluindo}
-                className="px-4 py-2 text-sm rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
-              >
-                {excluindo ? "Excluindo..." : "Excluir"}
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmActionModal
+          title="Excluir ocorrência?"
+          confirmLabel={excluindo ? "Excluindo..." : "Excluir"}
+          confirmClassName="bg-red-600 hover:bg-red-700"
+          confirmDisabled={excluindo}
+          cancelDisabled={excluindo}
+          onCancel={() => setExcluindoId(null)}
+          onConfirm={handleConfirmarExclusao}
+        >
+          <p className="text-sm text-gray-600 mb-6">
+            Essa ação não pode ser desfeita.
+          </p>
+        </ConfirmActionModal>
       )}
 
       {/* Dock flutuante global — progresso do agente */}
       <AgentProgressDock jobs={agentJobs} />
-    </div>
-  );
-}
-
-// ── ReminderModal ─────────────────────────────────────────────────────────────
-
-function ReminderModal({ onConfirm }: { onConfirm: () => void }) {
-  const now = new Date();
-  const hour = String(now.getHours()).padStart(2, "0");
-  const min  = String(now.getMinutes()).padStart(2, "0");
-
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
-        {/* Topo colorido */}
-        <div className="bg-amber-500 px-5 py-4 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-            <Clock className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <p className="text-white font-bold text-sm leading-none">Lembrete — {hour}h{min}</p>
-            <p className="text-amber-100 text-xs mt-0.5">Encerramento do turno</p>
-          </div>
-        </div>
-
-        {/* Corpo */}
-        <div className="px-5 py-5 space-y-3">
-          <p className="text-sm text-gray-700 leading-relaxed">
-            Confira se todas as ocorrencias foram apuradas e envie o{" "}
-            <span className="font-semibold text-gray-900">Relatorio Diario</span>{" "}
-            para o Google Drive antes de encerrar o turno.
-          </p>
-          <div className="flex items-start gap-2 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2.5">
-            <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-            <p className="text-xs text-amber-700 leading-relaxed">
-              Use o botao <span className="font-semibold">Drive</span> no topo da pagina para enviar o PDF automaticamente.
-            </p>
-          </div>
-        </div>
-
-        {/* Rodape */}
-        <div className="px-5 py-4 border-t border-gray-100 bg-gray-50 flex justify-end">
-          <button
-            onClick={onConfirm}
-            className="cursor-pointer h-9 px-6 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold transition-colors"
-          >
-            Confirmar
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function getLocalDateString(date: Date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-}
-
-function dtoToOcorrencia(
-  dto: any,
-  signedUrls: Array<{
-    id: string;
-    url: string;
-    caption?: string;
-    linkTexto?: string;
-    linkUrl?: string;
-  }> = [],
-): Ocorrencia {
-  return {
-    id: dto.id,
-    viagem: {
-      id: dto.tripId ?? "",
-      linha: dto.lineLabel ?? "",
-      prefixo: dto.vehicleNumber ?? "",
-      horario: dto.tripTime ?? "",
-      codigoLinha: dto.tripLineCode ?? "",
-      nomeLinha: dto.tripLineName ?? "",
-      sentido: dto.tripDirection ?? "",
-      origem: "",
-      destino: "",
-    },
-    evidencias: signedUrls.map((e) => ({
-      id: e.id,
-      url: e.url,
-      legenda: e.caption ?? "",
-      linkTexto: e.linkTexto ?? "",
-      linkUrl: e.linkUrl ?? "",
-    })),
-    motorista1: {
-      id: dto.drivers?.[0]?.driverId ?? "",
-      matricula: dto.drivers?.[0]?.registry ?? "",
-      nome: dto.drivers?.[0]?.name ?? "",
-      base: dto.drivers?.[0]?.baseCode ?? "",
-    },
-    motorista2: dto.drivers?.[1]
-      ? {
-          id: dto.drivers[1].driverId,
-          matricula: dto.drivers[1].registry,
-          nome: dto.drivers[1].name,
-          base: dto.drivers[1].baseCode ?? "",
-        }
-      : undefined,
-    dataEvento: dto.eventDate ?? "",
-    dataViagem: dto.tripDate ?? "",
-    horarioInicial: dto.startTime ?? "",
-    horarioFinal: dto.endTime ?? "",
-    localParada: dto.place ?? "",
-    typeCode: dto.typeCode ?? "",
-    typeTitle: dto.typeTitle ?? "",
-    speedKmh: dto.speedKmh ?? null,
-
-    // Campos GENERICO
-    reportTitle: dto.reportTitle ?? null,
-    ccoOperator: dto.ccoOperator ?? null,
-    vehicleKm: dto.vehicleKm ?? null,
-    passengerCount: dto.passengerCount ?? null,
-    passengerConnection: dto.passengerConnection ?? null,
-    relatoHtml: dto.relatoHtml ?? null,
-    devolutivaHtml: dto.devolutivaHtml ?? null,
-    devolutivaStatus: dto.devolutivaStatus ?? null,
-    showSectionViagem: dto.showSectionViagem ?? true,
-    showSectionIdentificacao: dto.showSectionIdentificacao ?? true,
-    showSectionDados: dto.showSectionDados ?? true,
-    showSectionTripulacao: dto.showSectionTripulacao ?? true,
-    showSectionPassageiros: dto.showSectionPassageiros ?? true,
-    devolutivaBeforeEvidences: dto.devolutivaBeforeEvidences ?? false,
-
-    // Análise e tratativa — precisam ser carregados senão o save (overwrite total)
-    // grava null no banco e apaga os dados refletidos nos relatórios.
-    occurrenceName: dto.occurrenceName ?? null,
-    tratativa: dto.tratativa ?? null,
-    analisadoPor: dto.analisadoPor ?? null,
-
-    createdAt: dto.createdAt ?? "",
-  };
-}
-
-function SkeletonCard() {
-  return (
-    <div className="bg-white border border-gray-200 rounded-lg p-4">
-      <div className="h-5 w-28 bg-gray-100 rounded mb-3" />
-      <div className="h-4 w-44 bg-gray-100 rounded mb-2" />
-      <div className="h-4 w-36 bg-gray-100 rounded mb-4" />
-      <div className="h-3 w-52 bg-gray-100 rounded" />
-    </div>
-  );
-}
-
-// ── Botões compactos com tooltip ──────────────────────────────────────────────
-
-function NavBtn({
-  onClick,
-  tooltip,
-  children,
-}: {
-  onClick: () => void;
-  tooltip: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className="relative group">
-      <button
-        onClick={onClick}
-        className="cursor-pointer p-1.5 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition-colors"
-      >
-        {children}
-      </button>
-      <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 text-xs bg-gray-900 text-white rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-50">
-        {tooltip}
-      </span>
-    </div>
-  );
-}
-
-function ActionBtn({
-  onClick,
-  tooltip,
-  primary,
-  children,
-}: {
-  onClick: () => void;
-  tooltip: string;
-  primary?: boolean;
-  children: ReactNode;
-}) {
-  return (
-    <div className="relative group">
-      <button
-        onClick={onClick}
-        className={`cursor-pointer p-2 rounded-lg transition-colors ${
-          primary
-            ? "bg-blue-600 text-white hover:bg-blue-700"
-            : "bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800"
-        }`}
-      >
-        {children}
-      </button>
-      <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 text-xs bg-gray-900 text-white rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-50">
-        {tooltip}
-      </span>
     </div>
   );
 }

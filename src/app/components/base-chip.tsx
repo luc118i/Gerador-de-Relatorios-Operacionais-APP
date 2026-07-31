@@ -1,4 +1,4 @@
-import { getBaseCanonicalKey, resolveBaseSigla } from "../utils/base";
+import { getBaseCanonicalKey, resolveBaseSigla } from "../../utils/base";
 
 type BaseChipProps = { base: string };
 

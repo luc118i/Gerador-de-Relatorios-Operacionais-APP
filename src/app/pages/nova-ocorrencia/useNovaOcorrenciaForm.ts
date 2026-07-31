@@ -336,6 +336,12 @@ export function useNovaOcorrenciaForm({ onSaved, edicao }: NovaOcorrenciaProps) 
     setTriedSave(false);
     setSpeedKmh(null);
     setLocalParada(null);
+    // RIZER não reconhece "EXCESSO_PERMANENCIA" como tipo — registra lá como
+    // "DESCUMPRIMENTO DE ESQUEMA OPERACIONAL", mantendo o título exibido no
+    // relatório (que vem de OCCURRENCE_TYPES) como "Excesso de Permanência".
+    setOccurrenceName(
+      code === "EXCESSO_PERMANENCIA" ? "DESCUMPRIMENTO DE ESQUEMA OPERACIONAL" : null,
+    );
     setReportTitle("");
     setCcoOperator("");
     setVehicleKm(null);

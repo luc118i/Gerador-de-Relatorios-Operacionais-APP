@@ -1,4 +1,4 @@
-import { Ocorrencia } from "../types";
+import { Ocorrencia } from "../app/types";
 
 function getLinha(v: Ocorrencia["viagem"]): string {
   return "linha" in v ? String(v.linha ?? "") : "";

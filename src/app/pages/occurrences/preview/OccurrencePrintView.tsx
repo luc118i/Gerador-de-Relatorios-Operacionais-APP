@@ -1,5 +1,5 @@
 import type { Ocorrencia } from "../../../types";
-import { formatPermanencia } from "../../../utils/relatorio";
+import { formatPermanencia } from "../../../../utils/relatorio";
 
 interface Props {
   occurrence: Ocorrencia;
