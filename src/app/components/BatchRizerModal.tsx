@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Gavel, ShieldAlert, ShieldOff, ClipboardList } from "lucide-react";
 import type { OccurrenceDTO } from "../../domain/occurrences";
 import type { TipoMedida } from "./RizerRegisterModal";
+import { tratativaToTipoMedida } from "../../utils/tratativa";
 
 export interface BatchRizerItem {
   id: string;
@@ -46,7 +47,9 @@ interface Props {
 
 export function BatchRizerModal({ open, subject, occs, onConfirm, onCancel }: Props) {
   const [rows, setRows] = useState<RowState>(() =>
-    Object.fromEntries(occs.map((o) => [o.id, "advertencia" as TipoMedida]))
+    Object.fromEntries(
+      occs.map((o) => [o.id, tratativaToTipoMedida(o.tratativa) ?? ("advertencia" as TipoMedida)])
+    )
   );
 
   if (!open) return null;

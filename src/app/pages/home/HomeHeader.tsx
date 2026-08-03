@@ -72,7 +72,7 @@ export function HomeHeader({
   onShowAutomationFolderModal,
 }: HomeHeaderProps) {
   return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+    <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <div className="flex items-center justify-between">
           <div className="relative flex items-center gap-3">

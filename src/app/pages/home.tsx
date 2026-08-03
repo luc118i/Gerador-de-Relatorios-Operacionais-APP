@@ -35,6 +35,7 @@ import { useAutomationFolders } from "../../hooks/useAutomationFolders";
 import { AutomationFoldersModal } from "../components/AutomationFoldersModal";
 import { useAgentStatus } from "../../hooks/useAgentStatus";
 import { BatchRizerModal, type BatchRizerItem } from "../components/BatchRizerModal";
+import { tratativaToTipoMedida } from "../../utils/tratativa";
 import { AgentProgressDock, type AgentJob } from "../components/AgentProgressDock";
 import { buildDriverPdfFileName } from "../../utils/pdfDownload";
 import { HomeHeader } from "./home/HomeHeader";
@@ -360,6 +361,22 @@ export function Home({
   function cancelBatch() {
     batchCancelRef.current = true;
     setBatchState(prev => prev ? { ...prev, cancelRequested: true } : null);
+  }
+
+  // Se todas as ocorrências já têm uma tratativa definida (badge no card),
+  // registra direto no RIZER sem perguntar de novo. Só abre o modal quando
+  // alguma ocorrência ainda não tem tratativa marcada.
+  function requestRegistrarTodas(subject: string, unregistered: OccurrenceDTO[]) {
+    const mapped = unregistered.map((o) => tratativaToTipoMedida(o.tratativa));
+    if (mapped.every((m) => m !== null)) {
+      const items: BatchRizerItem[] = unregistered.map((o, i) => ({
+        id: o.id,
+        advertencia: mapped[i] === "advertencia",
+      }));
+      startBatch(subject, items);
+      return;
+    }
+    setBatchConfirm({ subject, occs: unregistered });
   }
 
   function getBatchOverlay(occId: string, subject: string): BatchOverlay | undefined {
@@ -792,7 +809,7 @@ export function Home({
                 collapsed={collapsedSubjects.has(subject)}
                 onToggleCollapse={() => toggleSubjectCollapse(subject)}
                 anyBatchRunning={anyBatchRunning}
-                onRequestRegistrarTodas={(unregistered) => setBatchConfirm({ subject, occs: unregistered })}
+                onRequestRegistrarTodas={(unregistered) => requestRegistrarTodas(subject, unregistered)}
                 onRequestEnviarTratativas={(ids) => setBatchTratativaConfirm({ subject, ids })}
                 onRequestRevisarTodas={(ids) => setBatchRevisarConfirm({ subject, ids })}
                 registroBatch={{

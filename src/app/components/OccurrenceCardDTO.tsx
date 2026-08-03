@@ -37,6 +37,7 @@ import { aiApi } from "../../api/ai.api";
 import { SuspensaoModal } from "./SuspensaoModal";
 import { RizerRegisterModal, type TipoMedida } from "./RizerRegisterModal";
 import { ConfirmTratativaModal } from "./ConfirmTratativaModal";
+import { tratativaToTipoMedida } from "../../utils/tratativa";
 
 // ── TratativaBadge ────────────────────────────────────────────────────────────
 const TRATATIVA_META: Record<string, { label: string; dot: string; cls: string }> = {
@@ -45,20 +46,6 @@ const TRATATIVA_META: Record<string, { label: string; dot: string; cls: string }
   VALE:        { label: "Vale",           dot: "bg-red-500",    cls: "bg-red-50 text-red-700 border border-red-200"         },
   REGISTRO:    { label: "Só o Registro",  dot: "bg-gray-400",   cls: "bg-gray-100 text-gray-600 border border-gray-200"     },
 };
-
-// Mapeia a tratativa já escolhida na criação da ocorrência para a opção
-// correspondente do modal de envio ao RIZER, evitando perguntar de novo o que
-// o analista já definiu. VALE não tem equivalente no RIZER (é desconto em
-// folha, não medida disciplinar) — cai em "nenhum" (apenas registrar).
-function tratativaToTipoMedida(tratativa: string | null | undefined): TipoMedida | null {
-  switch (tratativa) {
-    case "SUSPEICAO": return "suspensao";
-    case "ADVERTENCIA": return "advertencia";
-    case "VALE": return "nenhum";
-    case "REGISTRO": return "nenhum";
-    default: return null;
-  }
-}
 
 function TratativaBadge({ value, size = "sm" }: { value: string; size?: "xs" | "sm" }) {
   const meta = TRATATIVA_META[value];
