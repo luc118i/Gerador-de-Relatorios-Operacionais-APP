@@ -73,7 +73,7 @@ export function buildDriverPdfFileName(args: {
   occurrenceTitle?: string | null;
   eventDate?: string | Date | null;
 }) {
-  const date = formatDateDDMMAA(new Date());
+  const date = formatDateDDMMAA(args.eventDate ?? new Date());
   const typeAbbr = abbreviateOccurrenceTitle(args.occurrenceTitle ?? "");
 
   const parts = [

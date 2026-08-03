@@ -69,7 +69,7 @@ export function DriverPdfCard(props: {
   const abortRef = useRef<AbortController | null>(null);
 
   const fileName = useMemo(
-    () => buildDriverPdfFileName({ registry: driver.registry, name: driver.name, base: driver.base ?? "", occurrenceTitle }),
+    () => buildDriverPdfFileName({ registry: driver.registry, name: driver.name, base: driver.base ?? "", occurrenceTitle, eventDate }),
     [driver.registry, driver.name, driver.base, occurrenceTitle, eventDate],
   );
 

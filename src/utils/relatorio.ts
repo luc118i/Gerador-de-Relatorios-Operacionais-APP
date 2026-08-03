@@ -1,4 +1,5 @@
 import { Ocorrencia } from "../app/types";
+import { buildDriverPdfFileName } from "./pdfDownload";
 
 function getLinha(v: Ocorrencia["viagem"]): string {
   return "linha" in v ? String(v.linha ?? "") : "";
@@ -52,7 +53,24 @@ export function formatPermanencia(inicio?: string | null, fim?: string | null): 
   return `${m}min`;
 }
 
+/** Nome do relatório/medida no Drive (sem extensão), ex.: "4709 - PAULO MENDES DUTRA - SALVADOR - EXCES_PERMA - 02.08.26" */
+function buildNomeRelatorio(ocorrencia: Ocorrencia): string {
+  const fileName = buildDriverPdfFileName({
+    registry: ocorrencia.motorista1?.matricula,
+    name: ocorrencia.motorista1?.nome,
+    base: ocorrencia.motorista1?.base,
+    occurrenceTitle: ocorrencia.typeTitle || ocorrencia.reportTitle,
+    eventDate: ocorrencia.dataEvento,
+  });
+  return fileName.replace(/\.pdf$/i, "");
+}
+
 export function gerarTextoRelatorioIndividual(ocorrencia: Ocorrencia): string {
+  const corpo = gerarCorpoRelatorioIndividual(ocorrencia);
+  return `${buildNomeRelatorio(ocorrencia)}\n${corpo}`;
+}
+
+function gerarCorpoRelatorioIndividual(ocorrencia: Ocorrencia): string {
   const data = formatarData(ocorrencia.dataEvento);
   const v = ocorrencia.viagem;
   const prefixo = getPrefixo(v);

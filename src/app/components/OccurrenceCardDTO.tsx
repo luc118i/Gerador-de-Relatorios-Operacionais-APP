@@ -506,7 +506,7 @@ export function OccurrenceCard({
             </span>
           </div>
         )}
-        {(tratativaOverlay || fillMedidaState === "loading") && !batchOverlay && disciplinaryState !== "loading" && (
+        {tratativaOverlay && !batchOverlay && disciplinaryState !== "loading" && (
           <div className="absolute inset-0 z-10 flex items-center gap-1.5 px-3 bg-amber-50/90 backdrop-blur-[1px] pointer-events-none">
             {tratativaOverlay === "queued"
               ? <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
@@ -527,38 +527,6 @@ export function OccurrenceCard({
           </div>
         )}
 
-        {/* Overlay "Completar tratativa" — aparece no hover, cobre até o limite das AÇÕES */}
-        {localFaltaTratativa && !batchOverlay && !tratativaOverlay && !revisarOverlay && (
-          <div
-            className={`absolute inset-y-0 left-0 right-[148px] z-10 flex items-center justify-center transition-opacity backdrop-blur-[1px] ${
-              fillMedidaState !== "idle" ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-            }`}
-            style={{ background: "radial-gradient(ellipse at center, rgba(254,243,199,0.95) 0%, rgba(254,243,199,0.6) 40%, transparent 100%)" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={handleFillMedida}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border shadow-sm transition-colors ${
-                fillMedidaState === "loading"
-                  ? "border-amber-300 text-amber-600 bg-amber-100 cursor-not-allowed"
-                  : fillMedidaState === "success"
-                    ? "border-emerald-300 text-emerald-600 bg-white cursor-default"
-                    : "border-amber-300 text-amber-700 bg-white hover:bg-amber-100"
-              }`}
-            >
-              {fillMedidaState === "loading"
-                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                : fillMedidaState === "success"
-                  ? <Check className="w-3.5 h-3.5" />
-                  : <AlertTriangle className="w-3.5 h-3.5" />}
-              {fillMedidaState === "loading"
-                ? "Completando tratativa..."
-                : fillMedidaState === "success"
-                  ? "Tratativa preenchida!"
-                  : "Completar tratativa"}
-            </button>
-          </div>
-        )}
         {/* Prefixo */}
         <div className="w-[70px] flex-shrink-0 px-3 py-2.5 flex items-center gap-1">
           {isSecondDriverCard ? (
@@ -716,6 +684,30 @@ export function OccurrenceCard({
           >
             <ShieldAlert className="w-4 h-4" />
           </button>
+          {localFaltaTratativa && (
+            <button
+              onClick={handleFillMedida}
+              disabled={fillMedidaState === "loading"}
+              title={
+                fillMedidaState === "success"
+                  ? "Tratativa preenchida!"
+                  : "Completar tratativa"
+              }
+              className={`p-2 rounded transition-colors disabled:opacity-50 disabled:cursor-wait ${
+                fillMedidaState === "success"
+                  ? "text-emerald-600"
+                  : "text-amber-500 hover:text-amber-700 hover:bg-amber-50"
+              }`}
+            >
+              {fillMedidaState === "loading" ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : fillMedidaState === "success" ? (
+                <Check className="w-4 h-4" />
+              ) : (
+                <AlertTriangle className="w-4 h-4" />
+              )}
+            </button>
+          )}
           <button
             onClick={handleRizerClick}
             disabled={disciplinaryState === "loading"}
