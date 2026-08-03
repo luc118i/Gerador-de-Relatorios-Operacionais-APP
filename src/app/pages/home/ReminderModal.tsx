@@ -7,7 +7,7 @@ export function ReminderModal({ onConfirm }: { onConfirm: () => void }) {
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
         {/* Topo colorido */}
         <div className="bg-amber-500 px-5 py-4 flex items-center gap-3">
           <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0">
@@ -21,9 +21,9 @@ export function ReminderModal({ onConfirm }: { onConfirm: () => void }) {
 
         {/* Corpo */}
         <div className="px-5 py-5 space-y-3">
-          <p className="text-sm text-gray-700 leading-relaxed">
+          <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
             Confira se todas as ocorrencias foram apuradas e envie o{" "}
-            <span className="font-semibold text-gray-900">Relatorio Diario</span>{" "}
+            <span className="font-semibold text-gray-900 dark:text-gray-100">Relatorio Diario</span>{" "}
             para o Google Drive antes de encerrar o turno.
           </p>
           <div className="flex items-start gap-2 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2.5">
@@ -35,7 +35,7 @@ export function ReminderModal({ onConfirm }: { onConfirm: () => void }) {
         </div>
 
         {/* Rodape */}
-        <div className="px-5 py-4 border-t border-gray-100 bg-gray-50 flex justify-end">
+        <div className="px-5 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/60 flex justify-end">
           <button
             onClick={onConfirm}
             className="cursor-pointer h-9 px-6 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold transition-colors"

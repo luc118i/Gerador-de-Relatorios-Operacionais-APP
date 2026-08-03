@@ -13,7 +13,7 @@ export function NavBtn({
     <div className="relative group">
       <button
         onClick={onClick}
-        className="cursor-pointer p-1.5 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition-colors"
+        className="cursor-pointer p-1.5 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-800 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100 transition-colors"
       >
         {children}
       </button>
@@ -42,7 +42,7 @@ export function ActionBtn({
         className={`cursor-pointer p-2 rounded-lg transition-colors ${
           primary
             ? "bg-blue-600 text-white hover:bg-blue-700"
-            : "bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800"
+            : "bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-gray-100"
         }`}
       >
         {children}

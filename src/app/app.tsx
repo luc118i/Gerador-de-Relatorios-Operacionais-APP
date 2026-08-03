@@ -55,7 +55,7 @@ function AppShell() {
 
   return (
     <AdminAuthProvider>
-      <div className="min-h-screen flex flex-col bg-gray-50">
+      <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950">
         <Toaster position="top-right" />
 
         <AppDrawer
@@ -125,7 +125,7 @@ function AppShell() {
           )}
         </main>
 
-        <footer className="py-6 px-6 md:px-12 border-t border-gray-200 bg-transparent">
+        <footer className="py-6 px-6 md:px-12 border-t border-gray-200 dark:border-gray-800 bg-transparent">
           <div
             className="max-w-7xl mx-auto text-center"
             style={{ color: "#718096" }}
@@ -146,7 +146,7 @@ function AppShell() {
  */
 function WelcomeSplash({ name }: { name: string }) {
   return (
-    <div className="ls-welcome fixed inset-0 z-[100] flex flex-col items-center justify-center gap-4 bg-[#edf1f7]">
+    <div className="ls-welcome fixed inset-0 z-[100] flex flex-col items-center justify-center gap-4 bg-[#edf1f7] dark:bg-[#0b1220]">
       <style>{`
         @keyframes lw-fade { 0%{opacity:0} 12%{opacity:1} 82%{opacity:1} 100%{opacity:0} }
         @keyframes lw-pop {

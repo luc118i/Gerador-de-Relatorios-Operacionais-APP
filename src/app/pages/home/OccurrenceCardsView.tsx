@@ -69,9 +69,9 @@ export function OccurrenceCardsView({
 
   if (viewMode === "list") {
     return (
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
         <div
-          className="flex items-center gap-0 bg-gray-50 border-b border-gray-200 text-[11px] font-semibold text-gray-400 uppercase tracking-wide"
+          className="flex items-center gap-0 bg-gray-50 dark:bg-gray-800/60 border-b border-gray-200 dark:border-gray-800 text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide"
           style={{ borderLeft: "3px solid transparent" }}
         >
           <div className="w-[70px] flex-shrink-0 px-3 py-2">Prefixo</div>

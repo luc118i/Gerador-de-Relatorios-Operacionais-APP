@@ -79,10 +79,10 @@ export function UserMenu() {
       {open && (
         <div
           onMouseDown={(e) => e.stopPropagation()}
-          className="absolute right-0 top-full mt-2 w-64 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden"
+          className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl z-50 overflow-hidden"
         >
-          <div className="px-4 py-3 border-b border-gray-100">
-            <p className="text-[11px] text-gray-400 uppercase tracking-widest font-semibold mb-2">
+          <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+            <p className="text-[11px] text-gray-400 dark:text-gray-500 uppercase tracking-widest font-semibold mb-2">
               Seu perfil
             </p>
             {editing ? (
@@ -98,7 +98,7 @@ export function UserMenu() {
                   placeholder="Seu nome"
                   maxLength={60}
                   disabled={saving}
-                  className="min-w-0 flex-1 px-2 py-1.5 rounded-lg border border-gray-200 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-200 disabled:opacity-60"
+                  className="min-w-0 flex-1 px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-200 dark:focus:ring-blue-800 disabled:opacity-60"
                 />
                 <button
                   onClick={() => void save()}
@@ -111,7 +111,7 @@ export function UserMenu() {
                 <button
                   onClick={() => setEditing(false)}
                   disabled={saving}
-                  className="cursor-pointer p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 disabled:opacity-50 transition-colors shrink-0"
+                  className="cursor-pointer p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50 transition-colors shrink-0"
                   aria-label="Cancelar"
                 >
                   <X className="w-4 h-4" />
@@ -120,12 +120,12 @@ export function UserMenu() {
             ) : (
               <div className="flex items-center gap-2">
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-gray-800 truncate">{name}</p>
-                  <p className="text-xs text-gray-400 truncate">{email}</p>
+                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">{name}</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 truncate">{email}</p>
                 </div>
                 <button
                   onClick={startEdit}
-                  className="cursor-pointer p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors shrink-0"
+                  className="cursor-pointer p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:text-gray-200 dark:hover:bg-gray-800 transition-colors shrink-0"
                   aria-label="Editar nome"
                   title="Editar seu nome"
                 >
@@ -137,7 +137,7 @@ export function UserMenu() {
 
           <button
             onClick={() => void signOut()}
-            className="cursor-pointer w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors"
+            className="cursor-pointer w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-600 dark:text-gray-300 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/50 dark:hover:text-red-400 transition-colors"
           >
             <LogOut className="w-4 h-4" />
             Sair

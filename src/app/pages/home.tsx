@@ -621,7 +621,7 @@ export function Home({
 
   // ── Render ────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {showAdminLogin && <AdminLoginModal onClose={() => setShowAdminLogin(false)} />}
 
       {/* Modal de lembrete às 17h */}
@@ -663,25 +663,25 @@ export function Home({
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">
           <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
-            <h2 className="text-lg font-semibold text-gray-900">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
               Ocorrências do Dia
             </h2>
             {!isLoading && !isError && ocorrencias.length > 0 && (
               <div className="flex items-center gap-2 flex-wrap">
                 {/* Busca universal */}
                 <div className="relative">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 dark:text-gray-500 pointer-events-none" />
                   <input
                     type="text"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Buscar prefixo, carro, tipo, motorista…"
-                    className="w-56 sm:w-72 pl-8 pr-7 py-1.5 rounded-lg border border-gray-200 text-xs text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-400 focus:border-blue-400 transition-all"
+                    className="w-56 sm:w-72 pl-8 pr-7 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-900 text-xs text-gray-700 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-400 focus:border-blue-400 transition-all"
                   />
                   {search && (
                     <button
                       onClick={() => setSearch("")}
-                      className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:text-gray-200 dark:hover:bg-gray-800 transition-colors"
                       aria-label="Limpar busca"
                     >
                       <X className="w-3.5 h-3.5" />
@@ -693,21 +693,21 @@ export function Home({
                   onClick={() => setGroupBySubject((v) => { const next = !v; localStorage.setItem("home_groupBySubject", String(next)); return next; })}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
                     groupBySubject
-                      ? "bg-blue-50 border-blue-200 text-blue-700"
-                      : "bg-white border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                      ? "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950/50 dark:border-blue-800 dark:text-blue-400"
+                      : "bg-white border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-200"
                   }`}
                 >
                   <Tag className="w-3.5 h-3.5" />
                   Agrupar por assunto
                 </button>
                 {/* Toggle visualização */}
-                <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+                <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
                   <button
                     onClick={() => { setViewMode("cards"); localStorage.setItem("home_viewMode", "cards"); }}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
                       viewMode === "cards"
-                        ? "bg-white shadow-sm text-gray-800"
-                        : "text-gray-500 hover:text-gray-700"
+                        ? "bg-white dark:bg-gray-700 shadow-sm text-gray-800 dark:text-gray-100"
+                        : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                     }`}
                   >
                     <LayoutGrid className="w-3.5 h-3.5" />
@@ -717,8 +717,8 @@ export function Home({
                     onClick={() => { setViewMode("list"); localStorage.setItem("home_viewMode", "list"); }}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
                       viewMode === "list"
-                        ? "bg-white shadow-sm text-gray-800"
-                        : "text-gray-500 hover:text-gray-700"
+                        ? "bg-white dark:bg-gray-700 shadow-sm text-gray-800 dark:text-gray-100"
+                        : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                     }`}
                   >
                     <List className="w-3.5 h-3.5" />
@@ -729,13 +729,13 @@ export function Home({
             )}
           </div>
           {isLoading ? (
-            <p className="text-sm text-gray-600">Carregando…</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Carregando…</p>
           ) : isError ? (
-            <p className="text-sm text-red-600">
+            <p className="text-sm text-red-600 dark:text-red-400">
               Falha ao carregar ocorrências do dia.
             </p>
           ) : (
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               {search.trim()
                 ? `${filteredOcorrencias.length} de ${ocorrencias.length} registro${ocorrencias.length !== 1 ? "s" : ""}`
                 : `${ocorrencias.length} registro${ocorrencias.length !== 1 ? "s" : ""}`}
@@ -744,16 +744,16 @@ export function Home({
         </div>
 
         {isError ? (
-          <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-12 text-center">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
               Não foi possível carregar as ocorrências
             </h3>
-            <p className="text-sm text-gray-600 mb-6">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
               Verifique a conexão com a API e tente novamente.
             </p>
             <button
               onClick={() => refetch()}
-              className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
+              className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white transition-colors font-medium"
             >
               Tentar novamente
             </button>
@@ -766,11 +766,11 @@ export function Home({
           </div>
         ) : ocorrencias.length === 0 ? (
           <div className="space-y-4">
-            <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
+            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-12 text-center">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
                 Nenhuma ocorrência registrada
               </h3>
-              <p className="text-sm text-gray-600 mb-6">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
                 Clique no botão "Nova Ocorrência" para registrar um descumprimento
                 operacional
               </p>
@@ -784,17 +784,17 @@ export function Home({
             <EmptyReportScene />
           </div>
         ) : filteredOcorrencias.length === 0 ? (
-          <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
-            <Search className="w-8 h-8 text-gray-300 mx-auto mb-3" />
-            <h3 className="text-base font-medium text-gray-900 mb-1">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-12 text-center">
+            <Search className="w-8 h-8 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+            <h3 className="text-base font-medium text-gray-900 dark:text-gray-100 mb-1">
               Nenhum resultado para “{search.trim()}”
             </h3>
-            <p className="text-sm text-gray-600 mb-6">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
               Tente outro prefixo, motorista, base ou tipo de ocorrência.
             </p>
             <button
               onClick={() => setSearch("")}
-              className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium text-sm"
+              className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white transition-colors font-medium text-sm"
             >
               <X className="w-4 h-4" /> Limpar busca
             </button>
@@ -893,7 +893,7 @@ export function Home({
             onClick={closeDrawer}
           />
           <div
-            className={`relative w-full max-w-6xl bg-white h-full overflow-y-auto shadow-2xl transition-transform duration-[320ms] ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform ${
+            className={`relative w-full max-w-6xl bg-white dark:bg-gray-950 h-full overflow-y-auto shadow-2xl transition-transform duration-[320ms] ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform ${
               panelOpen ? "translate-x-0" : "translate-x-full"
             }`}
           >
@@ -1005,14 +1005,14 @@ export function Home({
             startBatchTratativa(subject, ids);
           }}
         >
-          <p className="text-sm text-gray-600 mb-1">
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
             Você está prestes a preencher a tratativa de{" "}
-            <span className="font-semibold text-gray-800">
+            <span className="font-semibold text-gray-800 dark:text-gray-200">
               {batchTratativaConfirm.ids.length} ocorrência{batchTratativaConfirm.ids.length !== 1 ? "s" : ""}
             </span>{" "}
             do assunto:
           </p>
-          <p className="text-xs font-medium text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 mb-5">
+          <p className="text-xs font-medium text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-100 dark:border-amber-900 rounded-lg px-3 py-2 mb-5">
             {batchTratativaConfirm.subject}
           </p>
         </ConfirmActionModal>
@@ -1033,14 +1033,14 @@ export function Home({
             startBatchRevisar(subject, ids);
           }}
         >
-          <p className="text-sm text-gray-600 mb-1">
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
             Você está prestes a reabrir e reescrever todos os campos de{" "}
-            <span className="font-semibold text-gray-800">
+            <span className="font-semibold text-gray-800 dark:text-gray-200">
               {batchRevisarConfirm.ids.length} ocorrência{batchRevisarConfirm.ids.length !== 1 ? "s" : ""}
             </span>{" "}
             já enviada{batchRevisarConfirm.ids.length !== 1 ? "s" : ""} do assunto:
           </p>
-          <p className="text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2 mb-5">
+          <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900 rounded-lg px-3 py-2 mb-5">
             {batchRevisarConfirm.subject}
           </p>
         </ConfirmActionModal>
@@ -1057,7 +1057,7 @@ export function Home({
           onCancel={() => setExcluindoId(null)}
           onConfirm={handleConfirmarExclusao}
         >
-          <p className="text-sm text-gray-600 mb-6">
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
             Essa ação não pode ser desfeita.
           </p>
         </ConfirmActionModal>

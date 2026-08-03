@@ -119,10 +119,10 @@ export function LoginScreen() {
   }
 
   const inputBase =
-    "w-full pl-10 pr-10 h-11 rounded-xl border border-[#dde4f0] bg-[#f4f7ff] text-sm text-[#1a2a4a] outline-none transition-colors focus:border-[#3a6ee8] focus:bg-white placeholder:text-[#9aa8c8]";
+    "w-full pl-10 pr-10 h-11 rounded-xl border border-[#dde4f0] dark:border-gray-700 bg-[#f4f7ff] dark:bg-gray-800 text-sm text-[#1a2a4a] dark:text-gray-100 outline-none transition-colors focus:border-[#3a6ee8] focus:bg-white dark:focus:bg-gray-800 placeholder:text-[#9aa8c8] dark:placeholder:text-gray-500";
 
   return (
-    <div className="relative min-h-screen flex flex-col items-center justify-center gap-4 overflow-hidden bg-[#edf1f7] px-4 py-8">
+    <div className="relative min-h-screen flex flex-col items-center justify-center gap-4 overflow-hidden bg-[#edf1f7] dark:bg-[#0b1220] px-4 py-8">
       {/* keyframes locais (escopo via prefixo ls-) */}
       <style>{`
         @keyframes ls-scan { 0%{top:0;opacity:.7} 50%{opacity:1} 100%{top:100%;opacity:.2} }
@@ -250,9 +250,9 @@ export function LoginScreen() {
       </div>
 
       {/* ── Card ─────────────────────────────────────────────────────── */}
-      <div className="relative z-10 w-full max-w-[340px] rounded-2xl bg-white px-8 pt-9 pb-8 shadow-[0_2px_24px_rgba(60,100,200,0.10),0_0.5px_2px_rgba(60,100,200,0.10)]">
+      <div className="relative z-10 w-full max-w-[340px] rounded-2xl bg-white dark:bg-[#111a2e] px-8 pt-9 pb-8 shadow-[0_2px_24px_rgba(60,100,200,0.10),0_0.5px_2px_rgba(60,100,200,0.10)]">
         <div className="flex justify-center mb-2">
-          <div className="relative flex h-[52px] w-[52px] items-center justify-center rounded-2xl bg-[#eef3ff]">
+          <div className="relative flex h-[52px] w-[52px] items-center justify-center rounded-2xl bg-[#eef3ff] dark:bg-[#1c2b4a]">
             {/* Anéis de pulso */}
             {[0, 1, 2].map((i) => (
               <span
@@ -275,16 +275,16 @@ export function LoginScreen() {
           </div>
         </div>
 
-        <h1 className="text-center text-[17px] font-semibold text-[#1a2a4a]">
+        <h1 className="text-center text-[17px] font-semibold text-[#1a2a4a] dark:text-gray-100">
           Gerador de Relatórios
         </h1>
-        <p className="mb-5 text-center text-xs text-[#8899bb]">
+        <p className="mb-5 text-center text-xs text-[#8899bb] dark:text-gray-500">
           Entre com seu perfil para apurar ocorrências
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-2.5">
           <div className="relative">
-            <Mail className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8899cc]" />
+            <Mail className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8899cc] dark:text-gray-500" />
             <input
               type="email"
               autoComplete="email"
@@ -299,7 +299,7 @@ export function LoginScreen() {
           </div>
 
           <div className="relative">
-            <Lock className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8899cc]" />
+            <Lock className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8899cc] dark:text-gray-500" />
             <input
               type={showPwd ? "text" : "password"}
               autoComplete="current-password"
@@ -315,7 +315,7 @@ export function LoginScreen() {
               type="button"
               tabIndex={-1}
               onClick={() => setShowPwd((v) => !v)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8899cc] hover:text-[#5a6a99] transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8899cc] dark:text-gray-500 hover:text-[#5a6a99] dark:hover:text-gray-300 transition-colors"
             >
               {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
@@ -340,12 +340,12 @@ export function LoginScreen() {
 
       {/* ── Rodapé ───────────────────────────────────────────────────── */}
       <div className="relative z-10 text-center">
-        <p className="text-[11px] text-[#aabbcc]">
+        <p className="text-[11px] text-[#aabbcc] dark:text-gray-600">
           © {new Date().getFullYear()} Gerador de Relatórios Operacionais
         </p>
-        <p className="mt-0.5 text-[11px] text-[#aabbcc]">
+        <p className="mt-0.5 text-[11px] text-[#aabbcc] dark:text-gray-600">
           Desenvolvido por{" "}
-          <span className="font-semibold text-[#8aa0c4]">{DEVELOPER_NAME}</span>
+          <span className="font-semibold text-[#8aa0c4] dark:text-gray-500">{DEVELOPER_NAME}</span>
         </p>
       </div>
     </div>

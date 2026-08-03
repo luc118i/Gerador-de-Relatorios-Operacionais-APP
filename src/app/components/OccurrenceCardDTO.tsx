@@ -475,27 +475,27 @@ export function OccurrenceCard({
         onCancel={() => setShowConfirmTratativaModal(false)}
       />
       <div
-        className={`group relative flex items-center gap-0 border-b border-gray-100 transition-colors cursor-pointer ${
-          isSecondDriverCard ? "bg-gray-50/60" : "bg-white"
+        className={`group relative flex items-center gap-0 border-b border-gray-100 dark:border-gray-800 transition-colors cursor-pointer ${
+          isSecondDriverCard ? "bg-gray-50/60 dark:bg-gray-900/40" : "bg-white dark:bg-gray-900"
         } ${
           batchOverlay || tratativaOverlay || revisarOverlay || disciplinaryState === "loading" || fillMedidaState === "loading"
             ? "pointer-events-none"
             : localFaltaTratativa
-              ? "hover:bg-amber-50/30"
-              : "hover:bg-blue-50/40"
+              ? "hover:bg-amber-50/30 dark:hover:bg-amber-950/20"
+              : "hover:bg-blue-50/40 dark:hover:bg-blue-950/20"
         }`}
         style={{ borderLeft: `3px solid ${baseColor}` }}
         onClick={onOpen}
       >
         {batchOverlay && (
-          <div className="absolute inset-0 z-10 flex items-center justify-end pr-3 bg-white/70 backdrop-blur-[1px]">
+          <div className="absolute inset-0 z-10 flex items-center justify-end pr-3 bg-white/70 dark:bg-gray-900/80 backdrop-blur-[1px]">
             {batchOverlay === "processing"
               ? <Loader2 className="w-4 h-4 text-orange-400 animate-spin" />
-              : <Clock className="w-3.5 h-3.5 text-gray-300" />}
+              : <Clock className="w-3.5 h-3.5 text-gray-300 dark:text-gray-600" />}
           </div>
         )}
         {disciplinaryState === "loading" && !batchOverlay && (
-          <div className="absolute inset-0 z-10 flex items-center gap-1.5 px-3 bg-white/80 backdrop-blur-[1px] pointer-events-none">
+          <div className="absolute inset-0 z-10 flex items-center gap-1.5 px-3 bg-white/80 dark:bg-gray-900/85 backdrop-blur-[1px] pointer-events-none">
             <Loader2 className="w-3.5 h-3.5 text-orange-400 animate-spin shrink-0" />
             <span className="text-xs font-medium text-orange-600">
               {disciplinaryAction === "verifying"
@@ -530,10 +530,10 @@ export function OccurrenceCard({
         {/* Prefixo */}
         <div className="w-[70px] flex-shrink-0 px-3 py-2.5 flex items-center gap-1">
           {isSecondDriverCard ? (
-            <span className="text-gray-300 text-sm" title="Mesma ocorrência do card acima">↳</span>
+            <span className="text-gray-300 dark:text-gray-600 text-sm" title="Mesma ocorrência do card acima">↳</span>
           ) : (
             <>
-              <span className="font-bold text-sm text-gray-900 tabular-nums">
+              <span className="font-bold text-sm text-gray-900 dark:text-gray-100 tabular-nums">
                 {occurrence.vehicleNumber}
               </span>
               {isDuplicateVehicle && (
@@ -560,13 +560,13 @@ export function OccurrenceCard({
         {/* Assunto */}
         <div className="flex-1 min-w-0 px-2 py-2.5">
           {isSecondDriverCard ? (
-            <span className="text-xs text-gray-400 italic truncate block leading-tight">
+            <span className="text-xs text-gray-400 dark:text-gray-500 italic truncate block leading-tight">
               Mesma ocorrência acima — Motorista 02
             </span>
           ) : (
             <>
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-sm text-gray-800 truncate leading-tight">
+                <span className="text-sm text-gray-800 dark:text-gray-200 truncate leading-tight">
                   {subjectTitle}
                 </span>
                 {hasSecondDriverCard && (
@@ -604,7 +604,7 @@ export function OccurrenceCard({
                 )}
               </div>
               {subjectDetail && (
-                <span className="text-[11px] text-gray-400 truncate block leading-tight">
+                <span className="text-[11px] text-gray-400 dark:text-gray-500 truncate block leading-tight">
                   {subjectDetail}
                 </span>
               )}
@@ -614,8 +614,8 @@ export function OccurrenceCard({
 
         {/* Horário */}
         <div className="w-[115px] flex-shrink-0 px-2 py-2.5 hidden sm:flex items-center gap-1">
-          <Clock className="w-3 h-3 text-gray-300 flex-shrink-0" />
-          <span className="text-xs text-gray-500 tabular-nums">
+          <Clock className="w-3 h-3 text-gray-300 dark:text-gray-600 flex-shrink-0" />
+          <span className="text-xs text-gray-500 dark:text-gray-400 tabular-nums">
             {occurrence.typeCode === "EXCESSO_VELOCIDADE" || occurrence.startTime === occurrence.endTime
               ? occurrence.startTime
               : `${occurrence.startTime} – ${occurrence.endTime}`}
@@ -625,7 +625,7 @@ export function OccurrenceCard({
         {/* Motorista(s) */}
         <div className="w-[170px] flex-shrink-0 px-2 py-2.5 hidden lg:block">
           <span
-            className={`text-xs truncate block ${isSecondDriverCard ? "text-gray-700 font-medium" : "text-gray-500"}`}
+            className={`text-xs truncate block ${isSecondDriverCard ? "text-gray-700 dark:text-gray-300 font-medium" : "text-gray-500 dark:text-gray-400"}`}
             title={(isSecondDriverCard ? driver2?.name : driver1?.name) ?? undefined}
           >
             {(isSecondDriverCard ? driver2?.name : driver1?.name) ?? "—"}
@@ -642,7 +642,7 @@ export function OccurrenceCard({
             disabled={loadingAiWpp}
             title={isAnaliseOp ? "Gerar resumo WhatsApp com IA" : "Copiar WhatsApp"}
             className={`p-2 rounded transition-colors disabled:opacity-50 ${
-              copiedWpp ? "text-green-600" : "text-gray-400 hover:text-green-600 hover:bg-green-50"
+              copiedWpp ? "text-green-600" : "text-gray-400 hover:text-green-600 hover:bg-green-50 dark:text-gray-500 dark:hover:text-green-400 dark:hover:bg-green-950/40"
             }`}
           >
             {loadingAiWpp ? (
@@ -658,7 +658,7 @@ export function OccurrenceCard({
             disabled={loadingAiRelat}
             title={isAnaliseOp ? "Gerar resumo e-mail com IA" : "Copiar Relatório Individual"}
             className={`p-2 rounded transition-colors disabled:opacity-50 ${
-              copiedRelat ? "text-green-600" : "text-gray-400 hover:text-blue-600 hover:bg-blue-50"
+              copiedRelat ? "text-green-600" : "text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:text-gray-500 dark:hover:text-blue-400 dark:hover:bg-blue-950/40"
             }`}
           >
             {loadingAiRelat ? (
@@ -671,7 +671,7 @@ export function OccurrenceCard({
             onClick={(e) => { e.stopPropagation(); handleEditar(); }}
             disabled={loadingEdit}
             title="Editar"
-            className="p-2 rounded text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors disabled:opacity-50"
+            className="p-2 rounded text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:text-gray-500 dark:hover:text-blue-400 dark:hover:bg-blue-950/40 transition-colors disabled:opacity-50"
           >
             {loadingEdit
               ? <Loader2 className="w-4 h-4 animate-spin" />
@@ -680,7 +680,7 @@ export function OccurrenceCard({
           <button
             onClick={(e) => { e.stopPropagation(); setShowSuspensaoModal(true); }}
             title={localSuspensao ? `Suspensão: ${localSuspensao.dias}d a partir de ${fmtDdMmCompact(localSuspensao.dataInicio)}` : "Gerar Suspensão Disciplinar"}
-            className={`p-2 rounded transition-colors ${localSuspensao ? "text-amber-500 hover:text-amber-700 hover:bg-amber-50" : "text-gray-400 hover:text-red-700 hover:bg-red-50"}`}
+            className={`p-2 rounded transition-colors ${localSuspensao ? "text-amber-500 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/40" : "text-gray-400 hover:text-red-700 hover:bg-red-50 dark:text-gray-500 dark:hover:text-red-400 dark:hover:bg-red-950/40"}`}
           >
             <ShieldAlert className="w-4 h-4" />
           </button>
@@ -696,7 +696,7 @@ export function OccurrenceCard({
               className={`p-2 rounded transition-colors disabled:opacity-50 disabled:cursor-wait ${
                 fillMedidaState === "success"
                   ? "text-emerald-600"
-                  : "text-amber-500 hover:text-amber-700 hover:bg-amber-50"
+                  : "text-amber-500 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/40"
               }`}
             >
               {fillMedidaState === "loading" ? (
@@ -726,7 +726,7 @@ export function OccurrenceCard({
                   : disciplinaryState === "error"
                     ? "text-red-600 bg-red-50 border-red-200 hover:bg-red-100"
                     : !isAdmin
-                      ? "text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed"
+                      ? "text-gray-400 bg-gray-50 border-gray-200 dark:text-gray-500 dark:bg-gray-800 dark:border-gray-700 cursor-not-allowed"
                       : "text-orange-600 bg-orange-50 border-orange-200 hover:bg-orange-100"
             }`}
           >
@@ -743,7 +743,7 @@ export function OccurrenceCard({
           <button
             onClick={(e) => { e.stopPropagation(); onExcluir?.(); }}
             title="Excluir"
-            className="p-2 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+            className="p-2 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 dark:text-gray-500 dark:hover:text-red-400 dark:hover:bg-red-950/40 transition-colors"
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -756,8 +756,8 @@ export function OccurrenceCard({
                 driveStatus === "sent"
                   ? "text-emerald-500"
                   : driveStatus === "sending"
-                    ? "text-gray-300"
-                    : "text-gray-400 hover:text-[#0066da] hover:bg-blue-50"
+                    ? "text-gray-300 dark:text-gray-600"
+                    : "text-gray-400 hover:text-[#0066da] hover:bg-blue-50 dark:text-gray-500 dark:hover:bg-blue-950/40"
               }`}
             >
               {driveStatus === "sending" ? (
@@ -796,18 +796,18 @@ export function OccurrenceCard({
       onCancel={() => setShowConfirmTratativaModal(false)}
     />
     <div
-      className={`group relative bg-white border border-gray-200 rounded-lg p-4 transition-shadow cursor-pointer ${batchOverlay ? "pointer-events-none" : "hover:shadow-md"}`}
+      className={`group relative bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4 transition-shadow cursor-pointer ${batchOverlay ? "pointer-events-none" : "hover:shadow-md"}`}
       onClick={onOpen}
     >
       {batchOverlay && (
-        <div className="absolute inset-0 z-10 rounded-lg flex flex-col items-center justify-center gap-2 bg-white/75 backdrop-blur-[2px]">
+        <div className="absolute inset-0 z-10 rounded-lg flex flex-col items-center justify-center gap-2 bg-white/75 dark:bg-gray-900/85 backdrop-blur-[2px]">
           {batchOverlay === "processing"
             ? <><Loader2 className="w-6 h-6 text-orange-400 animate-spin" /><span className="text-xs font-medium text-orange-500">Registrando...</span></>
-            : <><Clock className="w-5 h-5 text-gray-300" /><span className="text-xs text-gray-400">Na fila</span></>}
+            : <><Clock className="w-5 h-5 text-gray-300 dark:text-gray-600" /><span className="text-xs text-gray-400 dark:text-gray-500">Na fila</span></>}
         </div>
       )}
       {disciplinaryState === "loading" && !batchOverlay && (
-        <div className="absolute inset-0 z-10 rounded-lg flex flex-col items-center justify-center gap-2 bg-white/80 backdrop-blur-[2px] pointer-events-none">
+        <div className="absolute inset-0 z-10 rounded-lg flex flex-col items-center justify-center gap-2 bg-white/80 dark:bg-gray-900/85 backdrop-blur-[2px] pointer-events-none">
           <Loader2 className="w-6 h-6 text-orange-400 animate-spin" />
           <span className="text-xs font-medium text-orange-600">
             {disciplinaryAction === "verifying"
@@ -843,10 +843,10 @@ export function OccurrenceCard({
         <div>
           <div className="flex items-center gap-2 mb-1">
             {isSecondDriverCard ? (
-              <span className="text-gray-300 text-base" title="Mesma ocorrência do card acima">↳</span>
+              <span className="text-gray-300 dark:text-gray-600 text-base" title="Mesma ocorrência do card acima">↳</span>
             ) : (
               <>
-                <span className="font-semibold text-lg text-gray-900">
+                <span className="font-semibold text-lg text-gray-900 dark:text-gray-100">
                   {occurrence.vehicleNumber}
                 </span>
                 {isDuplicateVehicle && (
@@ -865,7 +865,7 @@ export function OccurrenceCard({
               </>
             )}
           </div>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             {isSecondDriverCard ? "Mesma ocorrência acima — Motorista 02" : subject}
           </p>
         </div>
@@ -877,7 +877,7 @@ export function OccurrenceCard({
               <span className="text-xs font-semibold">Sem evidência</span>
             </div>
           ) : occurrence.evidenceCount > 0 ? (
-            <div className="flex items-center gap-1 text-gray-600 bg-gray-50 px-2 py-1 rounded">
+            <div className="flex items-center gap-1 text-gray-600 bg-gray-50 dark:text-gray-300 dark:bg-gray-800 px-2 py-1 rounded">
               <Camera className="w-4 h-4" />
               <span className="text-sm font-medium">{occurrence.evidenceCount}</span>
             </div>
@@ -905,8 +905,8 @@ export function OccurrenceCard({
       <div className="space-y-2">
         {!isSecondDriverCard && (
         <>
-        <div className="flex items-center gap-2 text-sm text-gray-700">
-          <Clock className="w-4 h-4 text-gray-400" />
+        <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+          <Clock className="w-4 h-4 text-gray-400 dark:text-gray-500" />
           {occurrence.typeCode === "EXCESSO_VELOCIDADE" || occurrence.startTime === occurrence.endTime ? (
             <span>{occurrence.startTime}</span>
           ) : (
@@ -914,7 +914,7 @@ export function OccurrenceCard({
               <span>
                 {occurrence.startTime} - {occurrence.endTime}
               </span>
-              <span className="text-gray-400">({tempoParada})</span>
+              <span className="text-gray-400 dark:text-gray-500">({tempoParada})</span>
             </>
           )}
         </div>
@@ -927,19 +927,19 @@ export function OccurrenceCard({
             </span>
           </div>
         ) : occurrence.typeCode === "GENERICO" ? (
-          <p className="text-sm text-gray-600">📋 {occurrence.place || "—"}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">📋 {occurrence.place || "—"}</p>
         ) : (
-          <p className="text-sm text-gray-600">📍 {occurrence.place}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">📍 {occurrence.place}</p>
         )}
         </>
         )}
 
-        <div className="text-xs text-gray-500 pt-2 border-t border-gray-100 flex items-center justify-between gap-2">
-          <span className={isSecondDriverCard ? "text-gray-700 font-medium" : undefined}>
+        <div className="text-xs text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between gap-2">
+          <span className={isSecondDriverCard ? "text-gray-700 dark:text-gray-300 font-medium" : undefined}>
             {isSecondDriverCard ? (driver2?.name ?? "—") : (driver1?.name ?? "—")}
           </span>
           {occurrence.analisadoPor && (
-            <span className="text-[11px] text-gray-400 flex items-center gap-1 flex-shrink-0">
+            <span className="text-[11px] text-gray-400 dark:text-gray-500 flex items-center gap-1 flex-shrink-0">
               <UserCheck className="w-3 h-3" />
               {occurrence.analisadoPor}
             </span>
@@ -949,7 +949,7 @@ export function OccurrenceCard({
 
       {/* Rodapé com botões */}
       <div
-        className="mt-3 pt-3 border-t border-gray-100 space-y-1.5"
+        className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800 space-y-1.5"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Linha 1: Editar + Excluir */}
@@ -957,7 +957,7 @@ export function OccurrenceCard({
           <button
             onClick={handleEditar}
             disabled={loadingEdit}
-            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors disabled:opacity-50"
+            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:text-gray-400 dark:hover:text-blue-400 dark:hover:bg-blue-950/40 rounded-md transition-colors disabled:opacity-50"
           >
             {loadingEdit ? (
               <>
@@ -971,7 +971,7 @@ export function OccurrenceCard({
           </button>
           <button
             onClick={onExcluir}
-            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs text-gray-500 hover:text-red-600 hover:bg-red-50 dark:text-gray-400 dark:hover:text-red-400 dark:hover:bg-red-950/40 rounded-md transition-colors"
           >
             <Trash2 className="w-3.5 h-3.5" />
             Excluir
@@ -985,8 +985,8 @@ export function OccurrenceCard({
             disabled={loadingAiWpp}
             className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs rounded-md transition-colors disabled:opacity-50 ${
               copiedWpp
-                ? "text-green-700 bg-green-50"
-                : "text-gray-500 hover:text-green-700 hover:bg-green-50"
+                ? "text-green-700 bg-green-50 dark:text-green-400 dark:bg-green-950/40"
+                : "text-gray-500 hover:text-green-700 hover:bg-green-50 dark:text-gray-400 dark:hover:text-green-400 dark:hover:bg-green-950/40"
             }`}
           >
             {loadingAiWpp ? (
@@ -1003,8 +1003,8 @@ export function OccurrenceCard({
             disabled={loadingAiRelat}
             className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs rounded-md transition-colors disabled:opacity-50 ${
               copiedRelat
-                ? "text-green-700 bg-green-50"
-                : "text-gray-500 hover:text-blue-700 hover:bg-blue-50"
+                ? "text-green-700 bg-green-50 dark:text-green-400 dark:bg-green-950/40"
+                : "text-gray-500 hover:text-blue-700 hover:bg-blue-50 dark:text-gray-400 dark:hover:text-blue-400 dark:hover:bg-blue-950/40"
             }`}
           >
             {loadingAiRelat ? (
@@ -1021,10 +1021,10 @@ export function OccurrenceCard({
               title={driveStatus === "sent" ? "Arquivo já enviado ao Drive" : "Enviar PDF ao Google Drive"}
               className={`flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md transition-colors disabled:cursor-default ${
                 driveStatus === "sent"
-                  ? "text-emerald-700 bg-emerald-50"
+                  ? "text-emerald-700 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-950/40"
                   : driveStatus === "sending"
-                    ? "text-gray-400 bg-gray-50"
-                    : "text-gray-500 hover:bg-gray-50"
+                    ? "text-gray-400 bg-gray-50 dark:text-gray-500 dark:bg-gray-800"
+                    : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800"
               }`}
             >
               {driveStatus === "sending" ? (
@@ -1044,8 +1044,8 @@ export function OccurrenceCard({
             onClick={() => setShowSuspensaoModal(true)}
             className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs rounded-md transition-colors ${
               localSuspensao
-                ? "text-amber-600 bg-amber-50 hover:bg-amber-100"
-                : "text-gray-500 hover:text-red-700 hover:bg-red-50"
+                ? "text-amber-600 bg-amber-50 hover:bg-amber-100 dark:text-amber-400 dark:bg-amber-950/40 dark:hover:bg-amber-950/60"
+                : "text-gray-500 hover:text-red-700 hover:bg-red-50 dark:text-gray-400 dark:hover:text-red-400 dark:hover:bg-red-950/40"
             }`}
           >
             <ShieldAlert className="w-3.5 h-3.5" />
@@ -1062,7 +1062,7 @@ export function OccurrenceCard({
                   : disciplinaryState === "error"
                     ? "text-red-600 bg-red-50 hover:bg-red-100"
                     : !isAdmin
-                      ? "text-gray-400 bg-gray-50 cursor-not-allowed"
+                      ? "text-gray-400 bg-gray-50 dark:text-gray-500 dark:bg-gray-800 cursor-not-allowed"
                       : "text-orange-700 bg-orange-50 hover:bg-orange-100"
             }`}
           >

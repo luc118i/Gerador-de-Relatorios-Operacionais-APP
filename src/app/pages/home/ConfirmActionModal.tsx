@@ -34,10 +34,10 @@ export function ConfirmActionModal({
         className="absolute inset-0 bg-black/40"
         onClick={() => !cancelDisabled && onCancel()}
       />
-      <div className="relative bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm mx-4">
+      <div className="relative bg-white dark:bg-gray-900 rounded-xl shadow-2xl p-6 w-full max-w-sm mx-4">
         <div className="flex items-center gap-3 mb-3">
           {icon && <div className={`p-2 rounded-lg ${iconBg ?? ""}`}>{icon}</div>}
-          <h3 className="text-base font-semibold text-gray-900">{title}</h3>
+          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">{title}</h3>
         </div>
 
         {children}
@@ -46,7 +46,7 @@ export function ConfirmActionModal({
           <button
             onClick={onCancel}
             disabled={cancelDisabled}
-            className="px-4 py-2 text-sm rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors disabled:opacity-50"
+            className="px-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
           >
             Cancelar
           </button>

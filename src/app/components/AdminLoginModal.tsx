@@ -37,20 +37,20 @@ export function AdminLoginModal({ onClose }: AdminLoginModalProps) {
       onClick={onClose}
     >
       <div
-        className={`bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-8 ${shake ? "animate-shake" : ""}`}
+        className={`bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-8 ${shake ? "animate-shake" : ""}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Ícone */}
         <div className="flex justify-center mb-5">
-          <div className="w-14 h-14 rounded-full bg-orange-50 flex items-center justify-center">
+          <div className="w-14 h-14 rounded-full bg-orange-50 dark:bg-orange-950/40 flex items-center justify-center">
             <Lock className="w-7 h-7 text-orange-500" />
           </div>
         </div>
 
-        <h2 className="text-center text-lg font-semibold text-gray-800 mb-1">
+        <h2 className="text-center text-lg font-semibold text-gray-800 dark:text-gray-100 mb-1">
           Acesso Restrito
         </h2>
-        <p className="text-center text-sm text-gray-500 mb-6">
+        <p className="text-center text-sm text-gray-500 dark:text-gray-400 mb-6">
           Funcionalidade disponível apenas para administradores.
         </p>
 
@@ -62,17 +62,17 @@ export function AdminLoginModal({ onClose }: AdminLoginModalProps) {
               value={pin}
               onChange={(e) => { setPin(e.target.value); setError(false); }}
               placeholder="Senha de acesso"
-              className={`w-full px-4 py-3 pr-10 rounded-xl border text-sm outline-none transition-colors ${
+              className={`w-full px-4 py-3 pr-10 rounded-xl border text-sm outline-none transition-colors dark:bg-gray-800 dark:text-gray-100 ${
                 error
-                  ? "border-red-400 bg-red-50 focus:ring-1 focus:ring-red-300"
-                  : "border-gray-200 focus:border-orange-400 focus:ring-1 focus:ring-orange-200"
+                  ? "border-red-400 bg-red-50 dark:bg-red-950/30 focus:ring-1 focus:ring-red-300"
+                  : "border-gray-200 dark:border-gray-700 focus:border-orange-400 focus:ring-1 focus:ring-orange-200"
               }`}
             />
             <button
               type="button"
               tabIndex={-1}
               onClick={() => setShowPin((v) => !v)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
             >
               {showPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>

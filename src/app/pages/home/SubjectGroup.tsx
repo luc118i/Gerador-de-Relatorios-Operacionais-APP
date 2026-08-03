@@ -80,10 +80,10 @@ export function SubjectGroup({
   return (
     <div>
       <div className="flex items-center gap-2 mb-2">
-        <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
           {subject}
         </h3>
-        <span className="text-xs text-gray-400 font-normal">({occs.length})</span>
+        <span className="text-xs text-gray-400 dark:text-gray-500 font-normal">({occs.length})</span>
 
         {isAdmin && !anyBatchRunning && unregistered.length > 0 && (
           <button
@@ -118,7 +118,7 @@ export function SubjectGroup({
         <button
           onClick={onToggleCollapse}
           title={collapsed ? "Mostrar ocorrências" : "Ocultar ocorrências"}
-          className="cursor-pointer ml-auto p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+          className="cursor-pointer ml-auto p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-500 dark:hover:text-gray-300 dark:hover:bg-gray-800 transition-colors"
         >
           {collapsed ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
         </button>
