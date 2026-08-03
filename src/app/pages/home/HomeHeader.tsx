@@ -86,7 +86,9 @@ export function HomeHeader({
               </NavBtn>
             )}
 
-            <img src="/favicon.png" alt="Logo" className="w-10 h-10 rounded-xl shrink-0 block" />
+            <div className="w-10 h-10 rounded-xl shrink-0 bg-[#e2a9f1] dark:bg-transparent flex items-center justify-center overflow-hidden">
+              <img src="/favicon.png" alt="Logo" className="w-full h-full object-contain" />
+            </div>
 
             <div>
               <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
