@@ -126,6 +126,7 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
   }
 
   /**

@@ -90,7 +90,7 @@ export function HomeHeader({
 
             <div>
               <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                Gerador de Relatórios Operacionais
+                Gerador de Relatórios
               </h1>
             </div>
             {/* Navegação de datas */}

@@ -341,7 +341,7 @@ export function LoginScreen() {
       {/* ── Rodapé ───────────────────────────────────────────────────── */}
       <div className="relative z-10 text-center">
         <p className="text-[11px] text-[#aabbcc] dark:text-gray-600">
-          © {new Date().getFullYear()} Gerador de Relatórios Operacionais
+          © {new Date().getFullYear()} Gerador de Relatórios
         </p>
         <p className="mt-0.5 text-[11px] text-[#aabbcc] dark:text-gray-600">
           Desenvolvido por{" "}

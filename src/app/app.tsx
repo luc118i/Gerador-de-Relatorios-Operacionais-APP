@@ -131,7 +131,7 @@ function AppShell() {
             style={{ color: "#718096" }}
           >
             <p className="text-sm">
-              © {new Date().getFullYear()} Lucas Inacio • Gerador de Relatórios Operacionais
+              © {new Date().getFullYear()} Lucas Inacio • Gerador de Relatórios
             </p>
           </div>
         </footer>
