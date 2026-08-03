@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, MapPin } from "lucide-react";
+import { ChevronDown, MapPin, MapPinPlus } from "lucide-react";
 import { useLocaisSearch } from "../../../features/occurrences/queries/locais/locais.queries";
 import { useDebouncedValue } from "../../../hooks/useDebouncedValue";
 import { inputAceso } from "../DriverPicker/DriverPicker";
+import { LocalCreateModal } from "../LocalCreateModal/LocalCreateModal";
 import type { Local } from "../../../api/locais.api";
 
 interface LocalPickerProps {
@@ -20,6 +21,7 @@ export function LocalPicker({
 }: LocalPickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const debounced = useDebouncedValue(search, 300);
@@ -50,6 +52,17 @@ export function LocalPicker({
 
   return (
     <div className="relative" ref={containerRef}>
+      <LocalCreateModal
+        open={showCreateModal}
+        onOpenChange={setShowCreateModal}
+        initialNome={search}
+        onCreated={(local) => {
+          onChange(local);
+          setIsOpen(false);
+          setSearch("");
+        }}
+      />
+
       <label className="block text-sm font-medium text-slate-700 mb-1">
         Local da Parada {required && <span className="text-red-600">*</span>}
       </label>
@@ -78,7 +91,7 @@ export function LocalPicker({
 
       {isOpen && !disabled && (
         <div className="absolute z-50 w-full mt-2 rounded-xl border border-white/30 bg-white/75 backdrop-blur-xl shadow-xl shadow-black/10 overflow-hidden">
-          <div className="p-2 border-b border-white/20">
+          <div className="p-2 border-b border-white/20 space-y-2">
             <input
               type="text"
               placeholder="Buscar local..."
@@ -90,6 +103,24 @@ export function LocalPicker({
               ].join(" ")}
               autoFocus
             />
+
+            <button
+              type="button"
+              onClick={() => {
+                setIsOpen(false);
+                setShowCreateModal(true);
+              }}
+              className={[
+                "cursor-pointer w-full h-10 px-3 rounded-lg",
+                "flex items-center justify-center gap-2",
+                "bg-white/60 border border-white/30",
+                "hover:bg-white/70",
+                "text-slate-800 font-medium",
+              ].join(" ")}
+            >
+              <MapPinPlus className="w-4 h-4" />
+              Cadastrar local
+            </button>
           </div>
 
           <div className="max-h-72 overflow-y-auto">
