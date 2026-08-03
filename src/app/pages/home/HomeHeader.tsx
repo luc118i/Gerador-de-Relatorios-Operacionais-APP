@@ -86,7 +86,7 @@ export function HomeHeader({
               </NavBtn>
             )}
 
-            <img src="/favicon.svg" alt="Logo" className="w-10 h-10 rounded-xl shrink-0 block" />
+            <img src="/favicon.png" alt="Logo" className="w-10 h-10 rounded-xl shrink-0 block" />
 
             <div>
               <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
