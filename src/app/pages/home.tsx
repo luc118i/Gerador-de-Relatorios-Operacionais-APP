@@ -50,6 +50,7 @@ interface HomeProps {
   onGerarRelatorio: () => void;
   onGerenciarMotoristas: () => void;
   onGerenciarNomes: () => void;
+  onGerenciarBaseResponsaveis: () => void;
   onOpenDrawer: () => void;
 }
 
@@ -58,6 +59,7 @@ export function Home({
   onGerarRelatorio,
   onGerenciarMotoristas,
   onGerenciarNomes,
+  onGerenciarBaseResponsaveis,
   onOpenDrawer,
 }: HomeProps) {
   const queryClient = useQueryClient();
@@ -648,6 +650,7 @@ export function Home({
         onGerarRelatorio={onGerarRelatorio}
         onGerenciarMotoristas={onGerenciarMotoristas}
         onGerenciarNomes={onGerenciarNomes}
+        onGerenciarBaseResponsaveis={onGerenciarBaseResponsaveis}
         onNovaOcorrencia={onNovaOcorrencia}
         onShowAdminLogin={() => setShowAdminLogin(true)}
         logout={logout}

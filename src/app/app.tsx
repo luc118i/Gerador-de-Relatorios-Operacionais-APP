@@ -8,6 +8,7 @@ import { toast, Toaster } from "sonner";
 import { OccurrencePreviewPage } from "./pages/occurrences/preview/OccurrencePreviewPage";
 import { DriversPage } from "./pages/DriversPage";
 import { GerenciarNomesPage } from "./pages/GerenciarNomesPage";
+import { BaseResponsaveisPage } from "./pages/BaseResponsaveisPage";
 import { AdminAuthProvider } from "./context/AdminAuthContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { LoginScreen } from "./components/LoginScreen";
@@ -24,6 +25,7 @@ type Page =
   | "preview-ocorrencia"
   | "motoristas"
   | "gerenciar-nomes"
+  | "base-responsaveis"
   | DrawerPage;
 
 function AppShell() {
@@ -70,6 +72,7 @@ function AppShell() {
               onGerarRelatorio={() => setCurrentPage("relatorio-diario")}
               onGerenciarMotoristas={() => setCurrentPage("motoristas")}
               onGerenciarNomes={() => setCurrentPage("gerenciar-nomes")}
+              onGerenciarBaseResponsaveis={() => setCurrentPage("base-responsaveis")}
               onOpenDrawer={() => setDrawerOpen(true)}
             />
           )}
@@ -103,6 +106,10 @@ function AppShell() {
 
           {currentPage === "gerenciar-nomes" && (
             <GerenciarNomesPage onVoltar={() => setCurrentPage("home")} />
+          )}
+
+          {currentPage === "base-responsaveis" && (
+            <BaseResponsaveisPage onVoltar={() => setCurrentPage("home")} />
           )}
 
           {currentPage === "analise-viagem" && (

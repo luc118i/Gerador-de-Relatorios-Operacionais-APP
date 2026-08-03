@@ -1,5 +1,6 @@
 import {
   BookMarked,
+  Building2,
   ChevronLeft,
   ChevronRight,
   Calendar as CalendarIcon,
@@ -37,6 +38,7 @@ interface HomeHeaderProps {
   onGerarRelatorio: () => void;
   onGerenciarMotoristas: () => void;
   onGerenciarNomes: () => void;
+  onGerenciarBaseResponsaveis: () => void;
   onNovaOcorrencia: () => void;
   onShowAdminLogin: () => void;
   logout: () => void;
@@ -64,6 +66,7 @@ export function HomeHeader({
   onGerarRelatorio,
   onGerenciarMotoristas,
   onGerenciarNomes,
+  onGerenciarBaseResponsaveis,
   onNovaOcorrencia,
   onShowAdminLogin,
   logout,
@@ -209,6 +212,13 @@ export function HomeHeader({
                     >
                       <BookMarked className="w-3.5 h-3.5 shrink-0" />
                       Nomes padronizados
+                    </button>
+                    <button
+                      onClick={onGerenciarBaseResponsaveis}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                    >
+                      <Building2 className="w-3.5 h-3.5 shrink-0" />
+                      Base e Responsáveis
                     </button>
                     <button
                       onClick={logout}
