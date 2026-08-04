@@ -45,6 +45,13 @@ import { ConfirmActionModal } from "./home/ConfirmActionModal";
 import { SubjectGroup } from "./home/SubjectGroup";
 import { OccurrenceCardsView } from "./home/OccurrenceCardsView";
 
+function getSaudacao(): string {
+  const hora = new Date().getHours();
+  if (hora < 12) return "Bom dia";
+  if (hora < 18) return "Boa tarde";
+  return "Boa noite";
+}
+
 interface HomeProps {
   onNovaOcorrencia: () => void;
   onGerarRelatorio: () => void;
@@ -663,9 +670,15 @@ export function Home({
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">
           <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              Ocorrências do Dia
-            </h2>
+            {!isLoading && !isError && ocorrencias.length === 0 ? (
+              <h2 className="text-xl text-gray-900 dark:text-gray-100" style={{ fontFamily: "'Newsreader', serif", fontWeight: 500 }}>
+                {getSaudacao()}{profileName ? `, ${profileName.split(" ")[0]}` : ""}!
+              </h2>
+            ) : (
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                Ocorrências do Dia
+              </h2>
+            )}
             {!isLoading && !isError && ocorrencias.length > 0 && (
               <div className="flex items-center gap-2 flex-wrap">
                 {/* Busca universal */}
@@ -734,13 +747,13 @@ export function Home({
             <p className="text-sm text-red-600 dark:text-red-400">
               Falha ao carregar ocorrências do dia.
             </p>
-          ) : (
+          ) : ocorrencias.length > 0 ? (
             <p className="text-sm text-gray-600 dark:text-gray-400">
               {search.trim()
                 ? `${filteredOcorrencias.length} de ${ocorrencias.length} registro${ocorrencias.length !== 1 ? "s" : ""}`
                 : `${ocorrencias.length} registro${ocorrencias.length !== 1 ? "s" : ""}`}
             </p>
-          )}
+          ) : null}
         </div>
 
         {isError ? (

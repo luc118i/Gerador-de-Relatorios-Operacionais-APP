@@ -104,10 +104,15 @@ export function HomeHeader({
               </button>
             </div>
 
-            <div>
-              <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                Gerador de Relatórios
-              </h1>
+            <div className="leading-none select-none">
+              <p className="text-[11px] font-semibold tracking-[0.15em] text-gray-500 dark:text-gray-400 uppercase mb-0.5">
+                Gerador de
+              </p>
+              <p className="text-xl font-extrabold tracking-[0.2em] uppercase">
+                <span className="bg-blue-600 dark:bg-blue-500 text-white px-1.5 py-0.5">
+                  Relatórios
+                </span>
+              </p>
             </div>
             {/* Navegação de datas */}
             <div ref={calendarRef} className="relative flex items-center gap-1 ml-2">
