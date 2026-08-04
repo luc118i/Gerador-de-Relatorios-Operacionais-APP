@@ -57,9 +57,12 @@ export function EmptyReportScene({
     const timers: number[] = [];
 
     const spawnDoc = () => {
+      const isDark = document.documentElement.classList.contains("dark");
       const el = document.createElement("span");
       el.className = "empty-doc-el absolute";
-      el.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="rgba(80,120,200,0.45)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${
+      el.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="${
+        isDark ? "rgba(140,170,240,0.55)" : "rgba(80,120,200,0.45)"
+      }" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${
         FLOAT_SVGS[docIdx++ % FLOAT_SVGS.length]
       }</svg>`;
       el.style.left = 6 + Math.round(Math.random() * 88) + "%";
@@ -70,15 +73,18 @@ export function EmptyReportScene({
     };
 
     const spawnBadge = () => {
+      const isDark = document.documentElement.classList.contains("dark");
       const el = document.createElement("span");
       el.className =
         "empty-badge-el absolute whitespace-nowrap text-[10px] font-semibold px-2 py-0.5 rounded-full";
       el.textContent = BADGES[badgeIdx++ % BADGES.length]!;
       el.style.left = 8 + Math.round(Math.random() * 74) + "%";
       el.style.bottom = 22 + Math.round(Math.random() * 48) + "%";
-      el.style.background = "rgba(235,240,255,0.9)";
-      el.style.color = "#4466bb";
-      el.style.border = "0.5px solid rgba(80,120,200,0.25)";
+      el.style.background = isDark ? "rgba(30,41,59,0.85)" : "rgba(235,240,255,0.9)";
+      el.style.color = isDark ? "#8fb0f0" : "#4466bb";
+      el.style.border = isDark
+        ? "0.5px solid rgba(140,170,240,0.3)"
+        : "0.5px solid rgba(80,120,200,0.25)";
       el.style.setProperty("--dur", (2.0 + Math.random() * 0.8).toFixed(2) + "s");
       layer.appendChild(el);
       window.setTimeout(() => el.remove(), 3000);
@@ -95,22 +101,22 @@ export function EmptyReportScene({
 
   return (
     <div
-      className={`relative overflow-hidden rounded-2xl border border-sky-500/20 bg-[#f4f6fb] min-h-[260px] ${className}`}
+      className={`relative overflow-hidden rounded-2xl border border-sky-500/20 dark:border-sky-400/20 bg-[#f4f6fb] dark:bg-gray-900 min-h-[260px] ${className}`}
     >
       {/* Grade de telemetria */}
       <div className="pointer-events-none absolute inset-0" aria-hidden>
         {[25, 50, 75].map((t) => (
-          <div key={`h${t}`} className="absolute left-0 right-0 border-t border-sky-500/[0.07]" style={{ top: `${t}%` }} />
+          <div key={`h${t}`} className="absolute left-0 right-0 border-t border-sky-500/[0.07] dark:border-sky-400/[0.12]" style={{ top: `${t}%` }} />
         ))}
         {[20, 40, 60, 80].map((l) => (
-          <div key={`v${l}`} className="absolute top-0 bottom-0 border-l border-sky-500/[0.07]" style={{ left: `${l}%` }} />
+          <div key={`v${l}`} className="absolute top-0 bottom-0 border-l border-sky-500/[0.07] dark:border-sky-400/[0.12]" style={{ left: `${l}%` }} />
         ))}
 
         {/* Linhas animadas (esqueleto de relatório) */}
         {LINES.map((ln, i) => (
           <div
             key={i}
-            className="empty-line absolute h-0.5 rounded-sm overflow-hidden bg-sky-500/15"
+            className="empty-line absolute h-0.5 rounded-sm overflow-hidden bg-sky-500/15 dark:bg-sky-400/25"
             style={{ ...ln.pos, "--dur": ln.dur, "--delay": ln.delay } as React.CSSProperties}
           />
         ))}
@@ -121,17 +127,17 @@ export function EmptyReportScene({
 
       {/* Centro: ícone com órbita + pulsos */}
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-2.5 pointer-events-none">
-        <div className="relative flex w-[54px] h-[54px] items-center justify-center rounded-full border-[1.5px] border-sky-600/20 bg-white/70">
-          <span className="empty-pulse-ring absolute left-1/2 top-1/2 w-[54px] h-[54px] rounded-full border border-sky-600/30" />
-          <span className="empty-pulse-ring absolute left-1/2 top-1/2 w-[54px] h-[54px] rounded-full border border-sky-600/30" style={{ animationDelay: "1s" }} />
-          <span className="empty-pulse-ring absolute left-1/2 top-1/2 w-[54px] h-[54px] rounded-full border border-sky-600/30" style={{ animationDelay: "2s" }} />
-          <span className="empty-orbit absolute left-1/2 top-1/2 w-[72px] h-[72px] rounded-full border border-dashed border-sky-600/20">
-            <span className="absolute left-1/2 -top-[2.5px] -translate-x-1/2 w-[5px] h-[5px] rounded-full bg-sky-600/50" />
+        <div className="relative flex w-[54px] h-[54px] items-center justify-center rounded-full border-[1.5px] border-sky-600/20 dark:border-sky-400/30 bg-white/70 dark:bg-gray-800/70">
+          <span className="empty-pulse-ring absolute left-1/2 top-1/2 w-[54px] h-[54px] rounded-full border border-sky-600/30 dark:border-sky-400/40" />
+          <span className="empty-pulse-ring absolute left-1/2 top-1/2 w-[54px] h-[54px] rounded-full border border-sky-600/30 dark:border-sky-400/40" style={{ animationDelay: "1s" }} />
+          <span className="empty-pulse-ring absolute left-1/2 top-1/2 w-[54px] h-[54px] rounded-full border border-sky-600/30 dark:border-sky-400/40" style={{ animationDelay: "2s" }} />
+          <span className="empty-orbit absolute left-1/2 top-1/2 w-[72px] h-[72px] rounded-full border border-dashed border-sky-600/20 dark:border-sky-400/30">
+            <span className="absolute left-1/2 -top-[2.5px] -translate-x-1/2 w-[5px] h-[5px] rounded-full bg-sky-600/50 dark:bg-sky-400/60" />
           </span>
-          <FileBarChart className="w-6 h-6 text-sky-600" />
+          <FileBarChart className="w-6 h-6 text-sky-600 dark:text-sky-400" />
         </div>
         <div className="text-[17px] font-semibold text-slate-600 dark:text-slate-400">Gerador de relatório</div>
-        <div className="text-xs uppercase tracking-wider text-slate-400">{subtitle}</div>
+        <div className="text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500">{subtitle}</div>
       </div>
     </div>
   );
