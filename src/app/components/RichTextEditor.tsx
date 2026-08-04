@@ -153,7 +153,7 @@ export function RichTextEditor({
           <UnderlineIcon className="w-4 h-4" />
         </ToolbarBtn>
 
-        <div className="w-px h-4 bg-gray-300 mx-1" />
+        <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mx-1" />
 
         <ToolbarBtn
           title="Lista"
@@ -163,7 +163,7 @@ export function RichTextEditor({
           <List className="w-4 h-4" />
         </ToolbarBtn>
 
-        <div className="w-px h-4 bg-gray-300 mx-1" />
+        <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mx-1" />
 
         {/* Seletor de cor de texto */}
         <div className="relative" ref={colorPickerRef}>
@@ -177,12 +177,12 @@ export function RichTextEditor({
             className="flex flex-col items-center p-1.5 rounded transition-colors text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-800 dark:hover:text-gray-200"
           >
             {/* Ícone "A" com barra de cor embaixo */}
-            <span className="text-xs font-bold leading-none" style={{ color: activeColor || "#111111" }}>
+            <span className="text-xs font-bold leading-none" style={{ color: activeColor || "currentColor" }}>
               A
             </span>
             <span
               className="block w-4 h-1 rounded-sm mt-0.5"
-              style={{ backgroundColor: activeColor || "#111111" }}
+              style={{ backgroundColor: activeColor || "currentColor" }}
             />
           </button>
 

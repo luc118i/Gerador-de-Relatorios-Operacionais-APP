@@ -21,7 +21,7 @@ const OPTIONS: Option[] = [
     title: "Advertência",
     description: "Registra no RIZER e busca a medida disciplinar no Drive.",
     color: "text-amber-600 dark:text-amber-400",
-    border: "border-amber-400",
+    border: "border-amber-400 dark:border-amber-700",
     bg: "bg-amber-50 dark:bg-amber-950/40",
   },
   {
@@ -30,7 +30,7 @@ const OPTIONS: Option[] = [
     title: "Suspensão",
     description: "Registra no RIZER sem buscar medida no Drive.",
     color: "text-red-600 dark:text-red-400",
-    border: "border-red-400",
+    border: "border-red-400 dark:border-red-700",
     bg: "bg-red-50 dark:bg-red-950/40",
   },
   {
@@ -39,7 +39,7 @@ const OPTIONS: Option[] = [
     title: "Apenas registrar",
     description: "Registra a ocorrência no RIZER sem nenhuma medida disciplinar.",
     color: "text-slate-600 dark:text-slate-400",
-    border: "border-slate-400",
+    border: "border-slate-400 dark:border-slate-700",
     bg: "bg-slate-50 dark:bg-slate-950/40",
   },
 ];

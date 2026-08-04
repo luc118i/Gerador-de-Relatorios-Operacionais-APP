@@ -664,12 +664,12 @@ export function OccurrencePreviewPage(props: {
               <div className="rounded-lg border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/40 p-4 space-y-3">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-violet-400 animate-pulse" />
-                  <span className="text-sm font-semibold text-violet-400">Gerando texto...</span>
+                  <span className="text-sm font-semibold text-violet-400 dark:text-violet-300">Gerando texto...</span>
                 </div>
                 <div className="space-y-2 animate-pulse">
-                  <div className="h-3 bg-violet-200 rounded-full w-full" />
-                  <div className="h-3 bg-violet-200 rounded-full w-5/6" />
-                  <div className="h-3 bg-violet-200 rounded-full w-4/6" />
+                  <div className="h-3 bg-violet-200 dark:bg-violet-800/60 rounded-full w-full" />
+                  <div className="h-3 bg-violet-200 dark:bg-violet-800/60 rounded-full w-5/6" />
+                  <div className="h-3 bg-violet-200 dark:bg-violet-800/60 rounded-full w-4/6" />
                 </div>
               </div>
             ) : (

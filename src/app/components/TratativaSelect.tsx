@@ -94,7 +94,7 @@ export function TratativaSelect({
             : "bg-gray-50 dark:bg-gray-950 text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800"
         }`}
       >
-        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${opt ? opt.dot : "bg-gray-300"}`} />
+        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${opt ? opt.dot : "bg-gray-300 dark:bg-gray-700"}`} />
         {opt ? opt.label : "Sem tratativa"}
         <ChevronDown className={`w-3 h-3 opacity-40 ml-0.5 transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
       </button>
@@ -118,7 +118,7 @@ export function TratativaSelect({
               onClick={() => { onChange(null); setOpen(false); }}
               className="w-full px-3 py-2 flex items-center gap-2.5 text-xs hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-left group"
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-gray-300 shrink-0" />
+              <span className="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-gray-700 shrink-0" />
               <span className="text-gray-400 dark:text-gray-500 font-medium flex-1">Sem tratativa</span>
               {value === null && <Check className="w-3 h-3 text-gray-400 dark:text-gray-500 shrink-0" />}
             </button>

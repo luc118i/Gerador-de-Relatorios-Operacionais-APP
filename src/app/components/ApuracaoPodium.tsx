@@ -92,15 +92,18 @@ export function ApuracaoPodium({
     };
 
     const spawnChip = () => {
+      const isDark = document.documentElement.classList.contains("dark");
       const el = document.createElement("span");
       el.className =
         "podium-chip-el absolute text-[10px] font-semibold px-2 py-0.5 rounded-full";
       el.textContent = CHIP_TEXTS[chipIdx++ % CHIP_TEXTS.length]!;
       el.style.left = 14 + Math.round(Math.random() * 70) + "%";
       el.style.bottom = 36 + Math.round(Math.random() * 34) + "%";
-      el.style.background = "rgba(245,184,0,0.15)";
-      el.style.color = "#a07800";
-      el.style.border = "0.5px solid rgba(245,184,0,0.4)";
+      el.style.background = isDark ? "rgba(245,184,0,0.18)" : "rgba(245,184,0,0.15)";
+      el.style.color = isDark ? "#f0c14b" : "#a07800";
+      el.style.border = isDark
+        ? "0.5px solid rgba(245,184,0,0.5)"
+        : "0.5px solid rgba(245,184,0,0.4)";
       el.style.setProperty("--dur", (1.6 + Math.random() * 0.9).toFixed(2) + "s");
       layer.appendChild(el);
       window.setTimeout(() => el.remove(), 2700);
@@ -154,7 +157,7 @@ export function ApuracaoPodium({
 
   return (
     <div
-      className={`relative overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-[#f0f4fa] p-5 min-h-[260px] ${className}`}
+      className={`relative overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-[#f0f4fa] dark:bg-gray-900 p-5 min-h-[260px] ${className}`}
     >
       {/* ── Fundo "vivo" — BI de apuração passando atrás ──────────────────── */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
@@ -179,7 +182,7 @@ export function ApuracaoPodium({
               <span
                 key={i}
                 className={`mx-4 text-[11px] font-semibold uppercase tracking-wider ${
-                  t.includes("%") || t.includes("AO VIVO") ? "text-sky-500/70" : "text-slate-400/70"
+                  t.includes("%") || t.includes("AO VIVO") ? "text-sky-500/70 dark:text-sky-400/70" : "text-slate-400/70 dark:text-slate-500/70"
                 }`}
               >
                 {t}
@@ -210,11 +213,11 @@ export function ApuracaoPodium({
             <span className="podium-live absolute inset-0 rounded-full bg-rose-500" />
             <span className="relative w-2 h-2 rounded-full bg-rose-500" />
           </span>
-          <ClipboardCheck className="w-4 h-4 text-slate-400" />
-          <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+          <ClipboardCheck className="w-4 h-4 text-slate-400 dark:text-slate-500" />
+          <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
             Pódio de apuração
           </h3>
-          <span className="ml-auto text-[11px] font-semibold text-sky-600 tabular-nums">
+          <span className="ml-auto text-[11px] font-semibold text-sky-600 dark:text-sky-400 tabular-nums">
             {pct}% apurado
           </span>
         </div>
@@ -233,7 +236,7 @@ export function ApuracaoPodium({
                 <div className={`text-2xl font-black tabular-nums leading-none mt-0.5 ${s.votes}`}>
                   {e.count}
                 </div>
-                <div className="text-[10px] text-slate-400 mb-1.5">apurações</div>
+                <div className="text-[10px] text-slate-400 dark:text-slate-500 mb-1.5">apurações</div>
                 <div
                   className={`w-full ${s.height} ${s.block} rounded-t-lg flex items-start justify-center pt-2 shadow-inner`}
                 >

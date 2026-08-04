@@ -223,7 +223,7 @@ export function LoginScreen() {
         {floatBadges.map((b, i) => (
           <div
             key={`fb${i}`}
-            className="ls-anim absolute rounded-full border border-[rgba(80,120,210,0.2)] bg-[rgba(220,230,255,0.85)] px-2 py-0.5 text-[10px] font-semibold text-[#3a5fbb] whitespace-nowrap"
+            className="ls-anim absolute rounded-full border border-[rgba(80,120,210,0.2)] dark:border-[rgba(140,170,240,0.3)] bg-[rgba(220,230,255,0.85)] dark:bg-[rgba(30,45,80,0.85)] px-2 py-0.5 text-[10px] font-semibold text-[#3a5fbb] dark:text-[#8fb0f0] whitespace-nowrap"
             style={{
               left: `${b.left}%`,
               bottom: `${b.bottom}%`,
@@ -250,7 +250,7 @@ export function LoginScreen() {
       </div>
 
       {/* ── Card ─────────────────────────────────────────────────────── */}
-      <div className="relative z-10 w-full max-w-[340px] rounded-2xl bg-white dark:bg-gray-900 dark:bg-[#111a2e] px-8 pt-9 pb-8 shadow-[0_2px_24px_rgba(60,100,200,0.10),0_0.5px_2px_rgba(60,100,200,0.10)]">
+      <div className="relative z-10 w-full max-w-[340px] rounded-2xl bg-white dark:bg-[#111a2e] px-8 pt-9 pb-8 shadow-[0_2px_24px_rgba(60,100,200,0.10),0_0.5px_2px_rgba(60,100,200,0.10)]">
         <div className="flex justify-center mb-2">
           <div className="relative flex h-[52px] w-[52px] items-center justify-center rounded-2xl bg-[#eef3ff] dark:bg-[#1c2b4a]">
             {/* Anéis de pulso */}
