@@ -28,7 +28,7 @@ function FolderInput({
 }) {
   return (
     <div>
-      <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+      <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
         {label} <span className="text-red-400">*</span>
       </label>
       <input
@@ -36,14 +36,14 @@ function FolderInput({
         placeholder="Cole o link da pasta do Google Drive"
         value={urlValue}
         onChange={(e) => onUrlChange(e.target.value)}
-        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
       />
       <input
         type="text"
         placeholder="Nome da pasta (opcional)"
         value={nameValue}
         onChange={(e) => onNameChange(e.target.value)}
-        className="w-full mt-1.5 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        className="w-full mt-1.5 px-3 py-2 text-sm border border-gray-200 dark:border-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
       />
     </div>
   );
@@ -80,23 +80,23 @@ export function AutomationFoldersModal({ current, onConfirm, onClose }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative bg-white rounded-xl shadow-2xl p-6 w-full max-w-md mx-4">
+      <div className="relative bg-white dark:bg-gray-900 rounded-xl shadow-2xl p-6 w-full max-w-md mx-4">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-blue-50">
-              <FolderOpen className="w-4 h-4 text-blue-600" />
+            <div className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/40">
+              <FolderOpen className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             </div>
-            <h3 className="text-base font-semibold text-gray-900">Configurar pastas do Drive</h3>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">Configurar pastas do Drive</h3>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded text-gray-400 hover:text-gray-600 transition-colors"
+            className="p-1 rounded text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <p className="text-xs text-gray-500 mb-4">
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
           Cole o link das pastas do Google Drive. A configuração fica salva para as próximas ações.
         </p>
 
@@ -120,7 +120,7 @@ export function AutomationFoldersModal({ current, onConfirm, onClose }: Props) {
         <div className="flex gap-3 justify-end mt-5">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
+            className="px-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
             Cancelar
           </button>

@@ -19,8 +19,8 @@ const KIND_META: Record<AgentJobKind, { label: string; verb: string; icon: typeo
     icon: Gavel,
     accent: "bg-orange-500",
     bar: "bg-orange-500",
-    text: "text-orange-700",
-    ring: "border-orange-200",
+    text: "text-orange-700 dark:text-orange-400",
+    ring: "border-orange-200 dark:border-orange-800",
   },
   tratativa: {
     label: "Enviando tratativas",
@@ -28,8 +28,8 @@ const KIND_META: Record<AgentJobKind, { label: string; verb: string; icon: typeo
     icon: AlertTriangle,
     accent: "bg-amber-500",
     bar: "bg-amber-500",
-    text: "text-amber-700",
-    ring: "border-amber-200",
+    text: "text-amber-700 dark:text-amber-400",
+    ring: "border-amber-200 dark:border-amber-800",
   },
   revisar: {
     label: "Revisando no RIZER",
@@ -37,8 +37,8 @@ const KIND_META: Record<AgentJobKind, { label: string; verb: string; icon: typeo
     icon: RefreshCw,
     accent: "bg-emerald-500",
     bar: "bg-emerald-500",
-    text: "text-emerald-700",
-    ring: "border-emerald-200",
+    text: "text-emerald-700 dark:text-emerald-400",
+    ring: "border-emerald-200 dark:border-emerald-800",
   },
 };
 
@@ -56,7 +56,7 @@ export function AgentProgressDock({ jobs }: { jobs: AgentJob[] }) {
 
   return (
     <div className="fixed bottom-4 right-4 z-[70] w-[330px] max-w-[calc(100vw-2rem)] select-none">
-      <div className="rounded-xl bg-white shadow-2xl border border-gray-200 overflow-hidden">
+      <div className="rounded-xl bg-white dark:bg-gray-900 shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
         {/* Cabeçalho */}
         <button
           type="button"
@@ -71,7 +71,7 @@ export function AgentProgressDock({ jobs }: { jobs: AgentJob[] }) {
           <span className="text-sm font-semibold flex-1 text-left">
             Agente em execução
             {activeCount > 1 && (
-              <span className="ml-1 text-xs font-normal text-gray-300">({activeCount} tarefas)</span>
+              <span className="ml-1 text-xs font-normal text-gray-300 dark:text-gray-600">({activeCount} tarefas)</span>
             )}
           </span>
           {minimized ? <ChevronUp className="w-4 h-4 shrink-0" /> : <ChevronDown className="w-4 h-4 shrink-0" />}
@@ -103,7 +103,7 @@ function JobRow({ job }: { job: AgentJob }) {
         <span className={`text-xs font-semibold ${meta.text} flex-1 truncate`}>
           {job.cancelRequested ? "Cancelando após item atual…" : meta.label}
         </span>
-        <span className="text-xs font-bold text-gray-700 tabular-nums shrink-0">
+        <span className="text-xs font-bold text-gray-700 dark:text-gray-300 tabular-nums shrink-0">
           {job.doneCount}/{job.total}
         </span>
         {!job.cancelRequested && !done && (
@@ -111,7 +111,7 @@ function JobRow({ job }: { job: AgentJob }) {
             type="button"
             onClick={job.onCancel}
             title="Cancelar"
-            className="cursor-pointer p-0.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors shrink-0"
+            className="cursor-pointer p-0.5 rounded text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors shrink-0"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -119,12 +119,12 @@ function JobRow({ job }: { job: AgentJob }) {
       </div>
 
       {/* Assunto */}
-      <p className="text-[11px] text-gray-500 truncate mb-2" title={job.subject}>
+      <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate mb-2" title={job.subject}>
         {job.subject}
       </p>
 
       {/* Barra de progresso */}
-      <div className="h-1.5 w-full rounded-full bg-gray-100 overflow-hidden">
+      <div className="h-1.5 w-full rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
         <div
           className={`h-full rounded-full transition-all duration-300 ${meta.bar}`}
           style={{ width: `${pct}%` }}
@@ -136,14 +136,14 @@ function JobRow({ job }: { job: AgentJob }) {
         {done ? (
           <>
             <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
-            <span className="text-[10px] font-medium text-emerald-600">
+            <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
               {job.total} {meta.verb}
             </span>
           </>
         ) : (
           <>
             <Loader2 className={`w-3 h-3 animate-spin shrink-0 ${meta.text}`} />
-            <span className="text-[10px] text-gray-400">{pct}% concluído</span>
+            <span className="text-[10px] text-gray-400 dark:text-gray-500">{pct}% concluído</span>
           </>
         )}
       </div>

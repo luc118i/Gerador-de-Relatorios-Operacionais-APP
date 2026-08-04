@@ -89,21 +89,21 @@ export function BaseResponsaveisPage({ onVoltar }: BaseResponsaveisPageProps) {
   }
 
   const inputBase =
-    "px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500";
+    "px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500";
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+      <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-4">
           <button
             onClick={onVoltar}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
           >
-            <ArrowLeft className="w-5 h-5 text-gray-600" />
+            <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
           </button>
           <div>
-            <h1 className="text-xl font-semibold text-gray-900">Base e Responsáveis</h1>
-            <p className="text-sm text-gray-500">
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Base e Responsáveis</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               Gerencie o responsável e a visibilidade (cidade) de cada base operacional
             </p>
           </div>
@@ -112,8 +112,8 @@ export function BaseResponsaveisPage({ onVoltar }: BaseResponsaveisPageProps) {
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
         {/* Adicionar nova base */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h2 className="text-sm font-semibold text-gray-700 mb-3">Adicionar nova base</h2>
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Adicionar nova base</h2>
           <div className="grid grid-cols-1 sm:grid-cols-[120px_1fr_1fr_auto] gap-2">
             <input
               type="text"
@@ -155,26 +155,26 @@ export function BaseResponsaveisPage({ onVoltar }: BaseResponsaveisPageProps) {
         </div>
 
         {/* Lista */}
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-700">Bases cadastradas</h2>
-            <span className="text-xs text-gray-400">{bases.length} base(s)</span>
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+          <div className="px-5 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Bases cadastradas</h2>
+            <span className="text-xs text-gray-400 dark:text-gray-500">{bases.length} base(s)</span>
           </div>
 
           {isLoading ? (
-            <div className="flex items-center justify-center py-12 text-gray-400">
+            <div className="flex items-center justify-center py-12 text-gray-400 dark:text-gray-500">
               <Loader2 className="w-5 h-5 animate-spin mr-2" />
               Carregando...
             </div>
           ) : bases.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-gray-400 gap-2">
+            <div className="flex flex-col items-center justify-center py-12 text-gray-400 dark:text-gray-500 gap-2">
               <AlertCircle className="w-8 h-8" />
               <p className="text-sm">Nenhuma base cadastrada ainda.</p>
             </div>
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs text-gray-400 uppercase tracking-wide border-b border-gray-100">
+                <tr className="text-left text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide border-b border-gray-100 dark:border-gray-800">
                   <th className="px-5 py-2 font-medium">Sigla</th>
                   <th className="px-5 py-2 font-medium">Responsável</th>
                   <th className="px-5 py-2 font-medium">Visibilidade</th>
@@ -185,8 +185,8 @@ export function BaseResponsaveisPage({ onVoltar }: BaseResponsaveisPageProps) {
                 {bases.map((base) => {
                   const isEditing = editingSigla === base.sigla;
                   return (
-                    <tr key={base.sigla} className="group hover:bg-gray-50">
-                      <td className="px-5 py-2.5 font-semibold text-gray-800">{base.sigla}</td>
+                    <tr key={base.sigla} className="group hover:bg-gray-50 dark:hover:bg-gray-800">
+                      <td className="px-5 py-2.5 font-semibold text-gray-800 dark:text-gray-200">{base.sigla}</td>
                       <td className="px-5 py-2.5">
                         {isEditing ? (
                           <input
@@ -197,7 +197,7 @@ export function BaseResponsaveisPage({ onVoltar }: BaseResponsaveisPageProps) {
                             autoFocus
                           />
                         ) : (
-                          <span className="text-gray-700">{base.responsavel}</span>
+                          <span className="text-gray-700 dark:text-gray-300">{base.responsavel}</span>
                         )}
                       </td>
                       <td className="px-5 py-2.5">
@@ -210,7 +210,7 @@ export function BaseResponsaveisPage({ onVoltar }: BaseResponsaveisPageProps) {
                             className={`${inputBase} w-full`}
                           />
                         ) : (
-                          <span className="text-gray-500">{base.visibilidade}</span>
+                          <span className="text-gray-500 dark:text-gray-400">{base.visibilidade}</span>
                         )}
                       </td>
                       <td className="px-5 py-2.5">
@@ -220,7 +220,7 @@ export function BaseResponsaveisPage({ onVoltar }: BaseResponsaveisPageProps) {
                               <button
                                 onClick={() => saveEdit(base.sigla)}
                                 disabled={updateMutation.isPending}
-                                className="p-1.5 text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50 rounded transition-colors"
+                                className="p-1.5 text-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded transition-colors"
                                 title="Salvar"
                               >
                                 {updateMutation.isPending ? (
@@ -231,7 +231,7 @@ export function BaseResponsaveisPage({ onVoltar }: BaseResponsaveisPageProps) {
                               </button>
                               <button
                                 onClick={() => setEditingSigla(null)}
-                                className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                                className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
                                 title="Cancelar"
                               >
                                 <X className="w-4 h-4" />
@@ -241,7 +241,7 @@ export function BaseResponsaveisPage({ onVoltar }: BaseResponsaveisPageProps) {
                             <>
                               <button
                                 onClick={() => startEdit(base)}
-                                className="p-1.5 text-gray-300 hover:text-blue-500 hover:bg-blue-50 rounded transition-colors opacity-0 group-hover:opacity-100"
+                                className="p-1.5 text-gray-300 dark:text-gray-600 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded transition-colors opacity-0 group-hover:opacity-100"
                                 title="Editar"
                               >
                                 <Pencil className="w-4 h-4" />
@@ -249,7 +249,7 @@ export function BaseResponsaveisPage({ onVoltar }: BaseResponsaveisPageProps) {
                               <button
                                 onClick={() => deleteMutation.mutate(base.sigla)}
                                 disabled={deleteMutation.isPending}
-                                className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded transition-colors opacity-0 group-hover:opacity-100"
+                                className="p-1.5 text-gray-300 dark:text-gray-600 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded transition-colors opacity-0 group-hover:opacity-100"
                                 title="Remover"
                               >
                                 <Trash2 className="w-4 h-4" />

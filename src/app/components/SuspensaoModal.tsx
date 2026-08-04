@@ -145,12 +145,12 @@ export function SuspensaoModal({ occurrence, onClose, onSuspensaoGerada }: Suspe
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-sm mx-4 p-6">
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-sm mx-4 p-6">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-base font-semibold text-gray-900">Gerar Suspensão Disciplinar</h2>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Gerar Suspensão Disciplinar</h2>
           <button
             onClick={onClose}
-            className="p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+            className="p-1 rounded text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -158,15 +158,15 @@ export function SuspensaoModal({ occurrence, onClose, onSuspensaoGerada }: Suspe
 
         {/* Aviso: suspensão já registrada (vinda do banco) */}
         {existingSuspensao && !geradoInfo && (
-          <div className="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200">
-            <p className="text-xs font-medium text-amber-800 mb-2">
+          <div className="mb-4 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800">
+            <p className="text-xs font-medium text-amber-800 dark:text-amber-400 mb-2">
               Suspensão registrada: {existingSuspensao.dias} dia(s) a partir de{" "}
               {fmtDdMm(existingSuspensao.dataInicio)}
             </p>
             <button
               onClick={handleBaixarSalvo}
               disabled={loadingBaixar}
-              className="w-full flex items-center justify-center gap-2 py-1.5 text-xs text-amber-700 border border-amber-300 bg-white rounded-md hover:bg-amber-50 transition-colors disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 py-1.5 text-xs text-amber-700 dark:text-amber-400 border border-amber-300 bg-white dark:bg-gray-900 rounded-md hover:bg-amber-50 dark:hover:bg-amber-950/40 transition-colors disabled:opacity-50"
             >
               {loadingBaixar ? (
                 <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Baixando...</>
@@ -179,16 +179,16 @@ export function SuspensaoModal({ occurrence, onClose, onSuspensaoGerada }: Suspe
 
         {/* Aviso: recém gerado — botão de copiar mensagem */}
         {geradoInfo && (
-          <div className="mb-4 p-3 rounded-lg bg-green-50 border border-green-200">
-            <p className="text-xs font-medium text-green-800 mb-2">
+          <div className="mb-4 p-3 rounded-lg bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800">
+            <p className="text-xs font-medium text-green-800 dark:text-green-400 mb-2">
               PDF gerado: {geradoInfo.dias} dia(s) a partir de {fmtDdMm(geradoInfo.dataInicio)}
             </p>
             <button
               onClick={handleCopiarMensagem}
               className={`w-full flex items-center justify-center gap-2 py-1.5 text-xs border rounded-md transition-colors ${
                 copied
-                  ? "text-green-700 border-green-400 bg-green-100"
-                  : "text-green-700 border-green-300 bg-white hover:bg-green-50"
+                  ? "text-green-700 dark:text-green-400 border-green-400 bg-green-100 dark:bg-green-950/40"
+                  : "text-green-700 dark:text-green-400 border-green-300 bg-white dark:bg-gray-900 hover:bg-green-50 dark:hover:bg-green-950/40"
               }`}
             >
               {copied ? (
@@ -207,8 +207,8 @@ export function SuspensaoModal({ occurrence, onClose, onSuspensaoGerada }: Suspe
               onClick={handleCopiarMensagem}
               className={`w-full flex items-center justify-center gap-2 py-1.5 text-xs border rounded-md transition-colors ${
                 copied
-                  ? "text-green-700 border-green-300 bg-green-50"
-                  : "text-gray-500 border-gray-200 hover:text-green-700 hover:border-green-300 hover:bg-green-50"
+                  ? "text-green-700 dark:text-green-400 border-green-300 bg-green-50 dark:bg-green-950/40"
+                  : "text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-800 hover:text-green-700 dark:hover:text-green-400 hover:border-green-300 hover:bg-green-50 dark:hover:bg-green-950/40"
               }`}
             >
               {copied ? (
@@ -222,19 +222,19 @@ export function SuspensaoModal({ occurrence, onClose, onSuspensaoGerada }: Suspe
 
         <div className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
               Data de início da suspensão
             </label>
             <input
               type="date"
               value={dataInicio}
               onChange={(e) => setDataInicio(e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-gray-300 dark:border-gray-700 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
               Quantidade de dias
             </label>
             <input
@@ -243,7 +243,7 @@ export function SuspensaoModal({ occurrence, onClose, onSuspensaoGerada }: Suspe
               max={30}
               value={quantidadeDias}
               onChange={(e) => setQuantidadeDias(Number(e.target.value))}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-gray-300 dark:border-gray-700 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
         </div>
@@ -252,7 +252,7 @@ export function SuspensaoModal({ occurrence, onClose, onSuspensaoGerada }: Suspe
           <button
             onClick={onClose}
             disabled={loading}
-            className="flex-1 py-2 text-sm text-gray-600 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50"
+            className="flex-1 py-2 text-sm text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-800 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
           >
             {geradoInfo ? "Fechar" : "Cancelar"}
           </button>

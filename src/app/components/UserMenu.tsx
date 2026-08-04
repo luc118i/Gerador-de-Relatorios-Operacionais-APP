@@ -103,7 +103,7 @@ export function UserMenu() {
                 <button
                   onClick={() => void save()}
                   disabled={saving}
-                  className="cursor-pointer p-1.5 rounded-lg text-green-600 hover:bg-green-50 disabled:opacity-50 transition-colors shrink-0"
+                  className="cursor-pointer p-1.5 rounded-lg text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-950/40 disabled:opacity-50 transition-colors shrink-0"
                   aria-label="Salvar nome"
                 >
                   {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
@@ -111,7 +111,7 @@ export function UserMenu() {
                 <button
                   onClick={() => setEditing(false)}
                   disabled={saving}
-                  className="cursor-pointer p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50 transition-colors shrink-0"
+                  className="cursor-pointer p-1.5 rounded-lg text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50 transition-colors shrink-0"
                   aria-label="Cancelar"
                 >
                   <X className="w-4 h-4" />
@@ -125,7 +125,7 @@ export function UserMenu() {
                 </div>
                 <button
                   onClick={startEdit}
-                  className="cursor-pointer p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:text-gray-200 dark:hover:bg-gray-800 transition-colors shrink-0"
+                  className="cursor-pointer p-1.5 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 hover:bg-gray-100 dark:hover:text-gray-200 dark:hover:bg-gray-800 transition-colors shrink-0"
                   aria-label="Editar nome"
                   title="Editar seu nome"
                 >

@@ -55,16 +55,16 @@ export function ComposicaoRelatorio({
 
   return (
     <section className="animate-in fade-in slide-in-from-top-2 duration-300">
-      <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-200">
+      <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-200 dark:border-gray-800">
         <div>
-          <h2 className="text-base font-semibold text-gray-900">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
             Composição do Relatório
           </h2>
-          <p className="text-xs text-gray-500 mt-0.5">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
             Defina quais blocos aparecerão no PDF gerado
           </p>
         </div>
-        <span className="text-xs text-gray-400 font-medium tabular-nums">
+        <span className="text-xs text-gray-400 dark:text-gray-500 font-medium tabular-nums">
           {activeCount} / 5 seções ativas
         </span>
       </div>
@@ -74,19 +74,19 @@ export function ComposicaoRelatorio({
             key={label}
             className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all duration-200 ${
               value
-                ? "border-orange-200 bg-orange-50/50"
-                : "border-gray-200 bg-gray-50 opacity-60"
+                ? "border-orange-200 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-950/40"
+                : "border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 opacity-60"
             }`}
           >
             <div>
-              <p className="text-sm font-medium text-gray-800">{label}</p>
-              <p className="text-xs text-gray-500">{sub}</p>
+              <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{label}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{sub}</p>
             </div>
             <input
               type="checkbox"
               checked={value}
               onChange={(e) => onChange(e.target.checked)}
-              className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-400 cursor-pointer ml-4 flex-shrink-0"
+              className="w-4 h-4 rounded border-gray-300 dark:border-gray-700 text-orange-500 focus:ring-orange-400 cursor-pointer ml-4 flex-shrink-0"
             />
           </label>
         ))}

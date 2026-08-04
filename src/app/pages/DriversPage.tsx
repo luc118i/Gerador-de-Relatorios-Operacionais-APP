@@ -90,13 +90,13 @@ export function DriversPage({ onVoltar }: DriversPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+      <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-semibold text-gray-900">Motoristas</h1>
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Motoristas</h1>
           <button
             onClick={onVoltar}
-            className="cursor-pointer text-sm px-3 py-1 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100"
+            className="cursor-pointer text-sm px-3 py-1 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
           >
             Voltar
           </button>
@@ -110,7 +110,7 @@ export function DriversPage({ onVoltar }: DriversPageProps) {
             placeholder="Buscar por código ou nome..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
 
           <button
@@ -123,25 +123,25 @@ export function DriversPage({ onVoltar }: DriversPageProps) {
         </div>
 
         {isLoading ? (
-          <p className="text-sm text-gray-600">Carregando motoristas…</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">Carregando motoristas…</p>
         ) : isError ? (
-          <p className="text-sm text-red-600">
+          <p className="text-sm text-red-600 dark:text-red-400">
             Falha ao carregar motoristas. Tente novamente.
           </p>
         ) : drivers.length === 0 ? (
-          <p className="text-sm text-gray-600">Nenhum motorista encontrado.</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">Nenhum motorista encontrado.</p>
         ) : (
-          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
             <table className="min-w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-gray-50 dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800">
                 <tr>
-                  <th className="text-left px-4 py-2 font-medium text-gray-700">
+                  <th className="text-left px-4 py-2 font-medium text-gray-700 dark:text-gray-300">
                     Código
                   </th>
-                  <th className="text-left px-4 py-2 font-medium text-gray-700">
+                  <th className="text-left px-4 py-2 font-medium text-gray-700 dark:text-gray-300">
                     Nome
                   </th>
-                  <th className="text-left px-4 py-2 font-medium text-gray-700">
+                  <th className="text-left px-4 py-2 font-medium text-gray-700 dark:text-gray-300">
                     Base
                   </th>
                   <th className="px-4 py-2" />
@@ -156,14 +156,14 @@ export function DriversPage({ onVoltar }: DriversPageProps) {
                     <td className="px-4 py-2 text-right space-x-2">
                       <button
                         onClick={() => openEdit(d)}
-                        className="cursor-pointer inline-flex items-center gap-1 px-2 py-1 text-xs border border-gray-300 rounded-md hover:bg-gray-100"
+                        className="cursor-pointer inline-flex items-center gap-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
                       >
                         <Edit2 className="w-3 h-3" />
                         Editar
                       </button>
                       <button
                         onClick={() => setIsDeleting(d)}
-                        className="cursor-pointer inline-flex items-center gap-1 px-2 py-1 text-xs border border-red-200 text-red-600 rounded-md hover:bg-red-50"
+                        className="cursor-pointer inline-flex items-center gap-1 px-2 py-1 text-xs border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-md hover:bg-red-50 dark:hover:bg-red-950/40"
                       >
                         <Trash2 className="w-3 h-3" />
                         Excluir
@@ -179,9 +179,9 @@ export function DriversPage({ onVoltar }: DriversPageProps) {
         {/* Modal formulário */}
         {isFormOpen && (
           <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
+            <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg w-full max-w-md p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                   {editingDriver ? "Editar Motorista" : "Novo Motorista"}
                 </h2>
                 <button
@@ -189,7 +189,7 @@ export function DriversPage({ onVoltar }: DriversPageProps) {
                     setIsFormOpen(false);
                     setEditingDriver(null);
                   }}
-                  className="cursor-pointer text-gray-500 hover:text-gray-700"
+                  className="cursor-pointer text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -197,37 +197,37 @@ export function DriversPage({ onVoltar }: DriversPageProps) {
 
               <form onSubmit={handleSubmitForm} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Código
                   </label>
                   <input
                     name="code"
                     defaultValue={editingDriver?.code ?? ""}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required={!editingDriver}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Nome
                   </label>
                   <input
                     name="name"
                     defaultValue={editingDriver?.name ?? ""}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required={!editingDriver}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Base (opcional)
                   </label>
                   <input
                     name="base"
                     defaultValue={editingDriver?.base ?? ""}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 
@@ -238,7 +238,7 @@ export function DriversPage({ onVoltar }: DriversPageProps) {
                       setIsFormOpen(false);
                       setEditingDriver(null);
                     }}
-                    className="cursor-pointer px-4 py-2 text-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100"
+                    className="cursor-pointer px-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                   >
                     Cancelar
                   </button>
@@ -260,11 +260,11 @@ export function DriversPage({ onVoltar }: DriversPageProps) {
         {/* Modal confirmação exclusão */}
         {isDeleting && (
           <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-lg w-full max-w-sm p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-2">
+            <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg w-full max-w-sm p-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
                 Excluir motorista
               </h2>
-              <p className="text-sm text-gray-700 mb-4">
+              <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
                 Tem certeza que deseja excluir o motorista{" "}
                 <span className="font-semibold">{isDeleting.name}</span>?
               </p>
@@ -272,7 +272,7 @@ export function DriversPage({ onVoltar }: DriversPageProps) {
               <div className="flex justify-end gap-2">
                 <button
                   onClick={() => setIsDeleting(null)}
-                  className="cursor-pointer px-4 py-2 text-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100"
+                  className="cursor-pointer px-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                 >
                   Cancelar
                 </button>

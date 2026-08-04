@@ -5,9 +5,9 @@ import { ClipboardCheck } from "lucide-react";
 type Ranked = { name: string; count: number; rank: number };
 
 const STYLES: Record<number, { block: string; votes: string; height: string }> = {
-  1: { block: "bg-amber-400",  votes: "text-amber-600",  height: "h-28" },
-  2: { block: "bg-gray-300",   votes: "text-gray-500",   height: "h-20" },
-  3: { block: "bg-orange-300", votes: "text-orange-700", height: "h-16" },
+  1: { block: "bg-amber-400",  votes: "text-amber-600 dark:text-amber-400",  height: "h-28" },
+  2: { block: "bg-gray-300",   votes: "text-gray-500 dark:text-gray-400",   height: "h-20" },
+  3: { block: "bg-orange-300", votes: "text-orange-700 dark:text-orange-400", height: "h-16" },
 };
 
 const FLOAT_COLORS = ["#d48a00", "#3a8af0", "#5bc4a0", "#6699dd", "#c07030"];
@@ -154,7 +154,7 @@ export function ApuracaoPodium({
 
   return (
     <div
-      className={`relative overflow-hidden rounded-2xl border border-slate-200 bg-[#f0f4fa] p-5 min-h-[260px] ${className}`}
+      className={`relative overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-[#f0f4fa] p-5 min-h-[260px] ${className}`}
     >
       {/* ── Fundo "vivo" — BI de apuração passando atrás ──────────────────── */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
@@ -225,7 +225,7 @@ export function ApuracaoPodium({
             return (
               <div key={e.name} className="flex flex-col items-center w-24">
                 <div
-                  className="text-sm font-semibold text-slate-600 truncate max-w-[96px] text-center"
+                  className="text-sm font-semibold text-slate-600 dark:text-slate-400 truncate max-w-[96px] text-center"
                   title={e.name}
                 >
                   {e.name}

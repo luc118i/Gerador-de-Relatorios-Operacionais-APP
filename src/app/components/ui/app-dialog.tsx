@@ -54,22 +54,22 @@ export function AppDialog(props: {
         className={cn(
           sizeClass[size],
           // glass content
-          "rounded-2xl border border-white/30 bg-white/75 backdrop-blur-xl",
+          "rounded-2xl border border-white/30 dark:border-white/10 bg-white/75 dark:bg-gray-900/85 backdrop-blur-xl",
           "shadow-2xl shadow-black/20",
           // layout
           "flex flex-col overflow-hidden",
         )}
       >
         {/* Header */}
-        <div className="flex items-start justify-between gap-4 px-6 py-5 border-b border-white/20">
+        <div className="flex items-start justify-between gap-4 px-6 py-5 border-b border-white/20 dark:border-white/10">
           <div className="min-w-0">
             <DialogTitle asChild>
-              <h2 className="text-xl font-semibold text-slate-900 truncate">
+              <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 truncate">
                 {title}
               </h2>
             </DialogTitle>
             {subtitle ? (
-              <p className="mt-1 text-sm text-slate-600">{subtitle}</p>
+              <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">{subtitle}</p>
             ) : null}
           </div>
 
@@ -85,8 +85,8 @@ export function AppDialog(props: {
                   className={cn(
                     "cursor-pointer inline-flex items-center justify-center rounded-lg",
                     "h-9 w-9",
-                    "text-slate-700 hover:text-slate-900",
-                    "hover:bg-white/60",
+                    "text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100",
+                    "hover:bg-white/60 dark:hover:bg-white/10",
                     "focus:outline-none focus:ring-2 focus:ring-slate-900/20",
                   )}
                   aria-label="Fechar"

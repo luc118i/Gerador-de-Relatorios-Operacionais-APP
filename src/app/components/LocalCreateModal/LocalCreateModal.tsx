@@ -90,15 +90,15 @@ export function LocalCreateModal({
       <div className="space-y-4">
         {/* Erro de API */}
         {createLocal.isError ? (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-4 py-3 text-sm text-red-700 dark:text-red-400">
             Falha ao cadastrar local. Verifique os dados e tente novamente.
           </div>
         ) : null}
 
         {/* Nome */}
         <div className="space-y-1">
-          <label className="block text-sm font-medium text-slate-700">
-            Nome <span className="text-red-600">*</span>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-400">
+            Nome <span className="text-red-600 dark:text-red-400">*</span>
           </label>
           <input
             value={form.nome}
@@ -106,21 +106,21 @@ export function LocalCreateModal({
             onBlur={() => setTouched((t) => ({ ...t, nome: true }))}
             placeholder="Ex: Rodoviária de Vitória da Conquista"
             className={[
-              "w-full h-10 px-3 rounded-lg border bg-white/70",
-              "border-white/40",
-              "focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-white/60",
+              "w-full h-10 px-3 rounded-lg border bg-white/70 dark:bg-white/5 text-slate-900 dark:text-slate-100",
+              "border-white/40 dark:border-white/10",
+              "focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-white/60 dark:focus:border-white/20",
             ].join(" ")}
             autoFocus
           />
           {touched.nome && errors.nome ? (
-            <p className="text-xs text-red-600">{errors.nome}</p>
+            <p className="text-xs text-red-600 dark:text-red-400">{errors.nome}</p>
           ) : null}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Sigla */}
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-400">
               Sigla
             </label>
             <input
@@ -128,16 +128,16 @@ export function LocalCreateModal({
               onChange={(e) => setForm((s) => ({ ...s, sigla: e.target.value }))}
               placeholder="Ex: VCA"
               className={[
-                "w-full h-10 px-3 rounded-lg border bg-white/70",
-                "border-white/40",
-                "focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-white/60",
+                "w-full h-10 px-3 rounded-lg border bg-white/70 dark:bg-white/5 text-slate-900 dark:text-slate-100",
+                "border-white/40 dark:border-white/10",
+                "focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-white/60 dark:focus:border-white/20",
               ].join(" ")}
             />
           </div>
 
           {/* Tipo */}
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-400">
               Tipo
             </label>
             <input
@@ -145,9 +145,9 @@ export function LocalCreateModal({
               onChange={(e) => setForm((s) => ({ ...s, tipo: e.target.value }))}
               placeholder="Ex: RODOVIARIA, GARAGEM, PEDAGIO..."
               className={[
-                "w-full h-10 px-3 rounded-lg border bg-white/70",
-                "border-white/40",
-                "focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-white/60",
+                "w-full h-10 px-3 rounded-lg border bg-white/70 dark:bg-white/5 text-slate-900 dark:text-slate-100",
+                "border-white/40 dark:border-white/10",
+                "focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-white/60 dark:focus:border-white/20",
               ].join(" ")}
             />
           </div>
@@ -156,7 +156,7 @@ export function LocalCreateModal({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Latitude */}
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-400">
               Latitude
             </label>
             <input
@@ -165,16 +165,16 @@ export function LocalCreateModal({
               placeholder="Ex: -14.8619"
               inputMode="decimal"
               className={[
-                "w-full h-10 px-3 rounded-lg border bg-white/70",
-                "border-white/40",
-                "focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-white/60",
+                "w-full h-10 px-3 rounded-lg border bg-white/70 dark:bg-white/5 text-slate-900 dark:text-slate-100",
+                "border-white/40 dark:border-white/10",
+                "focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-white/60 dark:focus:border-white/20",
               ].join(" ")}
             />
           </div>
 
           {/* Longitude */}
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-400">
               Longitude
             </label>
             <input
@@ -183,9 +183,9 @@ export function LocalCreateModal({
               placeholder="Ex: -40.8444"
               inputMode="decimal"
               className={[
-                "w-full h-10 px-3 rounded-lg border bg-white/70",
-                "border-white/40",
-                "focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-white/60",
+                "w-full h-10 px-3 rounded-lg border bg-white/70 dark:bg-white/5 text-slate-900 dark:text-slate-100",
+                "border-white/40 dark:border-white/10",
+                "focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-white/60 dark:focus:border-white/20",
               ].join(" ")}
             />
           </div>

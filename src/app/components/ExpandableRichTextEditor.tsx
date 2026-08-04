@@ -60,8 +60,8 @@ function SpellCheckBtn({
 
   const base =
     size === "md"
-      ? "inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium border border-violet-200 bg-violet-50 hover:bg-violet-100 text-violet-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-      : "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border border-violet-200 bg-violet-50 hover:bg-violet-100 text-violet-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer";
+      ? "inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/40 hover:bg-violet-100 dark:hover:bg-violet-950/40 text-violet-700 dark:text-violet-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+      : "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/40 hover:bg-violet-100 dark:hover:bg-violet-950/40 text-violet-700 dark:text-violet-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer";
 
   return (
     <button
@@ -120,13 +120,13 @@ function EditorModal({
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="w-full max-w-3xl bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+      <div className="w-full max-w-3xl bg-white dark:bg-gray-900 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
            style={{ height: "min(80vh, 680px)" }}>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 flex-shrink-0">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
           <div className="flex items-center gap-3">
-            <h3 className="text-base font-semibold text-gray-900">
+            <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
               {label ?? "Editar texto"}
             </h3>
             <SpellCheckBtn html={value} onCorrected={onChange} size="md" />
@@ -134,7 +134,7 @@ function EditorModal({
           <button
             type="button"
             onClick={onClose}
-            className="cursor-pointer p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
+            className="cursor-pointer p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -152,9 +152,9 @@ function EditorModal({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100 bg-gray-50 flex-shrink-0">
-          <span className="text-xs text-gray-400">
-            Pressione <kbd className="px-1.5 py-0.5 text-xs bg-white border border-gray-200 rounded font-mono">Esc</kbd> para fechar
+        <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 flex-shrink-0">
+          <span className="text-xs text-gray-400 dark:text-gray-500">
+            Pressione <kbd className="px-1.5 py-0.5 text-xs bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded font-mono">Esc</kbd> para fechar
           </span>
           <button
             type="button"
@@ -198,7 +198,7 @@ export function ExpandableRichTextEditor({
             type="button"
             onClick={() => setOpen(true)}
             title="Expandir editor"
-            className="cursor-pointer absolute bottom-2 right-2 p-1.5 rounded-lg bg-white/80 border border-gray-200 text-gray-400 hover:text-gray-700 hover:bg-white hover:border-gray-300 shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-150"
+            className="cursor-pointer absolute bottom-2 right-2 p-1.5 rounded-lg bg-white/80 dark:bg-gray-900/80 border border-gray-200 dark:border-gray-800 text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-white dark:hover:bg-gray-900 hover:border-gray-300 dark:hover:border-gray-700 shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-150"
           >
             <Maximize2 className="w-3.5 h-3.5" />
           </button>

@@ -16,7 +16,7 @@ function HighlightMatch({ text, query }: { text: string; query: string }) {
   return (
     <>
       {text.slice(0, idx)}
-      <span className="font-bold text-blue-600">{text.slice(idx, idx + q.length)}</span>
+      <span className="font-bold text-blue-600 dark:text-blue-400">{text.slice(idx, idx + q.length)}</span>
       {text.slice(idx + q.length)}
     </>
   );
@@ -50,6 +50,19 @@ export function ReportTitleSelect({
     document.addEventListener("mousedown", onClickOutside);
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, []);
+
+  // Fecha o menu ao rolar a página — evita ele ficar "flutuando" desalinhado
+  // do campo enquanto o usuário rola.
+  useEffect(() => {
+    if (!open) return;
+    function handleScroll() {
+      setOpen(false);
+      setSearch("");
+      setActiveIdx(-1);
+    }
+    window.addEventListener("scroll", handleScroll, true);
+    return () => window.removeEventListener("scroll", handleScroll, true);
+  }, [open]);
 
   useEffect(() => {
     if (open) setTimeout(() => searchRef.current?.focus(), 0);
@@ -96,24 +109,24 @@ export function ReportTitleSelect({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className={`w-full flex items-center gap-2 px-3 py-2 border rounded-md text-left focus:outline-none focus:ring-2 bg-white ${
+        className={`w-full flex items-center gap-2 px-3 py-2 border rounded-md text-left focus:outline-none focus:ring-2 bg-white dark:bg-gray-900 ${
           hasError
             ? "border-red-400 focus:ring-red-500"
-            : "border-gray-300 focus:ring-blue-500"
+            : "border-gray-300 dark:border-gray-700 focus:ring-blue-500"
         }`}
       >
-        <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
-        <span className={`flex-1 text-sm truncate ${value ? "text-gray-900" : "text-gray-400"}`}>
+        <Search className="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+        <span className={`flex-1 text-sm truncate ${value ? "text-gray-900 dark:text-gray-100" : "text-gray-400 dark:text-gray-500"}`}>
           {value || "Selecione o nome da ocorrência..."}
         </span>
         <ChevronDown
-          className={`w-4 h-4 text-gray-400 flex-shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
+          className={`w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
         />
       </button>
 
       {open && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden">
-          <div className="p-2 border-b border-gray-100">
+        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-xl overflow-hidden">
+          <div className="p-2 border-b border-gray-100 dark:border-gray-800">
             <input
               ref={searchRef}
               type="text"
@@ -124,17 +137,17 @@ export function ReportTitleSelect({
               }}
               onKeyDown={handleKeyDown}
               placeholder="Buscar nome..."
-              className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
+              className="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-800 rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
             />
           </div>
-          <div className="flex items-center gap-1.5 px-3 py-2 bg-gray-50 border-b border-gray-100">
-            <ListChecks className="w-3.5 h-3.5 text-gray-400" />
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+          <div className="flex items-center gap-1.5 px-3 py-2 bg-gray-50 dark:bg-gray-950 border-b border-gray-100 dark:border-gray-800">
+            <ListChecks className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
+            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
               Nomes padronizados
             </span>
           </div>
           {filtered.length === 0 ? (
-            <div className="px-4 py-6 text-center text-sm text-gray-400">
+            <div className="px-4 py-6 text-center text-sm text-gray-400 dark:text-gray-500">
               Nenhum nome encontrado
             </div>
           ) : (
@@ -148,7 +161,7 @@ export function ReportTitleSelect({
                   }}
                   onMouseEnter={() => setActiveIdx(i)}
                   className={`px-3 py-2.5 cursor-pointer text-sm transition-colors ${
-                    i === activeIdx ? "bg-blue-50 text-blue-700" : "text-gray-800 hover:bg-gray-50"
+                    i === activeIdx ? "bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400" : "text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800"
                   }`}
                 >
                   <HighlightMatch text={name} query={search} />

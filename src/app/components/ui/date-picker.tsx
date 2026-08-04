@@ -33,16 +33,16 @@ export function DatePicker({
           type="button"
           className={cn(
             "flex items-center gap-2.5 w-full px-3 py-2 rounded-md border text-sm text-left",
-            "bg-white transition-colors focus:outline-none focus:ring-2 focus:ring-offset-0",
+            "bg-white dark:bg-gray-900 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-0",
             hasError
               ? "border-red-300 focus:ring-red-400"
-              : "border-gray-300 hover:border-blue-400 focus:ring-blue-500",
-            !valid && "text-gray-400",
+              : "border-gray-300 dark:border-gray-700 hover:border-blue-400 focus:ring-blue-500",
+            !valid && "text-gray-400 dark:text-gray-500",
             className,
           )}
         >
-          <CalendarIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />
-          <span className={cn("flex-1", valid ? "text-gray-900" : "text-gray-400")}>
+          <CalendarIcon className="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+          <span className={cn("flex-1", valid ? "text-gray-900 dark:text-gray-100" : "text-gray-400 dark:text-gray-500")}>
             {valid
               ? format(date!, "dd 'de' MMM. 'de' yyyy", { locale: ptBR })
               : placeholder}
@@ -50,7 +50,7 @@ export function DatePicker({
         </button>
       </PopoverTrigger>
 
-      <PopoverContent className="w-auto p-0 shadow-lg border border-gray-200" align="start">
+      <PopoverContent className="w-auto p-0 shadow-lg border border-gray-200 dark:border-gray-800" align="start">
         <Calendar
           mode="single"
           selected={valid ? date : undefined}

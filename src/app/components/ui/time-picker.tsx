@@ -89,15 +89,15 @@ export function TimePicker({
       {/* Input row — mesma altura e estilo do DatePicker */}
       <div
         className={cn(
-          "flex items-center gap-2.5 w-full px-3 py-2 rounded-md border bg-white text-sm",
+          "flex items-center gap-2.5 w-full px-3 py-2 rounded-md border bg-white dark:bg-gray-900 text-sm",
           "transition-colors cursor-text",
           disabled
-            ? "opacity-50 cursor-not-allowed bg-gray-50 border-gray-200"
+            ? "opacity-50 cursor-not-allowed bg-gray-50 dark:bg-gray-950 border-gray-200 dark:border-gray-800"
             : hasError
               ? "border-red-300 ring-2 ring-red-100"
               : focused
                 ? "border-blue-500 ring-2 ring-blue-500/20"
-                : "border-gray-300 hover:border-blue-400",
+                : "border-gray-300 dark:border-gray-700 hover:border-blue-400",
           className,
         )}
         onClick={() => !disabled && inputRef.current?.focus()}
@@ -105,7 +105,7 @@ export function TimePicker({
         <Clock
           className={cn(
             "w-4 h-4 flex-shrink-0 transition-colors duration-150",
-            focused ? "text-blue-500" : "text-gray-400",
+            focused ? "text-blue-500" : "text-gray-400 dark:text-gray-500",
           )}
         />
 
@@ -120,7 +120,7 @@ export function TimePicker({
           disabled={disabled}
           className={cn(
             "flex-1 bg-transparent outline-none",
-            "text-sm text-gray-900 placeholder:text-gray-400",
+            "text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500",
             disabled && "cursor-not-allowed",
           )}
         />
@@ -129,7 +129,7 @@ export function TimePicker({
           <button
             type="button"
             onMouseDown={handleClear}
-            className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
+            className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 transition-colors flex-shrink-0"
           >
             <X className="w-4 h-4" />
           </button>
@@ -138,7 +138,7 @@ export function TimePicker({
 
       {/* Contador — flutua abaixo sem alterar a altura do campo */}
       {focused && (
-        <span className="absolute right-0 -bottom-5 text-[11px] text-gray-400 tabular-nums select-none">
+        <span className="absolute right-0 -bottom-5 text-[11px] text-gray-400 dark:text-gray-500 tabular-nums select-none">
           {digits.length}/4 dígitos
         </span>
       )}

@@ -681,7 +681,7 @@ export function Home({
                   {search && (
                     <button
                       onClick={() => setSearch("")}
-                      className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:text-gray-200 dark:hover:bg-gray-800 transition-colors"
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-gray-400 dark:text-gray-500 hover:text-gray-600 hover:bg-gray-100 dark:hover:text-gray-200 dark:hover:bg-gray-800 transition-colors"
                       aria-label="Limpar busca"
                     >
                       <X className="w-3.5 h-3.5" />
@@ -994,7 +994,7 @@ export function Home({
       {batchTratativaConfirm && (
         <ConfirmActionModal
           icon={<AlertTriangle className="w-5 h-5 text-amber-500" />}
-          iconBg="bg-amber-50"
+          iconBg="bg-amber-50 dark:bg-amber-950/40"
           title="Enviar tratativas no RIZER?"
           confirmLabel="Confirmar"
           confirmClassName="bg-amber-500 hover:bg-amber-600"
@@ -1022,7 +1022,7 @@ export function Home({
       {batchRevisarConfirm && (
         <ConfirmActionModal
           icon={<RefreshCw className="w-5 h-5 text-emerald-500" />}
-          iconBg="bg-emerald-50"
+          iconBg="bg-emerald-50 dark:bg-emerald-950/40"
           title="Revisar todas no RIZER?"
           confirmLabel="Confirmar"
           confirmClassName="bg-emerald-500 hover:bg-emerald-600"

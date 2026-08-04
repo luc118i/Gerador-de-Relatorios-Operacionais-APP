@@ -16,7 +16,7 @@ function HighlightMatch({ text, query }: { text: string; query: string }) {
   return (
     <>
       {text.slice(0, idx)}
-      <span className="font-bold text-blue-600">{text.slice(idx, idx + q.length)}</span>
+      <span className="font-bold text-blue-600 dark:text-blue-400">{text.slice(idx, idx + q.length)}</span>
       {text.slice(idx + q.length)}
     </>
   );
@@ -50,6 +50,18 @@ export function ReportTitleInput({
     document.addEventListener("mousedown", onClickOutside);
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, []);
+
+  // Fecha o menu ao rolar a página — evita ele ficar "flutuando" desalinhado
+  // do campo enquanto o usuário rola.
+  useEffect(() => {
+    if (!open) return;
+    function handleScroll() {
+      setOpen(false);
+      setActiveIdx(-1);
+    }
+    window.addEventListener("scroll", handleScroll, true);
+    return () => window.removeEventListener("scroll", handleScroll, true);
+  }, [open]);
 
   useEffect(() => {
     if (!listRef.current || activeIdx < 0) return;
@@ -97,7 +109,7 @@ export function ReportTitleInput({
   return (
     <div ref={containerRef} className="relative">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500 pointer-events-none" />
         <input
           type="text"
           value={value}
@@ -112,7 +124,7 @@ export function ReportTitleInput({
           className={`w-full pl-9 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
             hasError
               ? "border-red-400 focus:ring-red-500"
-              : "border-gray-300 focus:ring-blue-500"
+              : "border-gray-300 dark:border-gray-700 focus:ring-blue-500"
           }`}
           data-form-nav
           autoComplete="off"
@@ -120,10 +132,10 @@ export function ReportTitleInput({
       </div>
 
       {showDropdown && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden">
-          <div className="flex items-center gap-1.5 px-3 py-2 bg-gray-50 border-b border-gray-100">
-            <Clock className="w-3.5 h-3.5 text-gray-400" />
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-xl overflow-hidden">
+          <div className="flex items-center gap-1.5 px-3 py-2 bg-gray-50 dark:bg-gray-950 border-b border-gray-100 dark:border-gray-800">
+            <Clock className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
+            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
               Mais recentes
             </span>
           </div>
@@ -138,15 +150,15 @@ export function ReportTitleInput({
                 }}
                 onMouseEnter={() => setActiveIdx(i)}
                 className={`flex items-center gap-2.5 px-3 py-2.5 cursor-pointer text-sm transition-colors ${
-                  i === activeIdx ? "bg-blue-50" : "hover:bg-gray-50"
+                  i === activeIdx ? "bg-blue-50 dark:bg-blue-950/40" : "hover:bg-gray-50 dark:hover:bg-gray-800"
                 }`}
               >
                 <Clock
                   className={`w-3.5 h-3.5 flex-shrink-0 ${
-                    i === activeIdx ? "text-blue-400" : "text-gray-300"
+                    i === activeIdx ? "text-blue-400" : "text-gray-300 dark:text-gray-600"
                   }`}
                 />
-                <span className={i === activeIdx ? "text-blue-700" : "text-gray-800"}>
+                <span className={i === activeIdx ? "text-blue-700 dark:text-blue-400" : "text-gray-800 dark:text-gray-200"}>
                   <HighlightMatch text={s} query={value} />
                 </span>
               </li>

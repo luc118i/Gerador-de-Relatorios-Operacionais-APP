@@ -130,7 +130,7 @@ export function EmptyReportScene({
           </span>
           <FileBarChart className="w-6 h-6 text-sky-600" />
         </div>
-        <div className="text-[17px] font-semibold text-slate-600">Gerador de relatório</div>
+        <div className="text-[17px] font-semibold text-slate-600 dark:text-slate-400">Gerador de relatório</div>
         <div className="text-xs uppercase tracking-wider text-slate-400">{subtitle}</div>
       </div>
     </div>

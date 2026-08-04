@@ -250,7 +250,7 @@ export function LoginScreen() {
       </div>
 
       {/* ── Card ─────────────────────────────────────────────────────── */}
-      <div className="relative z-10 w-full max-w-[340px] rounded-2xl bg-white dark:bg-[#111a2e] px-8 pt-9 pb-8 shadow-[0_2px_24px_rgba(60,100,200,0.10),0_0.5px_2px_rgba(60,100,200,0.10)]">
+      <div className="relative z-10 w-full max-w-[340px] rounded-2xl bg-white dark:bg-gray-900 dark:bg-[#111a2e] px-8 pt-9 pb-8 shadow-[0_2px_24px_rgba(60,100,200,0.10),0_0.5px_2px_rgba(60,100,200,0.10)]">
         <div className="flex justify-center mb-2">
           <div className="relative flex h-[52px] w-[52px] items-center justify-center rounded-2xl bg-[#eef3ff] dark:bg-[#1c2b4a]">
             {/* Anéis de pulso */}

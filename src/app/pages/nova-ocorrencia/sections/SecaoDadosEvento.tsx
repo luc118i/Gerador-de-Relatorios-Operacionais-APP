@@ -35,7 +35,7 @@ export function SecaoDadosEvento({
   vehicleNumber, onVehicleNumberChange,
   isHorarioValido,
 }: SecaoDadosEventoProps) {
-  const inputBase = "w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500";
+  const inputBase = "w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500";
 
   return (
     <section className={typeConfig.isGeneric ? "animate-in fade-in slide-in-from-top-2 duration-300" : ""}>
@@ -43,15 +43,15 @@ export function SecaoDadosEvento({
         {typeConfig.singleTime ? (
           <div className="grid grid-cols-3 gap-4">
             <div id="field-data-evento">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Data do Evento *</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Data do Evento *</label>
               <DatePicker value={dataEvento} onChange={onDataEventoChange} placeholder="Data do evento" />
             </div>
             <div id="field-data-viagem">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Data da Viagem *</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Data da Viagem *</label>
               <DatePicker value={dataViagem} onChange={onDataViagemChange} placeholder="Data da viagem" />
             </div>
             <div id="field-horario-inicial">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Horário do Evento *</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Horário do Evento *</label>
               <TimePicker
                 value={horarioInicial}
                 onChange={(v) => {
@@ -66,19 +66,19 @@ export function SecaoDadosEvento({
           <>
             <div className="grid grid-cols-4 gap-4">
               <div id="field-data-evento">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Data do Evento *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Data do Evento *</label>
                 <DatePicker value={dataEvento} onChange={onDataEventoChange} placeholder="Data do evento" />
               </div>
               <div id="field-data-viagem">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Data da Viagem *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Data da Viagem *</label>
                 <DatePicker value={dataViagem} onChange={onDataViagemChange} placeholder="Data da viagem" />
               </div>
               <div id="field-horario-inicial">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Horário Inicial *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Horário Inicial *</label>
                 <TimePicker value={horarioInicial} onChange={onHorarioInicialChange} placeholder="HH:MM" />
               </div>
               <div id="field-horario-final">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Horário Final *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Horário Final *</label>
                 <TimePicker
                   value={horarioFinal}
                   onChange={onHorarioFinalChange}
@@ -88,7 +88,7 @@ export function SecaoDadosEvento({
               </div>
             </div>
             {!isHorarioValido && horarioInicial && horarioFinal && (
-              <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-md">
+              <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-3 py-2 rounded-md">
                 <AlertCircle className="w-4 h-4" />
                 Horário final deve ser posterior ao horário inicial
               </div>
@@ -97,7 +97,7 @@ export function SecaoDadosEvento({
         )}
 
         <div id="field-prefixo">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Prefixo do Veículo *</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Prefixo do Veículo *</label>
           <input
             type="text"
             inputMode="numeric"
@@ -113,7 +113,7 @@ export function SecaoDadosEvento({
           <div id="field-local">
             {typeConfig.isGeneric ? (
               <>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Local da Ocorrência
                 </label>
                 <input
@@ -135,7 +135,7 @@ export function SecaoDadosEvento({
 
         {typeConfig.showSpeed && (
           <div id="field-velocidade">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Velocidade Atingida (km/h) *
             </label>
             <input

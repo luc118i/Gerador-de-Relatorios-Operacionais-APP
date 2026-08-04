@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, UserPlus, User } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import type { Driver } from "../../../domain/drivers";
 import { useDriversSearch } from "../../../features/occurrences/queries/drivers.queries";
 import { useDebouncedValue } from "../../../hooks/useDebouncedValue";
@@ -11,7 +12,7 @@ function driverLabel(d: Driver) {
 }
 
 export const inputAceso =
-  "bg-blue-50/50 border-blue-200 hover:border-blue-300 " +
+  "bg-blue-50/50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800 hover:border-blue-300 " +
   "focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 " +
   "transition";
 
@@ -27,24 +28,9 @@ export function DriverPicker({
 }: DriverPickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const containerRef = useRef<HTMLDivElement>(null);
 
   const debounced = useDebouncedValue(search, 300);
   const { data, isLoading, isError } = useDriversSearch(debounced);
-
-  // fechar ao clicar fora
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
   useEffect(() => {
     if (initialDriver && value === initialDriver.id) {
@@ -92,41 +78,67 @@ export function DriverPicker({
       ? "Carregando motorista..."
       : "Selecione um motorista";
 
+  function closeMenu() {
+    setIsOpen(false);
+    setSearch("");
+  }
+
+  // Fecha o menu ao rolar a página — evita ele ficar "flutuando" desalinhado
+  // do campo enquanto o usuário rola.
+  useEffect(() => {
+    if (!isOpen) return;
+    window.addEventListener("scroll", closeMenu, true);
+    return () => window.removeEventListener("scroll", closeMenu, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+
   return (
-    <div className="relative" ref={containerRef}>
-      <label className="block text-sm font-medium text-slate-700 mb-1">
-        {label} {required ? <span className="text-red-600">*</span> : null}
+    <div className="relative">
+      <label className="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1">
+        {label} {required ? <span className="text-red-600 dark:text-red-400">*</span> : null}
       </label>
 
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => setIsOpen((v) => !v)}
-        className={[
-          "cursor-pointer w-full px-3 py-2 rounded-lg text-left flex items-center justify-between",
-
-          "hover:border-white/60",
-          "focus:outline-none focus:ring-2 focus:ring-slate-900/15",
-          inputAceso,
-          "disabled:opacity-60 disabled:cursor-not-allowed",
-        ].join(" ")}
+      <Popover
+        open={isOpen}
+        onOpenChange={(open) => {
+          if (disabled) return;
+          open ? setIsOpen(true) : closeMenu();
+        }}
       >
-        <span
-          className={selected || value ? "text-slate-900" : "text-slate-400"}
-        >
-          {displayText}
-        </span>
-        <ChevronDown
-          className={[
-            "w-4 h-4 text-slate-400 transition-transform",
-            isOpen ? "rotate-180" : "",
-          ].join(" ")}
-        />
-      </button>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            disabled={disabled}
+            className={[
+              "cursor-pointer w-full px-3 py-2 rounded-lg text-left flex items-center justify-between",
 
-      {isOpen && !disabled ? (
-        <div className="absolute z-50 w-full mt-2 rounded-xl border border-white/30 bg-white/75 backdrop-blur-xl shadow-xl shadow-black/10 overflow-hidden">
-          <div className="p-2 border-b border-white/20 space-y-2">
+              "hover:border-white/60",
+              "focus:outline-none focus:ring-2 focus:ring-slate-900/15",
+              inputAceso,
+              "disabled:opacity-60 disabled:cursor-not-allowed",
+            ].join(" ")}
+          >
+            <span
+              className={selected || value ? "text-slate-900 dark:text-slate-100" : "text-slate-400"}
+            >
+              {displayText}
+            </span>
+            <ChevronDown
+              className={[
+                "w-4 h-4 text-slate-400 transition-transform",
+                isOpen ? "rotate-180" : "",
+              ].join(" ")}
+            />
+          </button>
+        </PopoverTrigger>
+
+        <PopoverContent
+          align="start"
+          sideOffset={8}
+          style={{ width: "var(--radix-popover-trigger-width)" }}
+          className="z-[100] p-0 rounded-xl border border-white/30 dark:border-white/10 bg-white/75 dark:bg-gray-900/85 backdrop-blur-xl shadow-xl shadow-black/10 overflow-hidden"
+        >
+          <div className="p-2 border-b border-white/20 dark:border-white/10 space-y-2">
             <input
               type="text"
               placeholder="Buscar por matrícula, nome ou base..."
@@ -134,6 +146,7 @@ export function DriverPicker({
               onChange={(e) => setSearch(e.target.value)}
               className={[
                 "w-full h-10 px-3 rounded-lg border",
+                "text-slate-900 dark:text-slate-100",
                 inputAceso,
               ].join(" ")}
               autoFocus
@@ -149,9 +162,9 @@ export function DriverPicker({
                 className={[
                   "cursor-pointer w-full h-10 px-3 rounded-lg",
                   "flex items-center justify-center gap-2",
-                  "bg-white/60 border border-white/30",
-                  "hover:bg-white/70",
-                  "text-slate-800 font-medium",
+                  "bg-white/60 dark:bg-white/10 border border-white/30 dark:border-white/10",
+                  "hover:bg-white/70 dark:hover:bg-white/15",
+                  "text-slate-800 dark:text-slate-200 font-medium",
                 ].join(" ")}
               >
                 <UserPlus className="w-4 h-4" />
@@ -162,15 +175,15 @@ export function DriverPicker({
 
           <div className="max-h-72 overflow-y-auto">
             {isLoading ? (
-              <div className="p-4 text-sm text-slate-600">
+              <div className="p-4 text-sm text-slate-600 dark:text-slate-400">
                 Buscando motoristas...
               </div>
             ) : isError ? (
-              <div className="p-4 text-sm text-red-700">
+              <div className="p-4 text-sm text-red-700 dark:text-red-400">
                 Erro ao buscar motoristas. Tente novamente.
               </div>
             ) : options.length === 0 ? (
-              <div className="p-4 text-sm text-slate-600">
+              <div className="p-4 text-sm text-slate-600 dark:text-slate-400">
                 Nenhum motorista encontrado.
               </div>
             ) : (
@@ -186,17 +199,17 @@ export function DriverPicker({
                   }}
                   className={[
                     "cursor-pointer w-full px-4 py-3 text-left",
-                    "hover:bg-white/60 border-b border-white/10 last:border-b-0",
+                    "hover:bg-white/60 dark:hover:bg-white/10 border-b border-white/10 dark:border-white/5 last:border-b-0",
                     "transition-colors",
                   ].join(" ")}
                 >
                   <div className="flex items-start gap-2">
                     <User className="w-4 h-4 text-slate-400 mt-1" />
                     <div className="flex-1">
-                      <div className="font-semibold text-slate-900">
+                      <div className="font-semibold text-slate-900 dark:text-slate-100">
                         {d.code}
                       </div>
-                      <div className="text-sm text-slate-700">{d.name}</div>
+                      <div className="text-sm text-slate-700 dark:text-slate-400">{d.name}</div>
                       {d.base ? (
                         <div className="text-xs text-slate-500 mt-1">
                           {d.base}
@@ -208,8 +221,8 @@ export function DriverPicker({
               ))
             )}
           </div>
-        </div>
-      ) : null}
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }

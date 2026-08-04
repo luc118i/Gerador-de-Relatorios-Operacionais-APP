@@ -26,9 +26,9 @@ export function ReminderModal({ onConfirm }: { onConfirm: () => void }) {
             <span className="font-semibold text-gray-900 dark:text-gray-100">Relatorio Diario</span>{" "}
             para o Google Drive antes de encerrar o turno.
           </p>
-          <div className="flex items-start gap-2 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2.5">
+          <div className="flex items-start gap-2 bg-amber-50 dark:bg-amber-950/40 border border-amber-100 dark:border-amber-800 rounded-lg px-3 py-2.5">
             <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-            <p className="text-xs text-amber-700 leading-relaxed">
+            <p className="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
               Use o botao <span className="font-semibold">Drive</span> no topo da pagina para enviar o PDF automaticamente.
             </p>
           </div>

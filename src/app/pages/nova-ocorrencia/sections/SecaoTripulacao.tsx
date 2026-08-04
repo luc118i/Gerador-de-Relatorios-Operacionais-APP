@@ -95,7 +95,7 @@ export function SecaoTripulacao({
             )}
             <button
               onClick={() => onToggleMotorista2(false)}
-              className="cursor-pointer absolute top-0 right-0 p-1 text-red-500 hover:bg-red-50 rounded transition-colors"
+              className="cursor-pointer absolute top-0 right-0 p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded transition-colors"
               title="Remover Motorista 02"
             >
               <X className="w-4 h-4" />
@@ -104,7 +104,7 @@ export function SecaoTripulacao({
         ) : (
           <button
             onClick={() => onToggleMotorista2(true)}
-            className="cursor-pointer flex items-center gap-2 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+            className="cursor-pointer flex items-center gap-2 px-3 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-colors"
           >
             <Plus className="w-4 h-4" />
             Adicionar Motorista 02
@@ -112,7 +112,7 @@ export function SecaoTripulacao({
         )}
 
         {driver1Id && driver2Id && driver1Id === driver2Id && (
-          <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-md">
+          <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-3 py-2 rounded-md">
             <AlertCircle className="w-4 h-4" />
             Motorista 01 e 02 não podem ser o mesmo.
           </div>

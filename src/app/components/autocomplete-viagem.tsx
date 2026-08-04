@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Bus, ChevronDown, PlusCircle } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import type { ViagemCatalog } from "../types";
 import { useTrips } from "../../features/trips/queries/trips.queries";
 import type { Trip } from "../../domain/trips";
@@ -24,7 +25,7 @@ function normalize(s: string) {
   return (s ?? "")
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\p{Mn}/gu, "")
     .trim();
 }
 
@@ -73,7 +74,6 @@ export function AutocompleteViagem({
 }: AutocompleteViagemProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const containerRef = useRef<HTMLDivElement>(null);
 
   const { data: trips = [], isLoading } = useTrips();
 
@@ -94,19 +94,19 @@ export function AutocompleteViagem({
       .map(({ v }) => v);
   }, [indexed, viagens, search]);
 
-  // fechar ao clicar fora
+  function closeMenu() {
+    setIsOpen(false);
+    setSearch("");
+  }
+
+  // Fecha o menu ao rolar a página — evita ele ficar "flutuando" desalinhado
+  // do campo enquanto o usuário rola.
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    if (!isOpen) return;
+    window.addEventListener("scroll", closeMenu, true);
+    return () => window.removeEventListener("scroll", closeMenu, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   const displayText = value
     ? [
@@ -119,35 +119,44 @@ export function AutocompleteViagem({
     : "Selecione uma viagem";
 
   return (
-    <div className="relative" ref={containerRef}>
-      <label className="block text-sm font-medium text-gray-700 mb-1">
+    <div className="relative">
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
         Viagem
       </label>
 
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="cursor-pointer w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-left flex items-center justify-between hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      <Popover
+        open={isOpen}
+        onOpenChange={(open) => (open ? setIsOpen(true) : closeMenu())}
       >
-        <span className={value ? "text-gray-900" : "text-gray-400"}>
-          {displayText}
-        </span>
-        <ChevronDown
-          className={`w-4 h-4 text-gray-400 transition-transform ${
-            isOpen ? "rotate-180" : ""
-          }`}
-        />
-      </button>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className="cursor-pointer w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-left flex items-center justify-between hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <span className={value ? "text-gray-900 dark:text-gray-100" : "text-gray-400 dark:text-gray-500"}>
+              {displayText}
+            </span>
+            <ChevronDown
+              className={`w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform ${
+                isOpen ? "rotate-180" : ""
+              }`}
+            />
+          </button>
+        </PopoverTrigger>
 
-      {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-80 overflow-hidden">
-          <div className="p-2 border-b border-gray-200 space-y-2">
+        <PopoverContent
+          align="start"
+          sideOffset={4}
+          style={{ width: "var(--radix-popover-trigger-width)" }}
+          className="z-[100] p-0 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-md shadow-lg max-h-80 overflow-hidden"
+        >
+          <div className="p-2 border-b border-gray-200 dark:border-gray-800 space-y-2">
             <input
               type="text"
               placeholder="Buscar por código, nome, horário ou sentido..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               autoFocus
             />
 
@@ -158,7 +167,7 @@ export function AutocompleteViagem({
                   setIsOpen(false);
                   onCreateRequested();
                 }}
-                className="cursor-pointer w-full h-9 px-3 rounded-md flex items-center justify-center gap-2 bg-gray-50 border border-gray-200 hover:bg-gray-100 text-gray-700 text-sm font-medium"
+                className="cursor-pointer w-full h-9 px-3 rounded-md flex items-center justify-center gap-2 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm font-medium"
               >
                 <PlusCircle className="w-4 h-4" />
                 Cadastrar linha
@@ -168,11 +177,11 @@ export function AutocompleteViagem({
 
           <div className="overflow-y-auto max-h-60">
             {isLoading ? (
-              <div className="p-4 text-center text-gray-500 text-sm">
+              <div className="p-4 text-center text-gray-500 dark:text-gray-400 text-sm">
                 Carregando viagens...
               </div>
             ) : filteredViagens.length === 0 ? (
-              <div className="p-4 text-center text-gray-500 text-sm">
+              <div className="p-4 text-center text-gray-500 dark:text-gray-400 text-sm">
                 Nenhuma viagem encontrada
               </div>
             ) : (
@@ -185,23 +194,23 @@ export function AutocompleteViagem({
                     setIsOpen(false);
                     setSearch("");
                   }}
-                  className="cursor-pointer w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-colors"
+                  className="cursor-pointer w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800 border-b border-gray-100 dark:border-gray-800 last:border-b-0 transition-colors"
                 >
                   <div className="flex items-start gap-2">
-                    <Bus className="w-4 h-4 text-gray-400 mt-1" />
+                    <Bus className="w-4 h-4 text-gray-400 dark:text-gray-500 mt-1" />
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="font-semibold text-gray-900">
+                        <span className="font-semibold text-gray-900 dark:text-gray-100">
                           {viagem.codigoLinha}
                         </span>
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
                           {viagem.sentido}
                         </span>
                       </div>
-                      <div className="text-sm text-gray-600">
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
                         {viagem.nomeLinha}
                       </div>
-                      <div className="text-xs text-gray-500 mt-1">
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                         Horário: {viagem.horaPartida}
                       </div>
                     </div>
@@ -210,8 +219,8 @@ export function AutocompleteViagem({
               ))
             )}
           </div>
-        </div>
-      )}
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }

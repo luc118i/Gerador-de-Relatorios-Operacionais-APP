@@ -85,11 +85,11 @@ export function EvidenciasGrid({ evidencias, onChange }: EvidenciasGridProps) {
     <DndProvider backend={HTML5Backend}>
       <div>
         <div className="flex items-center justify-between mb-2">
-          <label className="block text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             Evidências (Fotos)
           </label>
           {evidencias.length > 0 && (
-            <span className={`text-sm font-medium ${atLimit ? "text-red-600" : nearLimit ? "text-amber-600" : "text-gray-500"}`}>
+            <span className={`text-sm font-medium ${atLimit ? "text-red-600 dark:text-red-400" : nearLimit ? "text-amber-600 dark:text-amber-400" : "text-gray-500 dark:text-gray-400"}`}>
               {evidencias.length}/{MAX_EVIDENCIAS} foto{evidencias.length !== 1 ? "s" : ""}
             </span>
           )}
@@ -103,16 +103,16 @@ export function EvidenciasGrid({ evidencias, onChange }: EvidenciasGridProps) {
           onClick={!atLimit ? () => fileInputRef.current?.click() : undefined}
           className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors mb-4 ${
             atLimit
-              ? "border-red-200 bg-red-50 cursor-not-allowed"
+              ? "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 cursor-not-allowed"
               : isDragging
-              ? "border-blue-500 bg-blue-50 cursor-pointer"
-              : "border-gray-300 hover:border-gray-400 hover:bg-gray-50 cursor-pointer"
+              ? "border-blue-500 bg-blue-50 dark:bg-blue-950/40 cursor-pointer"
+              : "border-gray-300 dark:border-gray-700 hover:border-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
           }`}
         >
           {atLimit ? (
             <>
               <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-3" />
-              <p className="text-sm font-medium text-red-600 mb-1">
+              <p className="text-sm font-medium text-red-600 dark:text-red-400 mb-1">
                 Limite de {MAX_EVIDENCIAS} fotos atingido
               </p>
               <p className="text-xs text-red-400">
@@ -121,11 +121,11 @@ export function EvidenciasGrid({ evidencias, onChange }: EvidenciasGridProps) {
             </>
           ) : (
             <>
-              <Upload className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-              <p className="text-sm text-gray-600 mb-1">
+              <Upload className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
                 Arraste fotos aqui ou clique para selecionar
               </p>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 Upload múltiplo permitido • JPG, PNG • máx. {MAX_EVIDENCIAS} fotos
               </p>
             </>
@@ -143,7 +143,7 @@ export function EvidenciasGrid({ evidencias, onChange }: EvidenciasGridProps) {
 
         {/* Aviso próximo do limite */}
         {nearLimit && !atLimit && (
-          <div className="flex items-center gap-2 text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-3 text-xs">
+          <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2 mb-3 text-xs">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>Você está próximo do limite — restam {MAX_EVIDENCIAS - evidencias.length} foto{MAX_EVIDENCIAS - evidencias.length !== 1 ? "s" : ""}.</span>
           </div>
@@ -152,7 +152,7 @@ export function EvidenciasGrid({ evidencias, onChange }: EvidenciasGridProps) {
         {/* Grid de Evidências */}
         {evidencias.length > 0 && (
           <div>
-            <p className="text-xs text-gray-500 mb-3">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
               💡 As evidências serão inseridas automaticamente abaixo do texto
               do relatório
             </p>
@@ -223,7 +223,7 @@ function EvidenciaItem({
   return (
     <div
       ref={ref}
-      className={`border border-gray-200 rounded-lg overflow-hidden bg-white ${
+      className={`border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden bg-white dark:bg-gray-900 ${
         isDragging ? "opacity-50" : ""
       }`}
     >
@@ -233,7 +233,7 @@ function EvidenciaItem({
           alt={`Evidência ${index + 1}`}
           className="w-full h-40 object-cover"
         />
-        <div className="absolute top-2 left-2 bg-white/90 px-2 py-1 rounded text-xs font-medium text-gray-700">
+        <div className="absolute top-2 left-2 bg-white/90 px-2 py-1 rounded text-xs font-medium text-gray-700 dark:text-gray-300">
           {index + 1}
         </div>
         <button
@@ -243,7 +243,7 @@ function EvidenciaItem({
           <X className="w-4 h-4" />
         </button>
         <div className="absolute top-2 left-10 bg-white/90 p-1 rounded cursor-move opacity-0 group-hover:opacity-100 transition-opacity">
-          <GripVertical className="w-4 h-4 text-gray-600" />
+          <GripVertical className="w-4 h-4 text-gray-600 dark:text-gray-400" />
         </div>
       </div>
       <div className="p-2 space-y-2">
@@ -252,7 +252,7 @@ function EvidenciaItem({
           placeholder="Legenda (opcional)"
           value={evidencia.legenda || ""}
           onChange={(e) => onUpdateLegenda(evidencia.id, e.target.value)}
-          className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="w-full px-2 py-1 text-xs border border-gray-200 dark:border-gray-800 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
         />
 
         <div className="space-y-1">
@@ -261,7 +261,7 @@ function EvidenciaItem({
             placeholder="Texto do link (opcional)"
             value={evidencia.linkTexto || ""}
             onChange={(e) => onUpdateLinkTexto(evidencia.id, e.target.value)}
-            className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="w-full px-2 py-1 text-xs border border-gray-200 dark:border-gray-800 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
 
           <input
@@ -269,7 +269,7 @@ function EvidenciaItem({
             placeholder="URL do link (https://...)"
             value={evidencia.linkUrl || ""}
             onChange={(e) => onUpdateLinkUrl(evidencia.id, e.target.value)}
-            className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="w-full px-2 py-1 text-xs border border-gray-200 dark:border-gray-800 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
         </div>
       </div>

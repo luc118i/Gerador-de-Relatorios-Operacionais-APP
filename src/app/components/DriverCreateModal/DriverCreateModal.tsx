@@ -83,7 +83,7 @@ export function DriverCreateModal({
       <div className="space-y-4">
         {/* Erro de API */}
         {createDriver.isError ? (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-4 py-3 text-sm text-red-700 dark:text-red-400">
             Falha ao cadastrar motorista. Verifique os dados e tente novamente.
           </div>
         ) : null}
@@ -91,8 +91,8 @@ export function DriverCreateModal({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Matrícula */}
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700">
-              Matrícula <span className="text-red-600">*</span>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-400">
+              Matrícula <span className="text-red-600 dark:text-red-400">*</span>
             </label>
             <input
               value={form.code}
@@ -100,19 +100,19 @@ export function DriverCreateModal({
               onBlur={() => setTouched((t) => ({ ...t, code: true }))}
               placeholder="Ex: 4997"
               className={[
-                "w-full h-10 px-3 rounded-lg border bg-white/70",
-                "border-white/40",
-                "focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-white/60",
+                "w-full h-10 px-3 rounded-lg border bg-white/70 dark:bg-white/5 text-slate-900 dark:text-slate-100",
+                "border-white/40 dark:border-white/10",
+                "focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-white/60 dark:focus:border-white/20",
               ].join(" ")}
             />
             {touched.code && errors.code ? (
-              <p className="text-xs text-red-600">{errors.code}</p>
+              <p className="text-xs text-red-600 dark:text-red-400">{errors.code}</p>
             ) : null}
           </div>
 
           {/* Base */}
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-400">
               Base
             </label>
             <input
@@ -120,9 +120,9 @@ export function DriverCreateModal({
               onChange={(e) => setForm((s) => ({ ...s, base: e.target.value }))}
               placeholder="Ex: Montes Claros"
               className={[
-                "w-full h-10 px-3 rounded-lg border bg-white/70",
-                "border-white/40",
-                "focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-white/60",
+                "w-full h-10 px-3 rounded-lg border bg-white/70 dark:bg-white/5 text-slate-900 dark:text-slate-100",
+                "border-white/40 dark:border-white/10",
+                "focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-white/60 dark:focus:border-white/20",
               ].join(" ")}
             />
           </div>
@@ -130,8 +130,8 @@ export function DriverCreateModal({
 
         {/* Nome */}
         <div className="space-y-1">
-          <label className="block text-sm font-medium text-slate-700">
-            Nome <span className="text-red-600">*</span>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-400">
+            Nome <span className="text-red-600 dark:text-red-400">*</span>
           </label>
           <input
             value={form.name}
@@ -139,13 +139,13 @@ export function DriverCreateModal({
             onBlur={() => setTouched((t) => ({ ...t, name: true }))}
             placeholder="Ex: Jeová Barbosa"
             className={[
-              "w-full h-10 px-3 rounded-lg border bg-white/70",
-              "border-white/40",
-              "focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-white/60",
+              "w-full h-10 px-3 rounded-lg border bg-white/70 dark:bg-white/5 text-slate-900 dark:text-slate-100",
+              "border-white/40 dark:border-white/10",
+              "focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-white/60 dark:focus:border-white/20",
             ].join(" ")}
           />
           {touched.name && errors.name ? (
-            <p className="text-xs text-red-600">{errors.name}</p>
+            <p className="text-xs text-red-600 dark:text-red-400">{errors.name}</p>
           ) : null}
         </div>
       </div>

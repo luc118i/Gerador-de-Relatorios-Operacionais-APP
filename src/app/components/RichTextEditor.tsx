@@ -118,8 +118,8 @@ export function RichTextEditor({
         }}
         className={`p-1.5 rounded transition-colors ${
           active
-            ? "bg-gray-200 text-gray-900"
-            : "text-gray-500 hover:bg-gray-100 hover:text-gray-800"
+            ? "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+            : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-800 dark:hover:text-gray-200"
         }`}
       >
         {children}
@@ -128,9 +128,9 @@ export function RichTextEditor({
   }
 
   return (
-    <div className="border border-gray-300 rounded-lg overflow-visible focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 bg-white">
+    <div className="border border-gray-300 dark:border-gray-700 rounded-lg overflow-visible focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 bg-white dark:bg-gray-900">
       {/* Toolbar */}
-      <div className="flex items-center gap-0.5 px-2 py-1.5 border-b border-gray-200 bg-gray-50 rounded-t-lg flex-wrap">
+      <div className="flex items-center gap-0.5 px-2 py-1.5 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 rounded-t-lg flex-wrap">
         <ToolbarBtn
           title="Negrito (Ctrl+B)"
           active={editor.isActive("bold")}
@@ -174,7 +174,7 @@ export function RichTextEditor({
               e.preventDefault();
               setColorPickerOpen((prev) => !prev);
             }}
-            className="flex flex-col items-center p-1.5 rounded transition-colors text-gray-500 hover:bg-gray-100 hover:text-gray-800"
+            className="flex flex-col items-center p-1.5 rounded transition-colors text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-800 dark:hover:text-gray-200"
           >
             {/* Ícone "A" com barra de cor embaixo */}
             <span className="text-xs font-bold leading-none" style={{ color: activeColor || "#111111" }}>
@@ -187,8 +187,8 @@ export function RichTextEditor({
           </button>
 
           {colorPickerOpen && (
-            <div className="absolute left-0 top-full mt-1 z-50 bg-white border border-gray-200 rounded-lg shadow-lg p-2 w-[152px]">
-              <p className="text-[10px] text-gray-400 mb-1.5 font-medium uppercase tracking-wide">
+            <div className="absolute left-0 top-full mt-1 z-50 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-lg p-2 w-[152px]">
+              <p className="text-[10px] text-gray-400 dark:text-gray-500 mb-1.5 font-medium uppercase tracking-wide">
                 Cor do texto
               </p>
               <div className="grid grid-cols-5 gap-1">
@@ -219,7 +219,7 @@ export function RichTextEditor({
                   editor.chain().focus().unsetColor().run();
                   setColorPickerOpen(false);
                 }}
-                className="mt-2 w-full text-[10px] text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded px-1 py-0.5 transition-colors text-center"
+                className="mt-2 w-full text-[10px] text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded px-1 py-0.5 transition-colors text-center"
               >
                 Remover cor
               </button>
@@ -233,12 +233,12 @@ export function RichTextEditor({
         <EditorContent
           editor={editor}
           style={{ minHeight }}
-          className="px-3 py-2 text-gray-900 [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-[inherit] [&_.ProseMirror_p]:my-0.5 [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ul]:pl-5 [&_.ProseMirror_ul]:my-1"
+          className="px-3 py-2 text-gray-900 dark:text-gray-100 [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-[inherit] [&_.ProseMirror_p]:my-0.5 [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ul]:pl-5 [&_.ProseMirror_ul]:my-1"
         />
 
         {/* Placeholder */}
         {editor.isEmpty && (
-          <div className="absolute top-2 left-3 pointer-events-none text-gray-400">
+          <div className="absolute top-2 left-3 pointer-events-none text-gray-400 dark:text-gray-500">
             {placeholder}
           </div>
         )}

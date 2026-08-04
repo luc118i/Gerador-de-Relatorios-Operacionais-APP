@@ -126,10 +126,7 @@ function AppShell() {
         </main>
 
         <footer className="py-6 px-6 md:px-12 border-t border-gray-200 dark:border-gray-800 bg-transparent">
-          <div
-            className="max-w-7xl mx-auto text-center"
-            style={{ color: "#718096" }}
-          >
+          <div className="max-w-7xl mx-auto text-center text-[#718096] dark:text-gray-500">
             <p className="text-sm">
               © {new Date().getFullYear()} Lucas Inacio • Gerador de Relatórios
             </p>
@@ -194,10 +191,10 @@ function WelcomeSplash({ name }: { name: string }) {
         className="text-center"
         style={{ animation: "lw-up .5s ease forwards .4s", opacity: 0 }}
       >
-        <p className="text-lg font-semibold text-[#1a2a4a]">
+        <p className="text-lg font-semibold text-[#1a2a4a] dark:text-[#e8ecf8]">
           Bem-vindo{name ? `, ${name.split(" ")[0]}` : ""}!
         </p>
-        <p className="mt-0.5 text-sm text-[#8899bb]">Preparando seu painel…</p>
+        <p className="mt-0.5 text-sm text-[#8899bb] dark:text-[#7f93c4]">Preparando seu painel…</p>
       </div>
     </div>
   );
@@ -226,8 +223,8 @@ function AuthGate() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+        <Loader2 className="w-6 h-6 text-gray-400 dark:text-gray-500 animate-spin" />
       </div>
     );
   }

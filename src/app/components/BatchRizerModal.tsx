@@ -18,22 +18,22 @@ const TIPO_OPTIONS: Array<{ value: TipoMedida; label: string; icon: React.ReactN
     value: "advertencia",
     label: "Advertência",
     icon: <ShieldAlert className="w-3 h-3" />,
-    active: "bg-amber-100 text-amber-700 border-amber-400",
-    inactive: "bg-white text-gray-400 border-gray-200 hover:border-amber-300 hover:text-amber-500",
+    active: "bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border-amber-400",
+    inactive: "bg-white dark:bg-gray-900 text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-800 hover:border-amber-300 hover:text-amber-500",
   },
   {
     value: "suspensao",
     label: "Suspensão",
     icon: <ShieldOff className="w-3 h-3" />,
-    active: "bg-red-100 text-red-700 border-red-400",
-    inactive: "bg-white text-gray-400 border-gray-200 hover:border-red-300 hover:text-red-500",
+    active: "bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400 border-red-400",
+    inactive: "bg-white dark:bg-gray-900 text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-800 hover:border-red-300 hover:text-red-500",
   },
   {
     value: "nenhum",
     label: "Apenas reg.",
     icon: <ClipboardList className="w-3 h-3" />,
-    active: "bg-slate-100 text-slate-700 border-slate-400",
-    inactive: "bg-white text-gray-400 border-gray-200 hover:border-slate-300 hover:text-slate-500",
+    active: "bg-slate-100 dark:bg-slate-950/40 text-slate-700 dark:text-slate-400 border-slate-400",
+    inactive: "bg-white dark:bg-gray-900 text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-800 hover:border-slate-300 hover:text-slate-500",
   },
 ];
 
@@ -72,25 +72,25 @@ export function BatchRizerModal({ open, subject, occs, onConfirm, onCancel }: Pr
       onClick={onCancel}
     >
       <div
-        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 flex flex-col max-h-[85vh]"
+        className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg mx-4 flex flex-col max-h-[85vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
-          <div className="p-1.5 rounded-lg bg-orange-50 shrink-0">
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+          <div className="p-1.5 rounded-lg bg-orange-50 dark:bg-orange-950/40 shrink-0">
             <Gavel className="w-4 h-4 text-orange-500" />
           </div>
           <div className="min-w-0">
-            <h3 className="text-sm font-semibold text-gray-900">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
               Registrar no RIZER —{" "}
-              <span className="text-orange-600">{occs.length} ocorrência{occs.length !== 1 ? "s" : ""}</span>
+              <span className="text-orange-600 dark:text-orange-400">{occs.length} ocorrência{occs.length !== 1 ? "s" : ""}</span>
             </h3>
-            <p className="text-xs text-gray-500 truncate mt-0.5">{subject}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">{subject}</p>
           </div>
         </div>
 
         {/* Legenda */}
-        <div className="px-5 pt-3 pb-1 flex items-center gap-4 text-[10px] text-gray-400 uppercase tracking-wide font-medium">
+        <div className="px-5 pt-3 pb-1 flex items-center gap-4 text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wide font-medium">
           <span className="flex-1">Motorista / Veículo</span>
           <span className="w-52 text-right">Tipo de medida</span>
         </div>
@@ -107,10 +107,10 @@ export function BatchRizerModal({ open, subject, occs, onConfirm, onCancel }: Pr
               >
                 {/* Info */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-gray-800 truncate">
+                  <p className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">
                     {driver?.name ?? "—"}
                   </p>
-                  <p className="text-[10px] text-gray-400 truncate">
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">
                     {occ.vehicleNumber} · {occ.baseCode}
                   </p>
                 </div>
@@ -137,10 +137,10 @@ export function BatchRizerModal({ open, subject, occs, onConfirm, onCancel }: Pr
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-2 px-5 py-4 border-t border-gray-100">
+        <div className="flex justify-end gap-2 px-5 py-4 border-t border-gray-100 dark:border-gray-800">
           <button
             onClick={onCancel}
-            className="px-4 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100 transition-colors"
+            className="px-4 py-2 rounded-lg text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           >
             Cancelar
           </button>

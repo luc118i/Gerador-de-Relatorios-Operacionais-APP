@@ -48,19 +48,19 @@ function tipoLabel(tipo: string | null) {
 }
 
 function tipoTagClass(tipo: string | null): string {
-  if (!tipo) return "bg-gray-100 text-gray-500";
+  if (!tipo) return "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400";
   const t = tipo.toLowerCase();
-  if (t.includes("garagem"))    return "bg-slate-100 text-slate-600";
-  if (t.includes("rodoviária") || t.includes("rodoviaria")) return "bg-indigo-100 text-indigo-600";
-  if (t.includes("controle"))   return "bg-blue-100 text-blue-600";
-  if (t.includes("auxiliar"))   return "bg-emerald-100 text-emerald-600";
-  return "bg-gray-100 text-gray-500";
+  if (t.includes("garagem"))    return "bg-slate-100 dark:bg-slate-950/40 text-slate-600 dark:text-slate-400";
+  if (t.includes("rodoviária") || t.includes("rodoviaria")) return "bg-indigo-100 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400";
+  if (t.includes("controle"))   return "bg-blue-100 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400";
+  if (t.includes("auxiliar"))   return "bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400";
+  return "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400";
 }
 
 function alertNivelStyle(nivel: string): { card: string; border: string; dot: string; title: string } {
-  if (nivel === "critical")  return { card: "bg-red-50",   border: "border-l-red-500",   dot: "bg-red-500",   title: "text-red-700"  };
-  if (nivel === "attention") return { card: "bg-amber-50", border: "border-l-amber-400", dot: "bg-amber-400", title: "text-amber-700" };
-  return                            { card: "bg-blue-50",  border: "border-l-blue-400",  dot: "bg-blue-400",  title: "text-blue-700" };
+  if (nivel === "critical")  return { card: "bg-red-50 dark:bg-red-950/40",   border: "border-l-red-500",   dot: "bg-red-500",   title: "text-red-700 dark:text-red-400"  };
+  if (nivel === "attention") return { card: "bg-amber-50 dark:bg-amber-950/40", border: "border-l-amber-400", dot: "bg-amber-400", title: "text-amber-700 dark:text-amber-400" };
+  return                            { card: "bg-blue-50 dark:bg-blue-950/40",  border: "border-l-blue-400",  dot: "bg-blue-400",  title: "text-blue-700 dark:text-blue-400" };
 }
 
 function alertTipoTitle(tipo: string): string {
@@ -158,21 +158,21 @@ export function AnaliseTelemetriaPage({ onVoltar }: Props) {
 
   if (view === "detail") {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+        <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-10">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <button onClick={() => setView("list")} className="cursor-pointer p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
+              <button onClick={() => setView("list")} className="cursor-pointer p-1.5 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                 <ArrowLeft className="w-4 h-4" />
               </button>
-              <BarChart2 className="w-5 h-5 text-blue-600" />
-              <h1 className="text-lg font-semibold text-gray-900">Detalhe da Análise</h1>
+              <BarChart2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Detalhe da Análise</h1>
             </div>
             {selectedId && (
               <button
                 onClick={() => handlePdf(selectedId)}
                 disabled={pdfLoading}
-                className="cursor-pointer flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors disabled:opacity-50"
+                className="cursor-pointer flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors disabled:opacity-50"
               >
                 {pdfLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
                 Gerar PDF
@@ -199,14 +199,14 @@ export function AnaliseTelemetriaPage({ onVoltar }: Props) {
   const meta     = listData?.meta;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+      <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center gap-3">
-          <button onClick={onVoltar} className="cursor-pointer p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
+          <button onClick={onVoltar} className="cursor-pointer p-1.5 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
             <ArrowLeft className="w-4 h-4" />
           </button>
-          <BarChart2 className="w-5 h-5 text-blue-600" />
-          <h1 className="text-lg font-semibold text-gray-900">Análise de Viagem</h1>
+          <BarChart2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+          <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Análise de Viagem</h1>
         </div>
       </header>
 
@@ -219,23 +219,23 @@ export function AnaliseTelemetriaPage({ onVoltar }: Props) {
           onDrop={handleDrop}
           onClick={() => !uploading && fileRef.current?.click()}
           className={`cursor-pointer border-2 border-dashed rounded-2xl p-10 flex flex-col items-center gap-3 transition-colors ${
-            isDragging ? "border-blue-400 bg-blue-50" : "border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50/30"
+            isDragging ? "border-blue-400 bg-blue-50 dark:bg-blue-950/40" : "border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-blue-300 hover:bg-blue-50/30 dark:hover:bg-blue-950/40"
           } ${uploading ? "pointer-events-none opacity-60" : ""}`}
         >
           <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={handleFileChange} />
           {uploading ? (
             <>
               <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
-              <p className="text-sm font-medium text-gray-600">Analisando viagem...</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Analisando viagem...</p>
             </>
           ) : (
             <>
-              <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center">
+              <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center">
                 <Upload className="w-7 h-7 text-blue-500" />
               </div>
               <div className="text-center">
-                <p className="text-sm font-semibold text-gray-700">Arraste o CSV aqui ou clique para selecionar</p>
-                <p className="text-xs text-gray-400 mt-1">Arquivo exportado do sistema de telemetria</p>
+                <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Arraste o CSV aqui ou clique para selecionar</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Arquivo exportado do sistema de telemetria</p>
               </div>
             </>
           )}
@@ -243,7 +243,7 @@ export function AnaliseTelemetriaPage({ onVoltar }: Props) {
 
         {/* Histórico */}
         <div>
-          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
+          <h2 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-4">
             Histórico {meta ? `· ${meta.total} análises` : ""}
           </h2>
 
@@ -254,21 +254,21 @@ export function AnaliseTelemetriaPage({ onVoltar }: Props) {
           )}
 
           {!listLoading && analyses.length === 0 && (
-            <div className="bg-white rounded-xl border border-gray-100 p-10 text-center text-gray-400 text-sm">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-10 text-center text-gray-400 dark:text-gray-500 text-sm">
               Nenhuma análise encontrada. Envie um CSV acima para começar.
             </div>
           )}
 
           {analyses.length > 0 && (
-            <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-100 bg-gray-50/80">
-                    <th className="text-left px-4 py-3 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Veículo / Motorista</th>
-                    <th className="text-left px-4 py-3 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Data</th>
-                    <th className="text-right px-4 py-3 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Km</th>
-                    <th className="text-right px-4 py-3 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Vel. Média</th>
-                    <th className="text-center px-4 py-3 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Status</th>
+                  <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50/80">
+                    <th className="text-left px-4 py-3 text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Veículo / Motorista</th>
+                    <th className="text-left px-4 py-3 text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Data</th>
+                    <th className="text-right px-4 py-3 text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Km</th>
+                    <th className="text-right px-4 py-3 text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Vel. Média</th>
+                    <th className="text-center px-4 py-3 text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Status</th>
                     <th className="px-4 py-3" />
                   </tr>
                 </thead>
@@ -277,28 +277,28 @@ export function AnaliseTelemetriaPage({ onVoltar }: Props) {
                     <tr
                       key={row.id}
                       onClick={() => openDetail(row.id)}
-                      className={`cursor-pointer border-b border-gray-50 hover:bg-blue-50/40 transition-colors ${i % 2 !== 0 ? "bg-gray-50/40" : ""}`}
+                      className={`cursor-pointer border-b border-gray-50 hover:bg-blue-50/40 dark:hover:bg-blue-950/40 transition-colors ${i % 2 !== 0 ? "bg-gray-50/40" : ""}`}
                     >
                       <td className="px-4 py-3">
-                        <p className="font-medium text-gray-800">{row.veiculo}</p>
-                        <p className="text-xs text-gray-400">{row.motorista}</p>
+                        <p className="font-medium text-gray-800 dark:text-gray-200">{row.veiculo}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">{row.motorista}</p>
                       </td>
-                      <td className="px-4 py-3 text-gray-600 text-xs">{row.data_viagem}</td>
-                      <td className="px-4 py-3 text-right text-gray-700">{fmtKm(row.total_km)}</td>
-                      <td className="px-4 py-3 text-right text-gray-700">{fmtSpeed(row.velocidade_media)}</td>
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400 text-xs">{row.data_viagem}</td>
+                      <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300">{fmtKm(row.total_km)}</td>
+                      <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300">{fmtSpeed(row.velocidade_media)}</td>
                       <td className="px-4 py-3 text-center">
                         {row.alertas_criticos > 0 ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-600">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400">
                             <AlertTriangle className="w-3 h-3" />{row.alertas_criticos} crítico{row.alertas_criticos > 1 ? "s" : ""}
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-600">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 dark:bg-green-950/40 text-green-600 dark:text-green-400">
                             <CheckCircle className="w-3 h-3" />OK
                           </span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <ChevronRight className="w-4 h-4 text-gray-300 ml-auto" />
+                        <ChevronRight className="w-4 h-4 text-gray-300 dark:text-gray-600 ml-auto" />
                       </td>
                     </tr>
                   ))}
@@ -306,15 +306,15 @@ export function AnaliseTelemetriaPage({ onVoltar }: Props) {
               </table>
 
               {meta && meta.totalPages > 1 && (
-                <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">
-                  <span className="text-xs text-gray-400">Página {meta.page} de {meta.totalPages}</span>
+                <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 dark:border-gray-800">
+                  <span className="text-xs text-gray-400 dark:text-gray-500">Página {meta.page} de {meta.totalPages}</span>
                   <div className="flex gap-2">
                     <button disabled={page === 1} onClick={() => setPage(p => p - 1)}
-                      className="cursor-pointer px-3 py-1 text-xs rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                      className="cursor-pointer px-3 py-1 text-xs rounded-lg border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                       Anterior
                     </button>
                     <button disabled={page >= meta.totalPages} onClick={() => setPage(p => p + 1)}
-                      className="cursor-pointer px-3 py-1 text-xs rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                      className="cursor-pointer px-3 py-1 text-xs rounded-lg border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                       Próxima
                     </button>
                   </div>
@@ -385,7 +385,7 @@ function AnalysisDetail({ row }: { row: AnalysisFullRow }) {
       </div>
 
       {/* ── Info da viagem ── */}
-      <div className="bg-white rounded-xl border border-gray-100 px-5 py-4 flex flex-wrap gap-x-8 gap-y-3">
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 px-5 py-4 flex flex-wrap gap-x-8 gap-y-3">
         <InfoItem label="Veículo"   value={row.veiculo} />
         <InfoItem label="Motorista" value={row.motorista} />
         <InfoItem label="Data"      value={row.data_viagem} />
@@ -406,11 +406,11 @@ function AnalysisDetail({ row }: { row: AnalysisFullRow }) {
       {/* ── Tabela de eventos ── */}
       <section>
         <SectionTitle>Eventos da Viagem <Count n={points.length} /></SectionTitle>
-        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-gray-50/80 border-b border-gray-100">
+                <tr className="bg-gray-50/80 border-b border-gray-100 dark:border-gray-800">
                   <Th w="w-8">#</Th>
                   <Th>Ponto</Th>
                   <Th>Tipo</Th>
@@ -432,11 +432,11 @@ function AnalysisDetail({ row }: { row: AnalysisFullRow }) {
       {segments.length > 0 && (
         <section>
           <SectionTitle>Trechos <Count n={segments.length} /></SectionTitle>
-          <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-gray-50/80 border-b border-gray-100">
+                  <tr className="bg-gray-50/80 border-b border-gray-100 dark:border-gray-800">
                     <Th w="w-8">#</Th>
                     <Th>De</Th>
                     <Th>Para</Th>
@@ -449,22 +449,22 @@ function AnalysisDetail({ row }: { row: AnalysisFullRow }) {
                 <tbody>
                   {segments.map((s, i) => (
                     <tr key={i} className={`border-b border-gray-50 ${i % 2 !== 0 ? "bg-gray-50/40" : ""}`}>
-                      <Td className="text-gray-300 text-xs text-center">{i + 1}</Td>
+                      <Td className="text-gray-300 dark:text-gray-600 text-xs text-center">{i + 1}</Td>
                       <Td>{s.de}</Td>
                       <Td>{s.para}</Td>
                       <Td align="right">{s.distKm != null ? fmtKm(s.distKm) : "—"}</Td>
                       <Td align="right">{s.tempoMin != null ? fmtMin(s.tempoMin) : "—"}</Td>
                       <Td align="right">
                         <span className={
-                          s.velocidadeKmh != null && s.velocidadeKmh > 100 ? "text-red-600 font-semibold" :
-                          s.velocidadeKmh != null && s.velocidadeKmh > 90  ? "text-amber-600 font-semibold" : ""
+                          s.velocidadeKmh != null && s.velocidadeKmh > 100 ? "text-red-600 dark:text-red-400 font-semibold" :
+                          s.velocidadeKmh != null && s.velocidadeKmh > 90  ? "text-amber-600 dark:text-amber-400 font-semibold" : ""
                         }>
                           {s.velocidadeKmh != null ? fmtSpeed(s.velocidadeKmh) : "—"}
                         </span>
                       </Td>
                       <Td align="center">
                         {s.alertas.length > 0
-                          ? <span className="inline-block px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-600">{s.alertas.length}</span>
+                          ? <span className="inline-block px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400">{s.alertas.length}</span>
                           : <span className="text-gray-200">—</span>}
                       </Td>
                     </tr>
@@ -489,9 +489,9 @@ function EventRow({ point: p, i, alerts }: { point: TelemetryPoint; i: number; a
   const rowBg = !p.matched
     ? "opacity-60"
     : hasCritical
-    ? "bg-red-50/60"
+    ? "bg-red-50/60 dark:bg-red-950/40"
     : hasWarning
-    ? "bg-amber-50/40"
+    ? "bg-amber-50/40 dark:bg-amber-950/40"
     : i % 2 !== 0 ? "bg-gray-50/40" : "";
 
   const label = tipoLabel(p.tipo);
@@ -499,36 +499,36 @@ function EventRow({ point: p, i, alerts }: { point: TelemetryPoint; i: number; a
 
   return (
     <tr className={`border-b border-gray-50 ${rowBg}`}>
-      <Td className="text-gray-300 text-xs text-center">{p.seq}</Td>
+      <Td className="text-gray-300 dark:text-gray-600 text-xs text-center">{p.seq}</Td>
       <Td>
-        <span className="font-medium text-gray-800 truncate max-w-[200px] block">{p.ponto}</span>
+        <span className="font-medium text-gray-800 dark:text-gray-200 truncate max-w-[200px] block">{p.ponto}</span>
       </Td>
       <Td>
         {label
           ? <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-medium ${tagClass}`}>{label}</span>
-          : <span className="text-gray-300">—</span>}
+          : <span className="text-gray-300 dark:text-gray-600">—</span>}
       </Td>
       <Td>
         {!p.matched ? (
-          <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold bg-gray-100 text-gray-500">N/Id.</span>
+          <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">N/Id.</span>
         ) : hasCritical ? (
-          <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold bg-red-100 text-red-600">Crítico</span>
+          <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400">Crítico</span>
         ) : hasWarning ? (
-          <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-600">Atenção</span>
+          <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400">Atenção</span>
         ) : (
-          <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-green-100 text-green-600">
+          <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-green-100 dark:bg-green-950/40 text-green-600 dark:text-green-400">
             <CheckCircle className="w-3 h-3" />OK
           </span>
         )}
       </Td>
-      <Td align="right" className="font-mono text-xs text-gray-400">{p.entrada ?? "—"}</Td>
-      <Td align="right" className="font-mono text-xs text-gray-400">{p.saida ?? "—"}</Td>
+      <Td align="right" className="font-mono text-xs text-gray-400 dark:text-gray-500">{p.entrada ?? "—"}</Td>
+      <Td align="right" className="font-mono text-xs text-gray-400 dark:text-gray-500">{p.saida ?? "—"}</Td>
       <Td align="right" className="text-xs">
         {p.parada_s > 0
-          ? <span className={p.parada_s > 1800 ? "text-red-600 font-semibold" : p.parada_s > 600 ? "text-amber-600" : "text-gray-500"}>
+          ? <span className={p.parada_s > 1800 ? "text-red-600 dark:text-red-400 font-semibold" : p.parada_s > 600 ? "text-amber-600 dark:text-amber-400" : "text-gray-500 dark:text-gray-400"}>
               {fmtSec(p.parada_s)}
             </span>
-          : <span className="text-gray-300">—</span>}
+          : <span className="text-gray-300 dark:text-gray-600">—</span>}
       </Td>
     </tr>
   );
@@ -539,12 +539,12 @@ function EventRow({ point: p, i, alerts }: { point: TelemetryPoint; i: number; a
 function AlertCard({ alert: a }: { alert: TelemetryAlert }) {
   const s = alertNivelStyle(a.nivel);
   return (
-    <div className={`rounded-xl border border-l-4 ${s.card} ${s.border} border-gray-100 p-4`}>
+    <div className={`rounded-xl border border-l-4 ${s.card} ${s.border} border-gray-100 dark:border-gray-800 p-4`}>
       <div className="flex items-start gap-3">
         <div className={`w-2.5 h-2.5 rounded-full mt-1 shrink-0 ${s.dot}`} />
         <div className="flex-1 min-w-0">
           <p className={`text-sm font-semibold ${s.title}`}>{alertTipoTitle(a.tipo)}</p>
-          <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">{a.descricao}</p>
+          <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 leading-relaxed">{a.descricao}</p>
           <div className="flex flex-wrap gap-3 mt-2">
             {a.trecho       && <CtxItem label="Trecho"     value={a.trecho} />}
             {a.distKm       != null && <CtxItem label="Dist."   value={fmtKm(a.distKm)} />}
@@ -564,10 +564,10 @@ function MetricCard({ label, value, sub, icon, color = "default" }: {
   icon: React.ReactNode; color?: "default" | "green" | "red" | "blue";
 }) {
   const colorMap = {
-    default: { card: "bg-white border-gray-100", val: "text-gray-800", icon: "text-gray-400" },
-    green:   { card: "bg-green-50 border-green-100", val: "text-green-700", icon: "text-green-400" },
-    red:     { card: "bg-red-50 border-red-100",   val: "text-red-700",   icon: "text-red-400"   },
-    blue:    { card: "bg-blue-50 border-blue-100", val: "text-blue-700",  icon: "text-blue-400"  },
+    default: { card: "bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800", val: "text-gray-800 dark:text-gray-200", icon: "text-gray-400 dark:text-gray-500" },
+    green:   { card: "bg-green-50 dark:bg-green-950/40 border-green-100 dark:border-green-800", val: "text-green-700 dark:text-green-400", icon: "text-green-400" },
+    red:     { card: "bg-red-50 dark:bg-red-950/40 border-red-100 dark:border-red-800",   val: "text-red-700 dark:text-red-400",   icon: "text-red-400"   },
+    blue:    { card: "bg-blue-50 dark:bg-blue-950/40 border-blue-100 dark:border-blue-800", val: "text-blue-700 dark:text-blue-400",  icon: "text-blue-400"  },
   };
   const c = colorMap[color];
   return (
@@ -576,39 +576,39 @@ function MetricCard({ label, value, sub, icon, color = "default" }: {
         {icon}{label}
       </div>
       <p className={`text-2xl font-bold leading-none ${c.val}`}>{value}</p>
-      {sub && <p className="text-[10px] text-gray-400 truncate">{sub}</p>}
+      {sub && <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">{sub}</p>}
     </div>
   );
 }
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
-  return <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">{children}</h2>;
+  return <h2 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">{children}</h2>;
 }
 
 function Count({ n }: { n: number }) {
-  return <span className="font-normal normal-case tracking-normal text-gray-300">· {n}</span>;
+  return <span className="font-normal normal-case tracking-normal text-gray-300 dark:text-gray-600">· {n}</span>;
 }
 
 function InfoItem({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <span className="text-[10px] text-gray-400 uppercase tracking-wide block">{label}</span>
-      <span className="text-sm font-semibold text-gray-800">{value}</span>
+      <span className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wide block">{label}</span>
+      <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{value}</span>
     </div>
   );
 }
 
 function CtxItem({ label, value }: { label: string; value: string }) {
   return (
-    <span className="text-[10px] text-gray-500">
-      <span className="text-gray-400">{label} </span>{value}
+    <span className="text-[10px] text-gray-500 dark:text-gray-400">
+      <span className="text-gray-400 dark:text-gray-500">{label} </span>{value}
     </span>
   );
 }
 
 function Th({ children, align, w }: { children?: React.ReactNode; align?: "right" | "center"; w?: string }) {
   return (
-    <th className={`px-4 py-3 text-[11px] font-semibold text-gray-400 uppercase tracking-wide text-${align ?? "left"} ${w ?? ""}`}>
+    <th className={`px-4 py-3 text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide text-${align ?? "left"} ${w ?? ""}`}>
       {children}
     </th>
   );

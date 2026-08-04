@@ -82,10 +82,10 @@ export function DriverPdfCard(props: {
 
   const statusBadge = useMemo(() => {
     switch (status) {
-      case "idle":      return { label: "idle",    cls: "border-slate-200 bg-slate-50 text-slate-700" };
-      case "generating":return { label: "gerando", cls: "border-amber-200 bg-amber-50 text-amber-800" };
-      case "ready":     return { label: "pronto",  cls: "border-emerald-200 bg-emerald-50 text-emerald-700" };
-      case "error":     return { label: "erro",    cls: "border-red-200 bg-red-50 text-red-700" };
+      case "idle":      return { label: "idle",    cls: "border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 text-slate-700 dark:text-slate-400" };
+      case "generating":return { label: "gerando", cls: "border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-400" };
+      case "ready":     return { label: "pronto",  cls: "border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400" };
+      case "error":     return { label: "erro",    cls: "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400" };
     }
   }, [status]);
 
@@ -165,11 +165,11 @@ export function DriverPdfCard(props: {
   }, [driveLoading, driveContext, occurrenceId, fileName]);
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-4">
+    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700">
+            <span className="inline-flex items-center rounded-md bg-gray-100 dark:bg-gray-800 px-2 py-1 text-xs font-medium text-gray-700 dark:text-gray-300">
               Motorista {String(driver.position).padStart(2, "0")}
             </span>
             <span className={`inline-flex items-center rounded-md border px-2 py-1 text-xs font-medium ${statusBadge.cls}`}>
@@ -177,21 +177,21 @@ export function DriverPdfCard(props: {
             </span>
           </div>
 
-          <h3 className="mt-2 text-sm font-semibold text-gray-900 truncate">
+          <h3 className="mt-2 text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
             {driver.registry} — {driver.name}
           </h3>
-          <p className="mt-1 text-xs text-gray-600">
-            Base: <span className="font-medium text-gray-800">{driver.base ?? "—"}</span>
+          <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+            Base: <span className="font-medium text-gray-800 dark:text-gray-200">{driver.base ?? "—"}</span>
           </p>
 
           <div className="mt-2 flex items-center gap-2 group">
-            <p className="text-xs text-gray-500 truncate" title={fileName}>
-              Arquivo: <span className="font-medium text-gray-700">{fileName}</span>
+            <p className="text-xs text-gray-500 dark:text-gray-400 truncate" title={fileName}>
+              Arquivo: <span className="font-medium text-gray-700 dark:text-gray-300">{fileName}</span>
             </p>
             <button
               type="button"
               onClick={handleCopyName}
-              className="cursor-pointer p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-blue-600 transition-colors"
+              className="cursor-pointer p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
               title="Copiar nome"
             >
               {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
@@ -199,7 +199,7 @@ export function DriverPdfCard(props: {
           </div>
 
           {status === "error" && errorMsg ? (
-            <p className="mt-2 text-xs text-red-700">{errorMsg}</p>
+            <p className="mt-2 text-xs text-red-700 dark:text-red-400">{errorMsg}</p>
           ) : null}
         </div>
 
@@ -220,12 +220,12 @@ export function DriverPdfCard(props: {
             className={[
               "h-10 rounded-lg border flex items-center justify-center transition-colors",
               driveSent
-                ? "px-3 gap-1.5 border-emerald-200 bg-emerald-50 text-emerald-700 cursor-default"
-                : "cursor-pointer w-10 border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50",
+                ? "px-3 gap-1.5 border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 cursor-default"
+                : "cursor-pointer w-10 border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50",
             ].join(" ")}
           >
             {driveLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin text-gray-500" />
+              <Loader2 className="w-4 h-4 animate-spin text-gray-500 dark:text-gray-400" />
             ) : driveSent ? (
               <>
                 <Check className="w-4 h-4" />

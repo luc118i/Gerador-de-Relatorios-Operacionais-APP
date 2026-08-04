@@ -85,17 +85,17 @@ export function AppDrawer({ open, currentPage, onClose, onNavigate }: AppDrawerP
 
       {/* Drawer */}
       <aside
-        className={`fixed top-0 left-0 h-full w-72 bg-white shadow-2xl z-50 flex flex-col transition-transform duration-300 ease-in-out ${open ? "translate-x-0" : "-translate-x-full"}`}
+        className={`fixed top-0 left-0 h-full w-72 bg-white dark:bg-gray-900 shadow-2xl z-50 flex flex-col transition-transform duration-300 ease-in-out ${open ? "translate-x-0" : "-translate-x-full"}`}
         aria-label="Menu lateral"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
           <div>
-            <p className="text-xs text-gray-400 uppercase tracking-widest font-semibold">Módulos</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-widest font-semibold">Módulos</p>
           </div>
           <button
             onClick={onClose}
-            className="cursor-pointer p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+            className="cursor-pointer p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-500 dark:hover:text-gray-300 dark:hover:bg-gray-800 transition-colors"
             aria-label="Fechar menu"
           >
             <X className="w-4 h-4" />
@@ -112,16 +112,16 @@ export function AppDrawer({ open, currentPage, onClose, onNavigate }: AppDrawerP
                 onClick={() => { onNavigate(item.id); onClose(); }}
                 className={`cursor-pointer w-full flex items-start gap-3 px-3 py-3 rounded-xl text-left transition-colors ${
                   active
-                    ? "bg-blue-50 text-blue-700"
-                    : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                    ? "bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400"
+                    : "text-gray-700 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-gray-100"
                 }`}
               >
-                <span className={`mt-0.5 shrink-0 ${active ? "text-blue-600" : "text-gray-400"}`}>
+                <span className={`mt-0.5 shrink-0 ${active ? "text-blue-600 dark:text-blue-400" : "text-gray-400 dark:text-gray-500"}`}>
                   {item.icon}
                 </span>
                 <div>
                   <p className="text-sm font-medium leading-tight">{item.label}</p>
-                  <p className={`text-xs mt-0.5 ${active ? "text-blue-500" : "text-gray-400"}`}>
+                  <p className={`text-xs mt-0.5 ${active ? "text-blue-500 dark:text-blue-400" : "text-gray-400 dark:text-gray-500"}`}>
                     {item.description}
                   </p>
                 </div>
@@ -131,9 +131,9 @@ export function AppDrawer({ open, currentPage, onClose, onNavigate }: AppDrawerP
         </nav>
 
         {/* Footer — perfil logado */}
-        <div className="px-3 py-4 border-t border-gray-100">
+        <div className="px-3 py-4 border-t border-gray-100 dark:border-gray-800">
           <div className="flex items-center gap-3 px-2 py-2">
-            <UserCircle2 className="w-8 h-8 text-gray-300 shrink-0" />
+            <UserCircle2 className="w-8 h-8 text-gray-300 dark:text-gray-600 shrink-0" />
             {editingName ? (
               <div className="min-w-0 flex-1 flex items-center gap-1.5">
                 <input
@@ -147,12 +147,12 @@ export function AppDrawer({ open, currentPage, onClose, onNavigate }: AppDrawerP
                   placeholder="Seu nome"
                   maxLength={60}
                   disabled={savingName}
-                  className="min-w-0 flex-1 px-2 py-1 rounded-lg border border-gray-200 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-200 disabled:opacity-60"
+                  className="min-w-0 flex-1 px-2 py-1 rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-200 dark:focus:ring-blue-900 disabled:opacity-60"
                 />
                 <button
                   onClick={() => void saveName()}
                   disabled={savingName}
-                  className="cursor-pointer p-1.5 rounded-lg text-green-600 hover:bg-green-50 disabled:opacity-50 transition-colors shrink-0"
+                  className="cursor-pointer p-1.5 rounded-lg text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-950/40 disabled:opacity-50 transition-colors shrink-0"
                   aria-label="Salvar nome"
                 >
                   {savingName ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
@@ -160,7 +160,7 @@ export function AppDrawer({ open, currentPage, onClose, onNavigate }: AppDrawerP
                 <button
                   onClick={() => setEditingName(false)}
                   disabled={savingName}
-                  className="cursor-pointer p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 disabled:opacity-50 transition-colors shrink-0"
+                  className="cursor-pointer p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 dark:text-gray-500 dark:hover:bg-gray-800 disabled:opacity-50 transition-colors shrink-0"
                   aria-label="Cancelar"
                 >
                   <X className="w-4 h-4" />
@@ -169,14 +169,14 @@ export function AppDrawer({ open, currentPage, onClose, onNavigate }: AppDrawerP
             ) : (
               <>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-gray-700 truncate">
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">
                     {profileName || "Analista"}
                   </p>
-                  <p className="text-xs text-gray-400 truncate">{user?.email ?? ""}</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 truncate">{user?.email ?? ""}</p>
                 </div>
                 <button
                   onClick={startEditName}
-                  className="cursor-pointer p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors shrink-0"
+                  className="cursor-pointer p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-500 dark:hover:text-gray-300 dark:hover:bg-gray-800 transition-colors shrink-0"
                   aria-label="Editar nome"
                   title="Editar seu nome"
                 >
@@ -187,7 +187,7 @@ export function AppDrawer({ open, currentPage, onClose, onNavigate }: AppDrawerP
           </div>
           <button
             onClick={() => { void signOut(); }}
-            className="cursor-pointer mt-1 w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors"
+            className="cursor-pointer mt-1 w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-gray-600 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-950/40 dark:hover:text-red-400 transition-colors"
           >
             <LogOut className="w-4 h-4" />
             Sair

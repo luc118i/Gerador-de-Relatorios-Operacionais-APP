@@ -42,7 +42,7 @@ export function OcorrenciaCard({
 
   return (
     <div
-      className="group bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer relative"
+      className="group bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer relative"
       onClick={onClick}
     >
       {/* ✅ Botões aparecem no hover */}
@@ -53,7 +53,7 @@ export function OcorrenciaCard({
         <button
           onClick={handleEditar}
           disabled={loadingEdit}
-          className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors disabled:opacity-50"
+          className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-md transition-colors disabled:opacity-50"
         >
           {loadingEdit ? (
             <>
@@ -67,7 +67,7 @@ export function OcorrenciaCard({
         </button>
         <button
           onClick={onExcluir}
-          className="p-1.5 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+          className="p-1.5 rounded-md text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
           title="Excluir"
         >
           <Trash2 className="w-4 h-4" />
@@ -76,14 +76,14 @@ export function OcorrenciaCard({
 
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2 mb-1">
-          <span className="font-semibold text-lg text-gray-900">
+          <span className="font-semibold text-lg text-gray-900 dark:text-gray-100">
             {identificadorViagem}
           </span>
           <BaseChip base={ocorrencia.motorista1.base} />
         </div>
-        <p className="text-sm text-gray-600">{descricaoLinha}</p>
+        <p className="text-sm text-gray-600 dark:text-gray-400">{descricaoLinha}</p>
         {ocorrencia.evidencias.length > 0 && (
-          <div className="flex items-center gap-1 text-gray-600 bg-gray-50 px-2 py-1 rounded">
+          <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-950 px-2 py-1 rounded">
             <Camera className="w-4 h-4" />
             <span className="text-sm font-medium">
               {ocorrencia.evidencias.length}
@@ -93,8 +93,8 @@ export function OcorrenciaCard({
       </div>
 
       <div className="space-y-2">
-        <div className="flex items-center gap-2 text-sm text-gray-700">
-          <Clock className="w-4 h-4 text-gray-400" />
+        <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+          <Clock className="w-4 h-4 text-gray-400 dark:text-gray-500" />
           {ocorrencia.typeCode === "EXCESSO_VELOCIDADE" ? (
             <span>{ocorrencia.horarioInicial}</span>
           ) : (
@@ -102,30 +102,30 @@ export function OcorrenciaCard({
               <span>
                 {ocorrencia.horarioInicial} - {ocorrencia.horarioFinal}
               </span>
-              <span className="text-gray-400">({tempoParada})</span>
+              <span className="text-gray-400 dark:text-gray-500">({tempoParada})</span>
             </>
           )}
         </div>
 
         {ocorrencia.typeCode === "EXCESSO_VELOCIDADE" ? (
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             🏎️{" "}
-            <span className="font-semibold text-gray-800">
+            <span className="font-semibold text-gray-800 dark:text-gray-200">
               {ocorrencia.speedKmh ? `${ocorrencia.speedKmh} km/h` : "—"}
             </span>
           </p>
         ) : ocorrencia.typeCode === "GENERICO" ? (
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             📋{" "}
-            <span className="font-semibold text-gray-800">
+            <span className="font-semibold text-gray-800 dark:text-gray-200">
               {ocorrencia.reportTitle || "—"}
             </span>
           </p>
         ) : (
-          <p className="text-sm text-gray-600">📍 {ocorrencia.localParada}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">📍 {ocorrencia.localParada}</p>
         )}
 
-        <div className="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-100">
+        <div className="text-xs text-gray-500 dark:text-gray-400 mt-2 pt-2 border-t border-gray-100 dark:border-gray-800">
           {ocorrencia.motorista1.nome}
           {ocorrencia.motorista2 && ` • ${ocorrencia.motorista2.nome}`}
         </div>

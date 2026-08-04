@@ -45,22 +45,22 @@ export function SecaoDadosViagem({
         />
 
         {viagemSelecionada && (
-          <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 dark:bg-gray-950 rounded-lg border border-gray-200 dark:border-gray-800">
             <div>
-              <label className="text-xs text-gray-600">Linha</label>
-              <p className="font-medium text-gray-900">
+              <label className="text-xs text-gray-600 dark:text-gray-400">Linha</label>
+              <p className="font-medium text-gray-900 dark:text-gray-100">
                 {viagemSelecionada.codigoLinha} – {viagemSelecionada.nomeLinha}
               </p>
             </div>
             <div>
-              <label className="text-xs text-gray-600">Horário da Viagem</label>
-              <p className="font-medium text-gray-900">
+              <label className="text-xs text-gray-600 dark:text-gray-400">Horário da Viagem</label>
+              <p className="font-medium text-gray-900 dark:text-gray-100">
                 {viagemSelecionada.horaPartida}
               </p>
             </div>
             <div className="col-span-2">
-              <label className="text-xs text-gray-600">Sentido</label>
-              <p className="font-medium text-gray-900">
+              <label className="text-xs text-gray-600 dark:text-gray-400">Sentido</label>
+              <p className="font-medium text-gray-900 dark:text-gray-100">
                 {viagemSelecionada.sentido}
               </p>
             </div>

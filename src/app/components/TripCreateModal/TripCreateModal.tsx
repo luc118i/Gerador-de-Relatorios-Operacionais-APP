@@ -98,7 +98,7 @@ export function TripCreateModal({
     >
       <div className="space-y-4">
         {createTrip.isError ? (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-4 py-3 text-sm text-red-700 dark:text-red-400">
             Falha ao cadastrar linha. Verifique os dados e tente novamente.
           </div>
         ) : null}
@@ -106,8 +106,8 @@ export function TripCreateModal({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Código da linha */}
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700">
-              Código da linha <span className="text-red-600">*</span>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-400">
+              Código da linha <span className="text-red-600 dark:text-red-400">*</span>
             </label>
             <input
               value={form.lineCode}
@@ -117,20 +117,20 @@ export function TripCreateModal({
               onBlur={() => setTouched((t) => ({ ...t, lineCode: true }))}
               placeholder="Ex: 330"
               className={[
-                "w-full h-10 px-3 rounded-lg border bg-white/70",
-                "border-white/40",
-                "focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-white/60",
+                "w-full h-10 px-3 rounded-lg border bg-white/70 dark:bg-white/5 text-slate-900 dark:text-slate-100",
+                "border-white/40 dark:border-white/10",
+                "focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-white/60 dark:focus:border-white/20",
               ].join(" ")}
             />
             {touched.lineCode && errors.lineCode ? (
-              <p className="text-xs text-red-600">{errors.lineCode}</p>
+              <p className="text-xs text-red-600 dark:text-red-400">{errors.lineCode}</p>
             ) : null}
           </div>
 
           {/* Horário de partida */}
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700">
-              Horário de partida <span className="text-red-600">*</span>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-400">
+              Horário de partida <span className="text-red-600 dark:text-red-400">*</span>
             </label>
             <input
               value={form.departureTime}
@@ -140,21 +140,21 @@ export function TripCreateModal({
               onBlur={() => setTouched((t) => ({ ...t, departureTime: true }))}
               placeholder="Ex: 06:30"
               className={[
-                "w-full h-10 px-3 rounded-lg border bg-white/70",
-                "border-white/40",
-                "focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-white/60",
+                "w-full h-10 px-3 rounded-lg border bg-white/70 dark:bg-white/5 text-slate-900 dark:text-slate-100",
+                "border-white/40 dark:border-white/10",
+                "focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-white/60 dark:focus:border-white/20",
               ].join(" ")}
             />
             {touched.departureTime && errors.departureTime ? (
-              <p className="text-xs text-red-600">{errors.departureTime}</p>
+              <p className="text-xs text-red-600 dark:text-red-400">{errors.departureTime}</p>
             ) : null}
           </div>
         </div>
 
         {/* Nome da linha */}
         <div className="space-y-1">
-          <label className="block text-sm font-medium text-slate-700">
-            Nome da linha <span className="text-red-600">*</span>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-400">
+            Nome da linha <span className="text-red-600 dark:text-red-400">*</span>
           </label>
           <input
             value={form.lineName}
@@ -164,19 +164,19 @@ export function TripCreateModal({
             onBlur={() => setTouched((t) => ({ ...t, lineName: true }))}
             placeholder="Ex: Montes Claros - Brasília"
             className={[
-              "w-full h-10 px-3 rounded-lg border bg-white/70",
-              "border-white/40",
-              "focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-white/60",
+              "w-full h-10 px-3 rounded-lg border bg-white/70 dark:bg-white/5 text-slate-900 dark:text-slate-100",
+              "border-white/40 dark:border-white/10",
+              "focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-white/60 dark:focus:border-white/20",
             ].join(" ")}
           />
           {touched.lineName && errors.lineName ? (
-            <p className="text-xs text-red-600">{errors.lineName}</p>
+            <p className="text-xs text-red-600 dark:text-red-400">{errors.lineName}</p>
           ) : null}
         </div>
 
         {/* Sentido */}
         <div className="space-y-1">
-          <label className="block text-sm font-medium text-slate-700">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-400">
             Sentido
           </label>
           <input
@@ -186,9 +186,9 @@ export function TripCreateModal({
             }
             placeholder="Ex: IDA / VOLTA"
             className={[
-              "w-full h-10 px-3 rounded-lg border bg-white/70",
-              "border-white/40",
-              "focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-white/60",
+              "w-full h-10 px-3 rounded-lg border bg-white/70 dark:bg-white/5 text-slate-900 dark:text-slate-100",
+              "border-white/40 dark:border-white/10",
+              "focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-white/60 dark:focus:border-white/20",
             ].join(" ")}
           />
         </div>

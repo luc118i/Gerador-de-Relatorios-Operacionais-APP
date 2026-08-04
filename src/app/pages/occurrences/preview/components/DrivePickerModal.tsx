@@ -136,20 +136,20 @@ export function DrivePickerModal({ onConfirm, onClose, currentConfig }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
           <div className="flex items-center gap-2.5">
-            <FolderUp className="w-5 h-5 text-blue-600" />
-            <h2 className="text-base font-semibold text-gray-900">
+            <FolderUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
               Enviar ao Google Drive
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="cursor-pointer p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+            className="cursor-pointer p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
           >
-            <X className="w-4 h-4 text-gray-500" />
+            <X className="w-4 h-4 text-gray-500 dark:text-gray-400" />
           </button>
         </div>
 
@@ -157,41 +157,41 @@ export function DrivePickerModal({ onConfirm, onClose, currentConfig }: Props) {
         <div className="px-5 py-5 space-y-4">
           {/* Pasta selecionada */}
           {selectedFolder ? (
-            <div className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-100 rounded-lg">
+            <div className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-800 rounded-lg">
               <FolderOpen className="w-5 h-5 text-blue-500 shrink-0" />
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-blue-900 truncate">
+                <p className="text-sm font-medium text-blue-900 dark:text-blue-300 truncate">
                   {selectedFolder.folderName}
                 </p>
-                <p className="text-xs text-blue-500 truncate">
+                <p className="text-xs text-blue-500 dark:text-blue-400 truncate">
                   {selectedFolder.folderId}
                 </p>
               </div>
               <button
                 onClick={handleConnect}
                 disabled={loading}
-                className="cursor-pointer shrink-0 text-xs text-blue-600 hover:text-blue-800 underline"
+                className="cursor-pointer shrink-0 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline"
               >
                 Trocar
               </button>
             </div>
           ) : step === "connect" ? (
             <div className="text-center py-4 space-y-3">
-              <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mx-auto">
+              <div className="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center mx-auto">
                 <FolderOpen className="w-6 h-6 text-blue-500" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-800">
+                <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
                   Escolha a pasta de destino
                 </p>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   Faça login com sua conta Google para selecionar a pasta onde
                   os PDFs serão enviados.
                 </p>
               </div>
             </div>
           ) : (
-            <div className="flex items-center justify-center gap-2 py-6 text-gray-500">
+            <div className="flex items-center justify-center gap-2 py-6 text-gray-500 dark:text-gray-400">
               <Loader2 className="w-5 h-5 animate-spin" />
               <span className="text-sm">Abrindo seletor de pasta…</span>
             </div>
@@ -211,12 +211,12 @@ export function DrivePickerModal({ onConfirm, onClose, currentConfig }: Props) {
                 }`}
               >
                 <span
-                  className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
+                  className={`absolute top-0.5 w-4 h-4 rounded-full bg-white dark:bg-gray-900 shadow transition-transform ${
                     saveAsDefault ? "translate-x-4" : "translate-x-0.5"
                   }`}
                 />
               </div>
-              <span className="text-sm text-gray-700">
+              <span className="text-sm text-gray-700 dark:text-gray-300">
                 Salvar como pasta padrão
               </span>
             </div>
@@ -224,17 +224,17 @@ export function DrivePickerModal({ onConfirm, onClose, currentConfig }: Props) {
 
           {/* Erro */}
           {error && (
-            <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+            <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 border border-red-100 dark:border-red-800 rounded-lg px-3 py-2">
               {error}
             </p>
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-100 bg-gray-50">
+        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950">
           <button
             onClick={onClose}
-            className="cursor-pointer h-9 px-4 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-sm text-gray-700"
+            className="cursor-pointer h-9 px-4 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm text-gray-700 dark:text-gray-300"
           >
             Cancelar
           </button>

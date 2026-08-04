@@ -41,10 +41,10 @@ import { tratativaToTipoMedida } from "../../utils/tratativa";
 
 // ── TratativaBadge ────────────────────────────────────────────────────────────
 const TRATATIVA_META: Record<string, { label: string; dot: string; cls: string }> = {
-  SUSPEICAO:   { label: "Suspensão",      dot: "bg-violet-500", cls: "bg-violet-50 text-violet-700 border border-violet-200" },
-  ADVERTENCIA: { label: "Advertência",    dot: "bg-amber-400",  cls: "bg-amber-50 text-amber-700 border border-amber-200"   },
-  VALE:        { label: "Vale",           dot: "bg-red-500",    cls: "bg-red-50 text-red-700 border border-red-200"         },
-  REGISTRO:    { label: "Só o Registro",  dot: "bg-gray-400",   cls: "bg-gray-100 text-gray-600 border border-gray-200"     },
+  SUSPEICAO:   { label: "Suspensão",      dot: "bg-violet-500", cls: "bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-400 border border-violet-200 dark:border-violet-800" },
+  ADVERTENCIA: { label: "Advertência",    dot: "bg-amber-400",  cls: "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800"   },
+  VALE:        { label: "Vale",           dot: "bg-red-500",    cls: "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800"         },
+  REGISTRO:    { label: "Só o Registro",  dot: "bg-gray-400",   cls: "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-800"     },
 };
 
 function TratativaBadge({ value, size = "sm" }: { value: string; size?: "xs" | "sm" }) {
@@ -497,7 +497,7 @@ export function OccurrenceCard({
         {disciplinaryState === "loading" && !batchOverlay && (
           <div className="absolute inset-0 z-10 flex items-center gap-1.5 px-3 bg-white/80 dark:bg-gray-900/85 backdrop-blur-[1px] pointer-events-none">
             <Loader2 className="w-3.5 h-3.5 text-orange-400 animate-spin shrink-0" />
-            <span className="text-xs font-medium text-orange-600">
+            <span className="text-xs font-medium text-orange-600 dark:text-orange-400">
               {disciplinaryAction === "verifying"
                 ? "Verificando no RIZER..."
                 : disciplinaryAction === "updating"
@@ -507,21 +507,21 @@ export function OccurrenceCard({
           </div>
         )}
         {tratativaOverlay && !batchOverlay && disciplinaryState !== "loading" && (
-          <div className="absolute inset-0 z-10 flex items-center gap-1.5 px-3 bg-amber-50/90 backdrop-blur-[1px] pointer-events-none">
+          <div className="absolute inset-0 z-10 flex items-center gap-1.5 px-3 bg-amber-50/90 dark:bg-amber-950/40 backdrop-blur-[1px] pointer-events-none">
             {tratativaOverlay === "queued"
               ? <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
               : <Loader2 className="w-3.5 h-3.5 text-amber-500 animate-spin shrink-0" />}
-            <span className="text-xs font-medium text-amber-700">
+            <span className="text-xs font-medium text-amber-700 dark:text-amber-400">
               {tratativaOverlay === "queued" ? "Aguardando tratativa..." : "Preenchendo tratativa..."}
             </span>
           </div>
         )}
         {revisarOverlay && !batchOverlay && !tratativaOverlay && disciplinaryState !== "loading" && (
-          <div className="absolute inset-0 z-10 flex items-center gap-1.5 px-3 bg-emerald-50/90 backdrop-blur-[1px] pointer-events-none">
+          <div className="absolute inset-0 z-10 flex items-center gap-1.5 px-3 bg-emerald-50/90 dark:bg-emerald-950/40 backdrop-blur-[1px] pointer-events-none">
             {revisarOverlay === "queued"
               ? <Clock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
               : <Loader2 className="w-3.5 h-3.5 text-emerald-500 animate-spin shrink-0" />}
-            <span className="text-xs font-medium text-emerald-700">
+            <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400">
               {revisarOverlay === "queued" ? "Aguardando revisão..." : "Revisando no RIZER..."}
             </span>
           </div>
@@ -570,31 +570,31 @@ export function OccurrenceCard({
                   {subjectTitle}
                 </span>
                 {hasSecondDriverCard && (
-                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 font-semibold text-[10px] leading-none whitespace-nowrap flex-shrink-0">
+                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 font-semibold text-[10px] leading-none whitespace-nowrap flex-shrink-0">
                     <UserCheck className="w-2.5 h-2.5" />
                     2 motoristas
                   </span>
                 )}
                 {occurrence.typeCode === "EXCESSO_VELOCIDADE" && occurrence.speedKmh != null && (
-                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-bold text-[10px] leading-none whitespace-nowrap flex-shrink-0">
+                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400 font-bold text-[10px] leading-none whitespace-nowrap flex-shrink-0">
                     <Zap className="w-2.5 h-2.5" />
                     {occurrence.speedKmh} km/h
                   </span>
                 )}
                 {occurrence.typeCode === "DESCUMP_OP_PARADA_FORA" && (occurrence.evidenceCount ?? 0) === 0 && (
-                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-orange-100 text-orange-600 font-semibold text-[10px] leading-none whitespace-nowrap flex-shrink-0">
+                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-orange-100 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 font-semibold text-[10px] leading-none whitespace-nowrap flex-shrink-0">
                     <ImageOff className="w-2.5 h-2.5" />
                     Sem evidência
                   </span>
                 )}
                 {disciplinaryState === "idle" && (
-                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 font-semibold text-[10px] leading-none whitespace-nowrap flex-shrink-0">
+                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400 font-semibold text-[10px] leading-none whitespace-nowrap flex-shrink-0">
                     <Gavel className="w-2.5 h-2.5" />
                     Pendente RIZER
                   </span>
                 )}
                 {localFaltaTratativa && (
-                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-semibold text-[10px] leading-none whitespace-nowrap flex-shrink-0">
+                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 font-semibold text-[10px] leading-none whitespace-nowrap flex-shrink-0">
                     <AlertTriangle className="w-2.5 h-2.5" />
                     Falta a tratativa
                   </span>
@@ -642,7 +642,7 @@ export function OccurrenceCard({
             disabled={loadingAiWpp}
             title={isAnaliseOp ? "Gerar resumo WhatsApp com IA" : "Copiar WhatsApp"}
             className={`p-2 rounded transition-colors disabled:opacity-50 ${
-              copiedWpp ? "text-green-600" : "text-gray-400 hover:text-green-600 hover:bg-green-50 dark:text-gray-500 dark:hover:text-green-400 dark:hover:bg-green-950/40"
+              copiedWpp ? "text-green-600 dark:text-green-400" : "text-gray-400 hover:text-green-600 hover:bg-green-50 dark:text-gray-500 dark:hover:text-green-400 dark:hover:bg-green-950/40"
             }`}
           >
             {loadingAiWpp ? (
@@ -658,7 +658,7 @@ export function OccurrenceCard({
             disabled={loadingAiRelat}
             title={isAnaliseOp ? "Gerar resumo e-mail com IA" : "Copiar Relatório Individual"}
             className={`p-2 rounded transition-colors disabled:opacity-50 ${
-              copiedRelat ? "text-green-600" : "text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:text-gray-500 dark:hover:text-blue-400 dark:hover:bg-blue-950/40"
+              copiedRelat ? "text-green-600 dark:text-green-400" : "text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:text-gray-500 dark:hover:text-blue-400 dark:hover:bg-blue-950/40"
             }`}
           >
             {loadingAiRelat ? (
@@ -680,7 +680,7 @@ export function OccurrenceCard({
           <button
             onClick={(e) => { e.stopPropagation(); setShowSuspensaoModal(true); }}
             title={localSuspensao ? `Suspensão: ${localSuspensao.dias}d a partir de ${fmtDdMmCompact(localSuspensao.dataInicio)}` : "Gerar Suspensão Disciplinar"}
-            className={`p-2 rounded transition-colors ${localSuspensao ? "text-amber-500 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/40" : "text-gray-400 hover:text-red-700 hover:bg-red-50 dark:text-gray-500 dark:hover:text-red-400 dark:hover:bg-red-950/40"}`}
+            className={`p-2 rounded transition-colors ${localSuspensao ? "text-amber-500 hover:text-amber-700 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40" : "text-gray-400 hover:text-red-700 hover:bg-red-50 dark:text-gray-500 dark:hover:text-red-400 dark:hover:bg-red-950/40"}`}
           >
             <ShieldAlert className="w-4 h-4" />
           </button>
@@ -695,8 +695,8 @@ export function OccurrenceCard({
               }
               className={`p-2 rounded transition-colors disabled:opacity-50 disabled:cursor-wait ${
                 fillMedidaState === "success"
-                  ? "text-emerald-600"
-                  : "text-amber-500 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/40"
+                  ? "text-emerald-600 dark:text-emerald-400"
+                  : "text-amber-500 hover:text-amber-700 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40"
               }`}
             >
               {fillMedidaState === "loading" ? (
@@ -720,14 +720,14 @@ export function OccurrenceCard({
             }
             className={`w-[108px] flex-shrink-0 flex items-center justify-center gap-1 px-1 py-1 rounded-md text-[10px] font-medium border transition-all disabled:opacity-60 overflow-hidden whitespace-nowrap ${
               disciplinaryState === "success"
-                ? "text-emerald-700 bg-emerald-50 border-emerald-200 hover:bg-emerald-100"
+                ? "text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-950/40"
                 : disciplinaryState === "loading"
-                  ? "text-orange-600 bg-orange-50 border-orange-200 cursor-wait"
+                  ? "text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/40 border-orange-200 dark:border-orange-800 cursor-wait"
                   : disciplinaryState === "error"
-                    ? "text-red-600 bg-red-50 border-red-200 hover:bg-red-100"
+                    ? "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-950/40"
                     : !isAdmin
                       ? "text-gray-400 bg-gray-50 border-gray-200 dark:text-gray-500 dark:bg-gray-800 dark:border-gray-700 cursor-not-allowed"
-                      : "text-orange-600 bg-orange-50 border-orange-200 hover:bg-orange-100"
+                      : "text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/40 border-orange-200 dark:border-orange-800 hover:bg-orange-100 dark:hover:bg-orange-950/40"
             }`}
           >
             {disciplinaryState === "loading" ? (
@@ -809,7 +809,7 @@ export function OccurrenceCard({
       {disciplinaryState === "loading" && !batchOverlay && (
         <div className="absolute inset-0 z-10 rounded-lg flex flex-col items-center justify-center gap-2 bg-white/80 dark:bg-gray-900/85 backdrop-blur-[2px] pointer-events-none">
           <Loader2 className="w-6 h-6 text-orange-400 animate-spin" />
-          <span className="text-xs font-medium text-orange-600">
+          <span className="text-xs font-medium text-orange-600 dark:text-orange-400">
             {disciplinaryAction === "verifying"
               ? "Verificando no RIZER..."
               : disciplinaryAction === "updating"
@@ -819,21 +819,21 @@ export function OccurrenceCard({
         </div>
       )}
       {(tratativaOverlay || fillMedidaState === "loading") && !batchOverlay && disciplinaryState !== "loading" && (
-        <div className="absolute inset-0 z-10 rounded-lg flex flex-col items-center justify-center gap-2 bg-amber-50/90 backdrop-blur-[2px] pointer-events-none">
+        <div className="absolute inset-0 z-10 rounded-lg flex flex-col items-center justify-center gap-2 bg-amber-50/90 dark:bg-amber-950/40 backdrop-blur-[2px] pointer-events-none">
           {tratativaOverlay === "queued"
             ? <Clock className="w-5 h-5 text-amber-400" />
             : <Loader2 className="w-6 h-6 text-amber-500 animate-spin" />}
-          <span className="text-xs font-medium text-amber-700">
+          <span className="text-xs font-medium text-amber-700 dark:text-amber-400">
             {tratativaOverlay === "queued" ? "Aguardando tratativa..." : "Preenchendo tratativa..."}
           </span>
         </div>
       )}
       {revisarOverlay && !batchOverlay && !tratativaOverlay && disciplinaryState !== "loading" && (
-        <div className="absolute inset-0 z-10 rounded-lg flex flex-col items-center justify-center gap-2 bg-emerald-50/90 backdrop-blur-[2px] pointer-events-none">
+        <div className="absolute inset-0 z-10 rounded-lg flex flex-col items-center justify-center gap-2 bg-emerald-50/90 dark:bg-emerald-950/40 backdrop-blur-[2px] pointer-events-none">
           {revisarOverlay === "queued"
             ? <Clock className="w-5 h-5 text-emerald-400" />
             : <Loader2 className="w-6 h-6 text-emerald-500 animate-spin" />}
-          <span className="text-xs font-medium text-emerald-700">
+          <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400">
             {revisarOverlay === "queued" ? "Aguardando revisão..." : "Revisando no RIZER..."}
           </span>
         </div>
@@ -857,7 +857,7 @@ export function OccurrenceCard({
                 )}
                 <BaseChip base={driver1?.baseCode ?? occurrence.baseCode} />
                 {hasSecondDriverCard && (
-                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 font-semibold text-[10px] leading-none whitespace-nowrap">
+                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 font-semibold text-[10px] leading-none whitespace-nowrap">
                     <UserCheck className="w-2.5 h-2.5" />
                     2 motoristas
                   </span>
@@ -872,7 +872,7 @@ export function OccurrenceCard({
         {!isSecondDriverCard && (
         <div className="flex items-center gap-1.5 flex-wrap">
           {occurrence.typeCode === "DESCUMP_OP_PARADA_FORA" && (occurrence.evidenceCount ?? 0) === 0 ? (
-            <div className="flex items-center gap-1 bg-orange-50 border border-orange-200 text-orange-600 px-2 py-1 rounded">
+            <div className="flex items-center gap-1 bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800 text-orange-600 dark:text-orange-400 px-2 py-1 rounded">
               <ImageOff className="w-3.5 h-3.5" />
               <span className="text-xs font-semibold">Sem evidência</span>
             </div>
@@ -883,13 +883,13 @@ export function OccurrenceCard({
             </div>
           ) : null}
           {disciplinaryState === "idle" && (
-            <div className="flex items-center gap-1 bg-orange-50 border border-orange-200 text-orange-700 px-2 py-1 rounded">
+            <div className="flex items-center gap-1 bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800 text-orange-700 dark:text-orange-400 px-2 py-1 rounded">
               <Gavel className="w-3.5 h-3.5" />
               <span className="text-xs font-semibold">Não enviado ao RIZER</span>
             </div>
           )}
           {localFaltaTratativa && (
-            <div className="flex items-center gap-1 bg-amber-50 border border-amber-200 text-amber-700 px-2 py-1 rounded">
+            <div className="flex items-center gap-1 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 px-2 py-1 rounded">
               <AlertTriangle className="w-3.5 h-3.5" />
               <span className="text-xs font-semibold">Falta a tratativa</span>
             </div>
@@ -921,7 +921,7 @@ export function OccurrenceCard({
 
         {occurrence.typeCode === "EXCESSO_VELOCIDADE" ? (
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 border border-red-200 text-red-700 font-bold text-base leading-none">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 font-bold text-base leading-none">
               <Zap className="w-4 h-4 fill-red-200" />
               {occurrence.speedKmh != null ? `${occurrence.speedKmh} km/h` : "—"}
             </span>
@@ -1056,14 +1056,14 @@ export function OccurrenceCard({
             disabled={disciplinaryState === "loading"}
             className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium rounded-md transition-colors disabled:opacity-60 ${
               disciplinaryState === "success"
-                ? "text-emerald-700 bg-emerald-50 hover:bg-emerald-100"
+                ? "text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-950/40"
                 : disciplinaryState === "loading"
-                  ? "text-orange-600 bg-orange-50 cursor-wait"
+                  ? "text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/40 cursor-wait"
                   : disciplinaryState === "error"
-                    ? "text-red-600 bg-red-50 hover:bg-red-100"
+                    ? "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-950/40"
                     : !isAdmin
                       ? "text-gray-400 bg-gray-50 dark:text-gray-500 dark:bg-gray-800 cursor-not-allowed"
-                      : "text-orange-700 bg-orange-50 hover:bg-orange-100"
+                      : "text-orange-700 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/40 hover:bg-orange-100 dark:hover:bg-orange-950/40"
             }`}
           >
             {disciplinaryState === "loading" ? (
@@ -1084,10 +1084,10 @@ export function OccurrenceCard({
             onClick={handleFillMedida}
             className={`w-full flex items-center justify-center gap-1.5 py-1.5 text-xs rounded-md border transition-colors ${
               fillMedidaState === "loading"
-                ? "border-amber-200 text-amber-600 bg-amber-50"
+                ? "border-amber-200 dark:border-amber-800 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40"
                 : fillMedidaState === "success"
-                  ? "border-emerald-200 text-emerald-600 bg-emerald-50 cursor-default"
-                  : "border-amber-200 text-amber-600 bg-amber-50 hover:bg-amber-100"
+                  ? "border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 cursor-default"
+                  : "border-amber-200 dark:border-amber-800 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-950/40"
             }`}
           >
             {fillMedidaState === "loading"

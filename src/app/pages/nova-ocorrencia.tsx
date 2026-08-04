@@ -34,6 +34,7 @@ export function NovaOcorrencia({ onVoltar, onSaved, edicao }: NovaOcorrenciaProp
   const headerRef = useRef<HTMLElement>(null);
   const [topBase, setTopBase] = useState(73);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [stuckId, setStuckId] = useState<string | null>(null);
 
   useLayoutEffect(() => {
     function measure() {
@@ -95,6 +96,16 @@ export function NovaOcorrencia({ onVoltar, onSaved, edicao }: NovaOcorrenciaProp
         if (el.getBoundingClientRect().top <= threshold) current = id;
       });
       setActiveId(current);
+
+      // Detecta se o cabeçalho "grudado" (sticky) está encostado no navbar,
+      // pra achatar as bordas arredondadas e esconder a linha do glow atrás.
+      let stuck: string | null = null;
+      ids.forEach((id) => {
+        const headerEl = document.getElementById(`${id}-header`);
+        if (!headerEl) return;
+        if (Math.round(headerEl.getBoundingClientRect().top) <= topBase) stuck = id;
+      });
+      setStuckId(stuck);
     }
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -111,8 +122,8 @@ export function NovaOcorrencia({ onVoltar, onSaved, edicao }: NovaOcorrenciaProp
     return [
       "relative rounded-xl mb-5 transition-colors duration-300 border-[1.5px]",
       active
-        ? "z-20 bg-blue-50 border-transparent section-glow"
-        : "bg-white border-gray-200",
+        ? "z-20 bg-blue-50 dark:bg-blue-950/30 border-transparent section-glow"
+        : "bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800",
     ].join(" ");
   }
 
@@ -120,20 +131,23 @@ export function NovaOcorrencia({ onVoltar, onSaved, edicao }: NovaOcorrenciaProp
     const i = sectionIndex(id);
     if (i < 0) return null;
     const active = activeId === id;
+    const stuck = stuckId === id;
     return (
       <button
+        id={`${id}-header`}
         type="button"
         onClick={() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" })}
         style={{ top: topBase - 1 }}
         className={[
-          "sticky z-10 w-full h-11 flex items-center gap-3 px-4 rounded-t-[10px] text-left cursor-pointer transition-colors duration-300",
-          active ? "bg-blue-50 text-blue-900" : "bg-white text-gray-700 hover:bg-gray-50",
+          "sticky z-10 w-full h-11 flex items-center gap-3 px-4 text-left cursor-pointer transition-all duration-300 shadow-sm dark:shadow-black/40",
+          stuck ? "rounded-t-none" : "rounded-t-[12.5px]",
+          active ? "bg-blue-50 dark:bg-blue-900 text-blue-900 dark:text-blue-100" : "bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800",
         ].join(" ")}
       >
         <span
           className={[
             "flex items-center justify-center w-5 h-5 rounded-full text-[11px] font-bold shrink-0 transition-all duration-300",
-            active ? "bg-blue-600 text-white scale-110" : "bg-gray-200 text-gray-500",
+            active ? "bg-blue-600 text-white scale-110" : "bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400",
           ].join(" ")}
         >
           {i + 1}
@@ -154,18 +168,18 @@ export function NovaOcorrencia({ onVoltar, onSaved, edicao }: NovaOcorrenciaProp
   function renderSectionGuide() {
     const pendingTotal = validationErrors.length;
     return (
-      <div className="rounded-xl border border-gray-200 bg-white/90 backdrop-blur p-3 shadow-sm">
+      <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white/90 backdrop-blur p-3 shadow-sm">
         <div className="flex items-center gap-2 mb-3 px-1">
-          <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+          <span className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
             Seções
           </span>
           {pendingTotal > 0 ? (
-            <span className="ml-auto inline-flex items-center gap-1 text-[11px] font-medium text-amber-600">
+            <span className="ml-auto inline-flex items-center gap-1 text-[11px] font-medium text-amber-600 dark:text-amber-400">
               <AlertCircle className="w-3.5 h-3.5" />
               {pendingTotal} pendente{pendingTotal > 1 ? "s" : ""}
             </span>
           ) : (
-            <span className="ml-auto inline-flex items-center gap-1 text-[11px] font-medium text-green-600">
+            <span className="ml-auto inline-flex items-center gap-1 text-[11px] font-medium text-green-600 dark:text-green-400">
               <CheckCircle2 className="w-3.5 h-3.5" />
               Completo
             </span>
@@ -185,7 +199,7 @@ export function NovaOcorrencia({ onVoltar, onSaved, edicao }: NovaOcorrenciaProp
                   }
                   className={[
                     "w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-left transition-colors cursor-pointer",
-                    active ? "bg-blue-50 text-blue-900" : "text-gray-600 hover:bg-gray-50",
+                    active ? "bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-300" :"text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800",
                   ].join(" ")}
                 >
                   <span
@@ -194,15 +208,15 @@ export function NovaOcorrencia({ onVoltar, onSaved, edicao }: NovaOcorrenciaProp
                       active
                         ? "bg-blue-600 text-white"
                         : hasError
-                          ? "bg-amber-100 text-amber-700"
-                          : "bg-gray-200 text-gray-500",
+                          ? "bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400"
+                          : "bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400",
                     ].join(" ")}
                   >
                     {i + 1}
                   </span>
                   <span className="text-sm font-medium truncate flex-1">{s.title}</span>
                   {hasError ? (
-                    <span className="shrink-0 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold">
+                    <span className="shrink-0 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 text-[10px] font-bold">
                       {errs.length}
                     </span>
                   ) : (
@@ -216,7 +230,7 @@ export function NovaOcorrencia({ onVoltar, onSaved, edicao }: NovaOcorrenciaProp
                         <button
                           type="button"
                           onClick={() => scrollToField(err.id)}
-                          className="cursor-pointer text-xs text-red-500 hover:text-red-700 hover:underline flex items-center gap-1 text-left"
+                          className="cursor-pointer text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400 hover:underline flex items-center gap-1 text-left"
                         >
                           <span aria-hidden>•</span>
                           {err.label}
@@ -270,32 +284,32 @@ export function NovaOcorrencia({ onVoltar, onSaved, edicao }: NovaOcorrenciaProp
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Header */}
-      <header ref={headerRef} className="bg-white border-b border-gray-200 sticky top-0 z-30">
+      <header ref={headerRef} className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-30">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center gap-4">
             <button
               onClick={onVoltar}
-              className="cursor-pointer p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="cursor-pointer p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
             >
-              <ArrowLeft className="w-5 h-5 text-gray-600" />
+              <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
             </button>
             <div className="flex-1 min-w-0">
-              <h1 className="text-2xl font-semibold text-gray-900">
+              <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
                 {edicao ? "Editar Ocorrência" : "Nova Ocorrência"}
               </h1>
               <div className="flex items-center gap-2 mt-1">
-                <span className="text-xs text-gray-400">Modo ativo:</span>
+                <span className="text-xs text-gray-400 dark:text-gray-500">Modo ativo:</span>
                 <span
                   className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold transition-all duration-300 ${
                     typeConfig.isGeneric
-                      ? "bg-orange-100 text-orange-700 border border-orange-200"
+                      ? "bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400 border border-orange-200 dark:border-orange-800"
                       : form.typeCode === "EXCESSO_VELOCIDADE"
-                        ? "bg-red-100 text-red-700 border border-red-200"
+                        ? "bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800"
                         : form.typeCode === "EXCESSO_PERMANENCIA"
-                          ? "bg-amber-100 text-amber-700 border border-amber-200"
-                          : "bg-gray-100 text-gray-600 border border-gray-200"
+                          ? "bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800"
+                          : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-800"
                   }`}
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-current" />
@@ -310,7 +324,7 @@ export function NovaOcorrencia({ onVoltar, onSaved, edicao }: NovaOcorrenciaProp
       {/* Main */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_260px] lg:gap-6 lg:items-start">
-        <div className="bg-white border border-gray-200 rounded-lg">
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg">
           <div id="nova-ocorrencia-form" className="p-6" onKeyDown={handleFormKeyDown}>
 
             <div className="space-y-8 mb-6">
@@ -352,9 +366,9 @@ export function NovaOcorrencia({ onVoltar, onSaved, edicao }: NovaOcorrenciaProp
                   {/* 1b — Status do esquema (só DESCUMP_OP_PARADA_FORA) */}
                   {form.typeCode === "DESCUMP_OP_PARADA_FORA" && form.schemaStatus !== "idle" && (
                     <div className={`mt-4 flex items-center gap-2 px-3 py-2 rounded-md text-sm ${
-                form.schemaStatus === "loading"   ? "bg-gray-50 text-gray-500 border border-gray-200" :
-                form.schemaStatus === "found"     ? "bg-green-50 text-green-700 border border-green-200" :
-                                                    "bg-amber-50 text-amber-700 border border-amber-200"
+                form.schemaStatus === "loading"   ? "bg-gray-50 dark:bg-gray-950 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-800" :
+                form.schemaStatus === "found"     ? "bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800" :
+                                                    "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800"
               }`}>
                 {form.schemaStatus === "loading" && <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />}
                 {form.schemaStatus === "found"   && <CheckCircle2 className="w-4 h-4 flex-shrink-0" />}
@@ -505,7 +519,7 @@ export function NovaOcorrencia({ onVoltar, onSaved, edicao }: NovaOcorrenciaProp
             </div>
 
             {/* 6 — Ações */}
-            <section className="pt-4 border-t border-gray-200">
+            <section className="pt-4 border-t border-gray-200 dark:border-gray-800">
               <div className="flex items-start justify-between gap-4">
                 <button
                   onClick={form.handleSalvar}
@@ -513,7 +527,7 @@ export function NovaOcorrencia({ onVoltar, onSaved, edicao }: NovaOcorrenciaProp
                   className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 ${
                     validationErrors.length === 0 && form.saveStatus === "idle"
                       ? "bg-blue-600 text-white hover:bg-blue-700 shadow-sm hover:shadow"
-                      : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                      : "bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed"
                   }`}
                 >
                   {form.saveStatus === "saving" ? (
@@ -530,7 +544,7 @@ export function NovaOcorrencia({ onVoltar, onSaved, edicao }: NovaOcorrenciaProp
                 </button>
                 {validationErrors.length > 0 && form.saveStatus === "idle" && (
                   <div className="flex flex-col gap-1.5 lg:hidden">
-                    <p className="text-xs text-gray-500 flex items-center gap-1.5">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
                       <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 text-amber-500" />
                       Campos obrigatórios pendentes:
                     </p>
@@ -540,7 +554,7 @@ export function NovaOcorrencia({ onVoltar, onSaved, edicao }: NovaOcorrenciaProp
                           <button
                             type="button"
                             onClick={() => scrollToField(err.id)}
-                            className="cursor-pointer text-xs text-red-500 hover:text-red-700 hover:underline flex items-center gap-1 text-left"
+                            className="cursor-pointer text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400 hover:underline flex items-center gap-1 text-left"
                           >
                             <span aria-hidden>•</span>
                             {err.label}
@@ -568,18 +582,18 @@ export function NovaOcorrencia({ onVoltar, onSaved, edicao }: NovaOcorrenciaProp
       {/* Preview Modal */}
       {form.showPreview && form.viagemSelecionada && form.driver1 && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
-            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="font-semibold text-gray-900">Relatório Individual</h3>
+          <div className="bg-white dark:bg-gray-900 rounded-lg max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Relatório Individual</h3>
               <button
                 onClick={() => form.setShowPreview(false)}
-                className="cursor-pointer p-1 hover:bg-gray-100 rounded transition-colors"
+                className="cursor-pointer p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
               >
-                <X className="w-5 h-5 text-gray-600" />
+                <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
               </button>
             </div>
             <div className="p-6 overflow-y-auto flex-1">
-              <pre className="text-sm whitespace-pre-wrap font-mono text-gray-800">
+              <pre className="text-sm whitespace-pre-wrap font-mono text-gray-800 dark:text-gray-200">
                 {gerarTextoRelatorioIndividual({
                   id: "temp",
                   viagem: form.toViagemView(form.viagemSelecionada),
@@ -595,8 +609,8 @@ export function NovaOcorrencia({ onVoltar, onSaved, edicao }: NovaOcorrenciaProp
                 })}
               </pre>
             </div>
-            <div className="p-4 border-t border-gray-200 bg-gray-50">
-              <p className="text-sm text-green-600 font-medium">
+            <div className="p-4 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950">
+              <p className="text-sm text-green-600 dark:text-green-400 font-medium">
                 ✓ Texto copiado para a área de transferência
               </p>
             </div>
