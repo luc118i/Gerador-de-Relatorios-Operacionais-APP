@@ -1,5 +1,6 @@
 import {
   AlertTriangle,
+  Home as HomeIcon,
   LayoutGrid,
   List,
   Plus,
@@ -220,6 +221,39 @@ export function Home({
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allOcorrencias, isAdmin, profileName]);
+
+  // ── Estatísticas da semana (só busca quando o dia selecionado está vazio,
+  // pra dar algum contexto no lugar do card de "nada registrado") ──────────
+  const isEmptyToday = !isLoading && !isError && ocorrencias.length === 0;
+  const { data: weekCounts } = useQuery({
+    queryKey: ["occurrences", "weekStats", selectedDate],
+    queryFn: async () => {
+      const dates: string[] = [];
+      for (let i = 1; i <= 7; i++) {
+        const d = new Date(selectedDateObj);
+        d.setDate(d.getDate() - i);
+        dates.push(getLocalDateString(d));
+      }
+      const me = normalizeText(profileName);
+      return Promise.all(
+        dates.map((d) =>
+          occurrencesApi
+            .listOccurrences(d)
+            .then((res) =>
+              isAdmin
+                ? res.data.length
+                : res.data.filter((o) => normalizeText(o.analisadoPor ?? "") === me).length,
+            )
+            .catch(() => 0),
+        ),
+      );
+    },
+    enabled: isEmptyToday,
+    staleTime: 5 * 60_000,
+  });
+  const weekTotal = weekCounts?.reduce((a, b) => a + b, 0) ?? 0;
+  const weekAvg = weekCounts ? (weekTotal / 7).toFixed(1) : "—";
+  const weekActiveDays = weekCounts?.filter((c) => c > 0).length ?? 0;
 
   const filteredOcorrencias = useMemo(() => {
     const q = normalizeText(search);
@@ -668,17 +702,37 @@ export function Home({
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
-            {!isLoading && !isError && ocorrencias.length === 0 ? (
-              <h2 className="text-xl text-gray-900 dark:text-gray-100" style={{ fontFamily: "'Newsreader', serif", fontWeight: 500 }}>
+        {!isLoading && !isError && ocorrencias.length === 0 && (
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center shrink-0">
+                <HomeIcon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              </div>
+              <span className="text-gray-300 dark:text-gray-700">|</span>
+              <span className="text-xs font-bold tracking-wide text-blue-600 dark:text-blue-400 uppercase">
+                Painel Inicial
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center text-xl shrink-0">
+                👋
+              </div>
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
                 {getSaudacao()}{profileName ? `, ${profileName.split(" ")[0]}` : ""}!
               </h2>
-            ) : (
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                Ocorrências do Dia
-              </h2>
-            )}
+            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 ml-[52px]">
+              Que bom te ver por aqui. 😊
+            </p>
+          </div>
+        )}
+
+        {(isLoading || isError || ocorrencias.length > 0) && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Ocorrências do Dia
+            </h2>
             {!isLoading && !isError && ocorrencias.length > 0 && (
               <div className="flex items-center gap-2 flex-wrap">
                 {/* Busca universal */}
@@ -755,6 +809,7 @@ export function Home({
             </p>
           ) : null}
         </div>
+        )}
 
         {isError ? (
           <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-12 text-center">
@@ -779,14 +834,40 @@ export function Home({
           </div>
         ) : ocorrencias.length === 0 ? (
           <div className="space-y-4">
-            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-12 text-center">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-                Nenhuma ocorrência registrada
-              </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-                Clique no botão "Nova Ocorrência" para registrar um descumprimento
-                operacional
+            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-10 text-center">
+              <p className="text-xs text-gray-400 dark:text-gray-500 mb-6">
+                Ainda não registramos nada hoje
               </p>
+
+              <div className="flex items-center justify-center gap-6 mb-8">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 tabular-nums">
+                    {weekTotal}
+                  </p>
+                  <p className="text-[11px] text-gray-400 dark:text-gray-500 uppercase tracking-wide mt-0.5">
+                    Últimos 7 dias
+                  </p>
+                </div>
+                <div className="w-px h-9 bg-gray-200 dark:bg-gray-800" />
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 tabular-nums">
+                    {weekAvg}
+                  </p>
+                  <p className="text-[11px] text-gray-400 dark:text-gray-500 uppercase tracking-wide mt-0.5">
+                    Média por dia
+                  </p>
+                </div>
+                <div className="w-px h-9 bg-gray-200 dark:bg-gray-800" />
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 tabular-nums">
+                    {weekActiveDays}/7
+                  </p>
+                  <p className="text-[11px] text-gray-400 dark:text-gray-500 uppercase tracking-wide mt-0.5">
+                    Dias com registro
+                  </p>
+                </div>
+              </div>
+
               <button
                 onClick={onNovaOcorrencia}
                 className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
