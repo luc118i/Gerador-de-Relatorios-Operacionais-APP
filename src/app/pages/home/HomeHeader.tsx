@@ -76,8 +76,8 @@ export function HomeHeader({
   onShowAutomationFolderModal,
 }: HomeHeaderProps) {
   return (
-    <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-30">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <header className="sticky top-0 z-30 bg-[#d9d9d9] dark:bg-gray-900 border-t-[1.5px] border-t-white/85 dark:border-t-0 dark:border-b dark:border-gray-800 shadow-[0_5px_1.5px_rgba(0,0,0,0.5),0_9px_8px_rgba(0,0,0,0.25)] dark:shadow-none">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
         <div className="flex items-center justify-between">
           <div className="relative flex items-center gap-3">
             {isAdmin && (
@@ -86,8 +86,22 @@ export function HomeHeader({
               </NavBtn>
             )}
 
-            <div className="w-10 h-10 rounded-xl shrink-0 bg-[#e2a9f1] dark:bg-transparent flex items-center justify-center overflow-hidden">
-              <img src="/favicon.png" alt="Logo" className="w-full h-full object-contain" />
+            <div className="relative z-10 w-14 h-14 translate-y-[20px] shrink-0">
+              {/* Sombra em camadas simulando espessura física (luz vindo de cima-esquerda,
+                  projeção pra baixo-direita): core escuro logo atrás do ícone (lateral do
+                  bloco) → lâmina clara nítida atrás do core. Sem camada esfumaçada atrás. */}
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                title="Recarregar página"
+                className="relative w-14 h-14 rounded-[16px] shrink-0 flex items-center justify-center overflow-hidden cursor-pointer
+                  bg-gradient-to-b from-[#e6bdf9] to-[#d79bf5] dark:bg-none dark:bg-[#0b0b0f]
+                  shadow-[inset_1px_1px_0_0_rgba(255,255,255,0.6),2px_8px_1px_1px_rgba(0,0,0,0.75),3px_13px_0px_0px_rgba(214,214,214,0.9)]
+                  transition-all duration-300 ease-out hover:-translate-y-1"
+              >
+                <img src="/favicon.png" alt="Logo" className="dark:hidden w-full h-full object-contain" />
+                <img src="/favicon-dark.png" alt="Logo" className="hidden dark:block w-full h-full object-contain" />
+              </button>
             </div>
 
             <div>
