@@ -78,7 +78,7 @@ export function HomeHeader({
   return (
     <header className="sticky top-0 z-30 bg-[#d9d9d9] dark:bg-gray-900 border-t-[1.5px] border-t-white/85 dark:border-t-0 dark:border-b dark:border-gray-800 shadow-[0_5px_1.5px_rgba(0,0,0,0.5),0_9px_8px_rgba(0,0,0,0.25)] dark:shadow-none">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
-        <div className="flex items-center justify-between">
+        <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3">
           <div className="relative flex items-center gap-3">
             {isAdmin && (
               <NavBtn onClick={onOpenDrawer} tooltip="Módulos">
@@ -114,39 +114,41 @@ export function HomeHeader({
                 </span>
               </p>
             </div>
-            {/* Navegação de datas */}
-            <div ref={calendarRef} className="relative flex items-center gap-1 ml-2">
-              <NavBtn onClick={onToggleCalendar} tooltip="Abrir calendário">
-                <CalendarIcon className="w-4 h-4" />
-              </NavBtn>
-              <NavBtn onClick={() => changeDay(-1)} tooltip="Dia anterior">
-                <ChevronLeft className="w-4 h-4" />
-              </NavBtn>
-              <span className="text-sm text-gray-700 dark:text-gray-300 font-medium px-1 select-none capitalize whitespace-nowrap">
-                {formattedDate}
-              </span>
-              <NavBtn onClick={() => changeDay(1)} tooltip="Próximo dia">
-                <ChevronRight className="w-4 h-4" />
-              </NavBtn>
-              <button
-                onClick={goToday}
-                className="cursor-pointer ml-1 text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200 transition font-medium"
-                title={dateDiffLabel}
-              >
-                {dateDiffLabel}
-              </button>
-              {calendarVisible && (
-                <div className="absolute top-9 left-0 bg-white dark:bg-gray-900 shadow-lg border border-gray-200 dark:border-gray-700 rounded-xl z-50">
-                  <Calendar
-                    mode="single"
-                    selected={selectedDateObj}
-                    onSelect={onSelectDate}
-                    locale={ptBR}
-                    initialFocus
-                  />
-                </div>
-              )}
-            </div>
+          </div>
+
+          {/* Navegação de datas — coluna central, fica centralizada na barra
+              independente de quantos botões existem à direita (admin ou não). */}
+          <div ref={calendarRef} className="relative flex items-center justify-center gap-1">
+            <NavBtn onClick={onToggleCalendar} tooltip="Abrir calendário">
+              <CalendarIcon className="w-4 h-4" />
+            </NavBtn>
+            <NavBtn onClick={() => changeDay(-1)} tooltip="Dia anterior">
+              <ChevronLeft className="w-4 h-4" />
+            </NavBtn>
+            <span className="text-sm text-gray-700 dark:text-gray-300 font-medium px-1 select-none capitalize whitespace-nowrap">
+              {formattedDate}
+            </span>
+            <NavBtn onClick={() => changeDay(1)} tooltip="Próximo dia">
+              <ChevronRight className="w-4 h-4" />
+            </NavBtn>
+            <button
+              onClick={goToday}
+              className="cursor-pointer ml-1 text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200 transition font-medium"
+              title={dateDiffLabel}
+            >
+              {dateDiffLabel}
+            </button>
+            {calendarVisible && (
+              <div className="absolute top-9 left-1/2 -translate-x-1/2 bg-white dark:bg-gray-900 shadow-lg border border-gray-200 dark:border-gray-700 rounded-xl z-50">
+                <Calendar
+                  mode="single"
+                  selected={selectedDateObj}
+                  onSelect={onSelectDate}
+                  locale={ptBR}
+                  initialFocus
+                />
+              </div>
+            )}
           </div>
 
           {/* Ações — icon-only com tooltip */}
