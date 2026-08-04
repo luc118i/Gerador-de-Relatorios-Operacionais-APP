@@ -43,11 +43,17 @@ export function LocalPicker({
   }
 
   // Fecha o menu ao rolar a página — evita ele ficar "flutuando" desalinhado
-  // do campo enquanto o usuário rola.
+  // do campo enquanto o usuário rola. Ignora o scroll da própria lista de
+  // resultados dentro do menu (senão rolar a lista já fecharia o menu).
   useEffect(() => {
     if (!isOpen) return;
-    window.addEventListener("scroll", closeMenu, true);
-    return () => window.removeEventListener("scroll", closeMenu, true);
+    function handleScroll(e: Event) {
+      const target = e.target;
+      if (target instanceof Element && target.closest('[data-slot="popover-content"]')) return;
+      closeMenu();
+    }
+    window.addEventListener("scroll", handleScroll, true);
+    return () => window.removeEventListener("scroll", handleScroll, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 

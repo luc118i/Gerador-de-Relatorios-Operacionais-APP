@@ -52,10 +52,13 @@ export function ReportTitleInput({
   }, []);
 
   // Fecha o menu ao rolar a página — evita ele ficar "flutuando" desalinhado
-  // do campo enquanto o usuário rola.
+  // do campo enquanto o usuário rola. Ignora o scroll da própria lista de
+  // resultados dentro do menu (senão rolar a lista já fecharia o menu).
   useEffect(() => {
     if (!open) return;
-    function handleScroll() {
+    function handleScroll(e: Event) {
+      const target = e.target;
+      if (target instanceof Node && containerRef.current?.contains(target)) return;
       setOpen(false);
       setActiveIdx(-1);
     }
