@@ -87,7 +87,13 @@ export function HomeHeader({
   }, []);
 
   return (
-    <header className="sticky top-0 z-30 bg-[#d9d9d9] dark:bg-gray-900 border-t-[1.5px] border-t-white/85 dark:border-t-0 dark:border-b dark:border-gray-800 shadow-[0_5px_1.5px_rgba(0,0,0,0.5),0_9px_8px_rgba(0,0,0,0.25)] dark:shadow-none">
+    <header
+      className={`sticky top-0 z-30 bg-[#d9d9d9] dark:bg-gray-900 border-t-[1.5px] border-t-white/85 dark:border-t-0 dark:border-b dark:border-gray-800 transition-shadow duration-500 ease-out dark:shadow-none ${
+        scrolled
+          ? "shadow-[0_10px_20px_-4px_rgba(0,0,0,0.12)]"
+          : "shadow-[0_5px_1.5px_rgba(0,0,0,0.5),0_9px_8px_rgba(0,0,0,0.25)]"
+      }`}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
         <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3">
           <div className="relative flex items-center gap-3">
