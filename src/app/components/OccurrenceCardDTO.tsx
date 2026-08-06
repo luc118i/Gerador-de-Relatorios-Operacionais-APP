@@ -16,6 +16,7 @@ import {
   ShieldAlert,
   AlertTriangle,
   RefreshCw,
+  MapPin,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -140,6 +141,7 @@ function dtoToMinimalOcorrencia(occ: OccurrenceDTO): Ocorrencia {
     horarioInicial: occ.startTime,
     horarioFinal: occ.endTime,
     localParada: occ.place ?? "",
+    points: occ.points,
     speedKmh: occ.speedKmh ?? null,
     evidencias: [],
     createdAt: occ.createdAt,
@@ -581,6 +583,15 @@ export function OccurrenceCard({
                     {occurrence.speedKmh} km/h
                   </span>
                 )}
+                {occurrence.typeCode === "EXCESSO_PERMANENCIA" && (occurrence.points?.length ?? 0) > 1 && (
+                  <span
+                    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 font-semibold text-[10px] leading-none whitespace-nowrap flex-shrink-0"
+                    title={occurrence.points!.map((p) => `${p.place} (${p.startTime}–${p.endTime})`).join(" · ")}
+                  >
+                    <MapPin className="w-2.5 h-2.5" />
+                    {occurrence.points!.length} paradas
+                  </span>
+                )}
                 {occurrence.typeCode === "DESCUMP_OP_PARADA_FORA" && (occurrence.evidenceCount ?? 0) === 0 && (
                   <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-orange-100 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 font-semibold text-[10px] leading-none whitespace-nowrap flex-shrink-0">
                     <ImageOff className="w-2.5 h-2.5" />
@@ -871,6 +882,15 @@ export function OccurrenceCard({
         </div>
         {!isSecondDriverCard && (
         <div className="flex items-center gap-1.5 flex-wrap">
+          {occurrence.typeCode === "EXCESSO_PERMANENCIA" && (occurrence.points?.length ?? 0) > 1 && (
+            <div
+              className="flex items-center gap-1 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 px-2 py-1 rounded"
+              title={occurrence.points!.map((p) => `${p.place} (${p.startTime}–${p.endTime})`).join(" · ")}
+            >
+              <MapPin className="w-3.5 h-3.5" />
+              <span className="text-xs font-semibold">{occurrence.points!.length} paradas</span>
+            </div>
+          )}
           {occurrence.typeCode === "DESCUMP_OP_PARADA_FORA" && (occurrence.evidenceCount ?? 0) === 0 ? (
             <div className="flex items-center gap-1 bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800 text-orange-600 dark:text-orange-400 px-2 py-1 rounded">
               <ImageOff className="w-3.5 h-3.5" />

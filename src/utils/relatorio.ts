@@ -53,6 +53,15 @@ export function formatPermanencia(inicio?: string | null, fim?: string | null): 
   return `${m}min`;
 }
 
+/** Minutos → "1h 40min" / "40min" (mesmo formato de formatPermanencia). */
+function formatDuracaoMin(totalMin: number): string {
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  if (h && m) return `${h}h ${m}min`;
+  if (h) return `${h}h`;
+  return `${m}min`;
+}
+
 /** Nome do relatório/medida no Drive (sem extensão), ex.: "4709 - PAULO MENDES DUTRA - SALVADOR - EXCES_PERMA - 02.08.26" */
 function buildNomeRelatorio(ocorrencia: Ocorrencia): string {
   const fileName = buildDriverPdfFileName({
@@ -103,6 +112,17 @@ function gerarCorpoRelatorioIndividual(ocorrencia: Ocorrencia): string {
     }
 
     case "EXCESSO_PERMANENCIA": {
+      const pontos = ocorrencia.points;
+      if (pontos && pontos.length > 1) {
+        const totalMin = pontos.reduce((acc, p) => acc + (p.excedenteMin ?? 0), 0);
+        const excessoLabel = totalMin > 0
+          ? `excesso total de ${formatDuracaoMin(totalMin)} distribuído em ${pontos.length} paradas`
+          : `excesso de permanência em ${pontos.length} paradas`;
+        const listaPontos = pontos
+          .map((p) => `- ${p.place} (${p.startTime} às ${p.endTime})`)
+          .join("\n");
+        return `Durante a análise das atividades do veículo de número ${prefixo}${linhaInfo} na viagem do dia ${formatarData(ocorrencia.dataViagem || ocorrencia.dataEvento)}, identificamos o descumprimento operacional por parte do condutor, em razão da permanência superior ao tempo previsto em mais de um ponto de parada (${excessoLabel}):\n\n${listaPontos}\n\nEsta conduta caracteriza uma violação dos procedimentos operacionais estabelecidos, impactando diretamente a programação da viagem, gerando atrasos e comprometendo a qualidade do serviço prestado aos passageiros.`;
+      }
       const local = ocorrencia.localParada
         ? `no ponto de parada ${ocorrencia.localParada}`
         : "em ponto de parada";
@@ -196,6 +216,25 @@ ${motoristas}
 
   // ── EXCESSO DE PERMANÊNCIA ──────────────────────────────────────────────────
   if (ocorrencia.typeCode === "EXCESSO_PERMANENCIA") {
+    const pontos = ocorrencia.points;
+    if (pontos && pontos.length > 1) {
+      const listaPontos = pontos
+        .map((p) => `📍 ${p.place} — ${p.startTime} às ${p.endTime}`)
+        .join("\n");
+      return `🚨 *EXCESSO DE PERMANÊNCIA (${pontos.length} PARADAS)*
+
+📋 *LINHA:* ${getLinha(v)}
+🚌 *PREFIXO:* ${getPrefixo(v)}
+⏰ *HORÁRIO DA VIAGEM:* ${getHorario(v)}
+📍 *ORIGEM x DESTINO:* ${getOrigem(v)} x ${getDestino(v)}
+
+👤 *MOTORISTA(S):*
+${motoristas}
+
+📅 *DATA:* ${formatarData(ocorrencia.dataEvento)}
+
+${listaPontos}`;
+    }
     const perm = formatPermanencia(ocorrencia.horarioInicial, ocorrencia.horarioFinal);
     return `🚨 *EXCESSO DE PERMANÊNCIA*
 

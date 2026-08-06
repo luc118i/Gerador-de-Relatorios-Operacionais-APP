@@ -53,6 +53,7 @@ export function dtoToOcorrencia(
     horarioInicial: dto.startTime ?? "",
     horarioFinal: dto.endTime ?? "",
     localParada: dto.place ?? "",
+    points: dto.points ?? undefined,
     typeCode: dto.typeCode ?? "",
     typeTitle: dto.typeTitle ?? "",
     speedKmh: dto.speedKmh ?? null,

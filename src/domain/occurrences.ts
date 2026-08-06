@@ -91,6 +91,19 @@ export type OccurrenceDTO = {
   drivers: OccurrenceDriverDTO[];
   evidenceCount: number;
 
+  // EXCESSO_PERMANENCIA: quando a ocorrência agrupa mais de um ponto de
+  // parada (motorista excedeu em N pontos na mesma viagem), startTime/
+  // endTime/place acima viram um resumo (menor entrada/maior saída/"N
+  // paradas") e os pontos individuais vêm aqui.
+  points?: Array<{
+    place: string;
+    startTime: string;
+    endTime: string;
+    permanenciaMin?: number | null;
+    permitidoMin?: number | null;
+    excedenteMin?: number | null;
+  }>;
+
   // Campos do tipo GENERICO (CCO)
   reportTitle?: string | null;
   ccoOperator?: string | null;
