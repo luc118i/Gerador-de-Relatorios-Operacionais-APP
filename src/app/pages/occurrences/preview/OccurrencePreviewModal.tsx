@@ -235,7 +235,7 @@ export function OccurrencePreviewModal({ occurrenceId, open, onClose }: Props) {
                 </div>
 
                 {/* Análise e Tratativa + Observações */}
-                <TratativaBlock occ={occ} />
+                <TratativaBlock occ={occ} onSaved={onClose} />
               </>
             ) : null}
           </div>
@@ -378,7 +378,7 @@ function EvidenceViewerButton({ occ }: { occ: OccurrenceDTO }) {
  * PATCH /occurrences/:id/tratativa ao clicar em "Salvar tratativa".
  * O analista é preenchido automaticamente com o usuário logado.
  */
-function TratativaBlock({ occ }: { occ: OccurrenceDTO }) {
+function TratativaBlock({ occ, onSaved }: { occ: OccurrenceDTO; onSaved: () => void }) {
   const { profileName } = useAuth();
   const qc = useQueryClient();
 
@@ -415,6 +415,7 @@ function TratativaBlock({ occ }: { occ: OccurrenceDTO }) {
       toast.success("Tratativa salva!");
       void qc.invalidateQueries({ queryKey: ["occurrence", occ.id] });
       void qc.invalidateQueries({ queryKey: ["occurrences"] });
+      onSaved();
     } catch (e) {
       toast.error(getApiErrorMessage(e, "Falha ao salvar tratativa"));
     } finally {

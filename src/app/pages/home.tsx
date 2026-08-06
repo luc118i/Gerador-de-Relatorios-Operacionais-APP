@@ -969,13 +969,18 @@ export function Home({
           <ApuracaoPodium occurrences={allOcorrencias} className="mt-16 w-full" />
         )}
 
-        <OccurrencePreviewModal
-          occurrenceId={previewId}
-          open={!!previewId}
-          onClose={() => setPreviewId(null)}
-        />
       </main>
       </div>
+
+      {/* Fora do wrapper com transform/will-change acima: um ancestral com
+          transform vira containing block de elementos `fixed`, então o modal
+          abriria centralizado na altura de toda a lista (fora da viewport
+          visível) em vez de no centro da tela do usuário. */}
+      <OccurrencePreviewModal
+        occurrenceId={previewId}
+        open={!!previewId}
+        onClose={() => setPreviewId(null)}
+      />
 
       {/* Drawer de Edição */}
       {editando && (
