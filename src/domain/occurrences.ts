@@ -113,6 +113,10 @@ export type OccurrenceDTO = {
   tratativa?: "SUSPEICAO" | "ADVERTENCIA" | "VALE" | "REGISTRO" | null;
   analisadoPor?: string | null;
   justificativaRegistro?: string | null;
+  // Preenchidos depois de "Enviar ao Drive" (ver POST /reports/occurrences/:id/drive) —
+  // o backend já devolve isso, só não estava declarado aqui.
+  driveFileNome?: string | null;
+  driveWebViewLink?: string | null;
 };
 
 export type CreateOccurrenceFormInput = {
