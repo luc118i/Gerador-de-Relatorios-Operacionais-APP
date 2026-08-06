@@ -42,6 +42,17 @@ export interface Ocorrencia {
   evidencias: Evidencia[];
   createdAt: string;
 
+  // EXCESSO_PERMANENCIA: presente quando a ocorrência agrupa mais de um
+  // ponto de parada — ver OccurrenceDTO.points.
+  points?: Array<{
+    place: string;
+    startTime: string;
+    endTime: string;
+    permanenciaMin?: number | null;
+    permitidoMin?: number | null;
+    excedenteMin?: number | null;
+  }>;
+
   // Campos do tipo GENERICO (CCO)
   reportTitle?: string | null;        // Nome do relatório (ex: "Atendimento Especial")
   ccoOperator?: string | null;        // Operador CCO

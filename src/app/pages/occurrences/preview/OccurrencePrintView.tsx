@@ -47,6 +47,18 @@ function buildRelatoHtml(o: Ocorrencia): string {
       );
     }
     case "EXCESSO_PERMANENCIA": {
+      const pontos = o.points;
+      if (pontos && pontos.length > 1) {
+        const listaPontos = pontos
+          .map((p) => `<li>${b(p.place)} (${p.startTime} às ${p.endTime})</li>`)
+          .join("");
+        return (
+          `Durante a análise das atividades do veículo ${b(prefixo)}${b(linha)} na viagem do dia ${b(dataViagem)}, ` +
+          `identificamos a permanência superior ao tempo previsto em ${b(String(pontos.length))} pontos de parada:` +
+          `<ul>${listaPontos}</ul>` +
+          `Tal conduta caracteriza descumprimento operacional, impactando a programação da viagem e a qualidade do serviço prestado aos passageiros.`
+        );
+      }
       const local = o.localParada || "ponto de parada";
       const perm = formatPermanencia(o.horarioInicial, o.horarioFinal);
       const periodo = o.horarioFinal && o.horarioFinal !== o.horarioInicial
