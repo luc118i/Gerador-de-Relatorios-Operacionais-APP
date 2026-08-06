@@ -12,6 +12,7 @@ import { BaseResponsaveisPage } from "./pages/BaseResponsaveisPage";
 import { AdminAuthProvider } from "./context/AdminAuthContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { LoginScreen } from "./components/LoginScreen";
+import { ResetPasswordScreen } from "./components/ResetPasswordScreen";
 import { Loader2, Check } from "lucide-react";
 import { AppDrawer, type DrawerPage } from "./components/AppDrawer";
 import { AnaliseTelemetriaPage } from "./pages/AnaliseTelemetriaPage";
@@ -201,7 +202,7 @@ function WelcomeSplash({ name }: { name: string }) {
 }
 
 function AuthGate() {
-  const { loading, session, profileName } = useAuth();
+  const { loading, session, profileName, passwordRecovery } = useAuth();
   // Marca se a tela de login chegou a ser exibida (para não animar em refresh
   // com sessão persistida no localStorage).
   const sawLogin = useRef(false);
@@ -227,6 +228,10 @@ function AuthGate() {
         <Loader2 className="w-6 h-6 text-gray-400 dark:text-gray-500 animate-spin" />
       </div>
     );
+  }
+
+  if (passwordRecovery) {
+    return <ResetPasswordScreen />;
   }
 
   if (!session) {

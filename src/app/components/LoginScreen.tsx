@@ -55,12 +55,44 @@ function rand(seed: number) {
 }
 
 export function LoginScreen() {
-  const { signIn } = useAuth();
+  const { signIn, requestPasswordReset } = useAuth();
+  const [mode, setMode] = useState<"login" | "forgot">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPwd, setShowPwd] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotSent, setForgotSent] = useState(false);
+  const [forgotError, setForgotError] = useState<string | null>(null);
+  const [forgotLoading, setForgotLoading] = useState(false);
+
+  function openForgot() {
+    setForgotEmail(email);
+    setForgotSent(false);
+    setForgotError(null);
+    setMode("forgot");
+  }
+
+  function backToLogin() {
+    setMode("login");
+    setForgotError(null);
+  }
+
+  async function handleForgotSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!forgotEmail) return;
+    setForgotLoading(true);
+    setForgotError(null);
+    const { error } = await requestPasswordReset(forgotEmail);
+    setForgotLoading(false);
+    if (error) {
+      setForgotError(error);
+      return;
+    }
+    setForgotSent(true);
+  }
 
   // Partículas pré-computadas (posição/atraso estáveis entre renders).
   const floatIcons = useMemo(
@@ -275,67 +307,147 @@ export function LoginScreen() {
           </div>
         </div>
 
-        <h1 className="text-center text-[17px] font-semibold text-[#1a2a4a] dark:text-gray-100">
-          Gerador de Relatórios
-        </h1>
-        <p className="mb-5 text-center text-xs text-[#8899bb] dark:text-gray-500">
-          Entre com seu perfil para apurar ocorrências
-        </p>
+        {mode === "login" ? (
+          <>
+            <h1 className="text-center text-[17px] font-semibold text-[#1a2a4a] dark:text-gray-100">
+              Gerador de Relatórios
+            </h1>
+            <p className="mb-5 text-center text-xs text-[#8899bb] dark:text-gray-500">
+              Entre com seu perfil para apurar ocorrências
+            </p>
 
-        <form onSubmit={handleSubmit} className="space-y-2.5">
-          <div className="relative">
-            <Mail className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8899cc] dark:text-gray-500" />
-            <input
-              type="email"
-              autoComplete="email"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                setError(null);
-              }}
-              placeholder="seu@email.com"
-              className={inputBase}
-            />
-          </div>
+            <form onSubmit={handleSubmit} className="space-y-2.5">
+              <div className="relative">
+                <Mail className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8899cc] dark:text-gray-500" />
+                <input
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setError(null);
+                  }}
+                  placeholder="seu@email.com"
+                  className={inputBase}
+                />
+              </div>
 
-          <div className="relative">
-            <Lock className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8899cc] dark:text-gray-500" />
-            <input
-              type={showPwd ? "text" : "password"}
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                setError(null);
-              }}
-              placeholder="Senha"
-              className={inputBase}
-            />
-            <button
-              type="button"
-              tabIndex={-1}
-              onClick={() => setShowPwd((v) => !v)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8899cc] dark:text-gray-500 hover:text-[#5a6a99] dark:hover:text-gray-300 transition-colors"
-            >
-              {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
-          </div>
+              <div className="relative">
+                <Lock className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8899cc] dark:text-gray-500" />
+                <input
+                  type={showPwd ? "text" : "password"}
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setError(null);
+                  }}
+                  placeholder="Senha"
+                  className={inputBase}
+                />
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  onClick={() => setShowPwd((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8899cc] dark:text-gray-500 hover:text-[#5a6a99] dark:hover:text-gray-300 transition-colors"
+                >
+                  {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
 
-          {error && <p className="text-center text-xs text-red-500">{error}</p>}
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={openForgot}
+                  className="text-xs font-medium text-[#3a6ee8] hover:text-[#2a5dd4] dark:text-[#7fa0f0] dark:hover:text-[#9cb6f5] transition-colors"
+                >
+                  Esqueci minha senha
+                </button>
+              </div>
 
-          <button
-            type="submit"
-            disabled={!email || !password || loading}
-            className="mt-1 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#3a6ee8] text-sm font-semibold text-white transition-[background,transform] hover:bg-[#2a5dd4] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            {loading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              {error && <p className="text-center text-xs text-red-500">{error}</p>}
+
+              <button
+                type="submit"
+                disabled={!email || !password || loading}
+                className="mt-1 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#3a6ee8] text-sm font-semibold text-white transition-[background,transform] hover:bg-[#2a5dd4] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {loading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <LogIn className="w-[17px] h-[17px]" />
+                )}
+                {loading ? "Entrando…" : "Entrar"}
+              </button>
+            </form>
+          </>
+        ) : (
+          <>
+            <h1 className="text-center text-[17px] font-semibold text-[#1a2a4a] dark:text-gray-100">
+              Esqueci minha senha
+            </h1>
+            <p className="mb-5 text-center text-xs text-[#8899bb] dark:text-gray-500">
+              {forgotSent
+                ? "Confira sua caixa de entrada"
+                : "Informe seu e-mail para receber o link de recuperação"}
+            </p>
+
+            {forgotSent ? (
+              <div className="space-y-4">
+                <p className="text-center text-xs text-[#5a6a99] dark:text-gray-400">
+                  Se <span className="font-semibold">{forgotEmail}</span> estiver cadastrado,
+                  enviamos um link para redefinir a senha. O link expira em pouco tempo.
+                </p>
+                <button
+                  type="button"
+                  onClick={backToLogin}
+                  className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#3a6ee8] text-sm font-semibold text-white transition-[background,transform] hover:bg-[#2a5dd4] active:scale-[0.98]"
+                >
+                  Voltar ao login
+                </button>
+              </div>
             ) : (
-              <LogIn className="w-[17px] h-[17px]" />
+              <form onSubmit={handleForgotSubmit} className="space-y-2.5">
+                <div className="relative">
+                  <Mail className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8899cc] dark:text-gray-500" />
+                  <input
+                    type="email"
+                    autoComplete="email"
+                    value={forgotEmail}
+                    onChange={(e) => {
+                      setForgotEmail(e.target.value);
+                      setForgotError(null);
+                    }}
+                    placeholder="seu@email.com"
+                    className={inputBase}
+                    autoFocus
+                  />
+                </div>
+
+                {forgotError && (
+                  <p className="text-center text-xs text-red-500">{forgotError}</p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={!forgotEmail || forgotLoading}
+                  className="mt-1 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#3a6ee8] text-sm font-semibold text-white transition-[background,transform] hover:bg-[#2a5dd4] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {forgotLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {forgotLoading ? "Enviando…" : "Enviar link de recuperação"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={backToLogin}
+                  className="flex h-9 w-full items-center justify-center text-xs font-medium text-[#8899bb] hover:text-[#5a6a99] dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
+                >
+                  Voltar ao login
+                </button>
+              </form>
             )}
-            {loading ? "Entrando…" : "Entrar"}
-          </button>
-        </form>
+          </>
+        )}
       </div>
 
       {/* ── Rodapé ───────────────────────────────────────────────────── */}
