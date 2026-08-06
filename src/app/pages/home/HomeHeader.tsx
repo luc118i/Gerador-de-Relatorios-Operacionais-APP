@@ -129,7 +129,7 @@ export function HomeHeader({
                     : "inset 1px 1px 0 0 rgba(255,255,255,0.6), 2px 8px 1px 1px rgba(0,0,0,0.75), 3px 13px 0px 0px rgba(214,214,214,0.9)",
                 }}
               >
-                <img src="/favicon.png" alt="Logo" className="dark:hidden w-full h-full object-contain" />
+                <img src="/logo.png" alt="Logo" className="dark:hidden w-full h-full object-contain" />
                 <img src="/favicon-dark.png" alt="Logo" className="hidden dark:block w-full h-full object-contain" />
               </button>
             </div>
