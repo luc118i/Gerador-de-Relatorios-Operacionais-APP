@@ -402,7 +402,13 @@ function TratativaBlock({ occ, onSaved }: { occ: OccurrenceDTO; onSaved: () => v
   );
 
   async function handleSave() {
-    const apurador = (profileName || analista).trim();
+    // Prioriza o que já está no campo "Quem apurou" (pré-preenchido com
+    // occ.analisadoPor — quem de fato criou/gerou a ocorrência, ex. via GAS).
+    // Só cai pro profileName de quem está logado no front agora se o campo
+    // estiver vazio — antes era o contrário e qualquer "Salvar tratativa"
+    // (ex. escolher "Só o Registro") reatribuía a ocorrência pra quem
+    // estivesse logado no front, sumindo ela da conta do analista real.
+    const apurador = (analista || profileName).trim();
     setAnalista(apurador);
     setSaving(true);
     try {

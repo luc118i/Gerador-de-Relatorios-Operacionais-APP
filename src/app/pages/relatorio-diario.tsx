@@ -1336,9 +1336,13 @@ function ApuracaoRow({
     }
   }
 
-  // Ao apurar (definir tratativa/justificativa), grava automaticamente o usuário logado como analista.
+  // Ao apurar (definir tratativa/justificativa), mantém o analista já registrado
+  // (ex. quem gerou a ocorrência pelo GAS) e só usa o usuário logado no front
+  // como fallback se ainda não houver ninguém — mesma correção do
+  // OccurrencePreviewModal.tsx, onde a ordem invertida reatribuía a
+  // ocorrência pra quem clicasse em salvar, mesmo que não fosse o analista real.
   function persist(t: TratativaKey | null, j: string) {
-    const apurador = (profileName || analista).trim();
+    const apurador = (analista || profileName).trim();
     setAnalista(apurador);
     void save(t, apurador, j);
   }
