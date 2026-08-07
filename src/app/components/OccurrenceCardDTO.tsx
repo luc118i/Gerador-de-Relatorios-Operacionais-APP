@@ -96,6 +96,9 @@ interface OccurrenceCardProps {
   driverSlot?: 1 | 2;
   /** Quantas ocorrências deste veículo existem no dia (para destacar prefixo repetido). */
   duplicateVehicleCount?: number;
+  /** true enquanto um lote (registro/tratativa/revisão) está rodando — evita editar
+   * uma ocorrência que o robô pode estar lendo/escrevendo no RIZER nesse momento. */
+  editDisabled?: boolean;
 }
 
 export type OccurrenceDetailDTO = OccurrenceDTO & {
@@ -174,6 +177,7 @@ export function OccurrenceCard({
   onNeedFolderConfig,
   driverSlot = 1,
   duplicateVehicleCount = 1,
+  editDisabled = false,
 }: OccurrenceCardProps) {
   const [loadingEdit, setLoadingEdit] = useState(false);
   const [copiedWpp, setCopiedWpp] = useState(false);
@@ -353,7 +357,7 @@ export function OccurrenceCard({
   const subjectDetail = occurrence.lineLabel || null;
 
   async function handleEditar() {
-    if (!onEditar) return;
+    if (!onEditar || editDisabled) return;
     setLoadingEdit(true);
     try {
       await onEditar();
@@ -680,9 +684,9 @@ export function OccurrenceCard({
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); handleEditar(); }}
-            disabled={loadingEdit}
-            title="Editar"
-            className="p-2 rounded text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:text-gray-500 dark:hover:text-blue-400 dark:hover:bg-blue-950/40 transition-colors disabled:opacity-50"
+            disabled={loadingEdit || editDisabled}
+            title={editDisabled ? "Edição bloqueada enquanto o RIZER está processando" : "Editar"}
+            className="p-2 rounded text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:text-gray-500 dark:hover:text-blue-400 dark:hover:bg-blue-950/40 transition-colors disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-gray-400"
           >
             {loadingEdit
               ? <Loader2 className="w-4 h-4 animate-spin" />
@@ -976,8 +980,9 @@ export function OccurrenceCard({
         <div className="flex gap-2">
           <button
             onClick={handleEditar}
-            disabled={loadingEdit}
-            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:text-gray-400 dark:hover:text-blue-400 dark:hover:bg-blue-950/40 rounded-md transition-colors disabled:opacity-50"
+            disabled={loadingEdit || editDisabled}
+            title={editDisabled ? "Edição bloqueada enquanto o RIZER está processando" : undefined}
+            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:text-gray-400 dark:hover:text-blue-400 dark:hover:bg-blue-950/40 rounded-md transition-colors disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-gray-500"
           >
             {loadingEdit ? (
               <>

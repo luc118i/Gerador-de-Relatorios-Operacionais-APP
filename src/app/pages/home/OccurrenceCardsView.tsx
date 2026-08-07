@@ -23,6 +23,10 @@ interface OccurrenceCardsViewProps {
   relatoriosFolderId?: string;
   medidasFolderId?: string;
   onNeedFolderConfig: () => void;
+  /** true enquanto qualquer lote (registro/tratativa/revisão) está rodando —
+   * bloqueia a edição pra não mexer numa ocorrência que o robô pode estar
+   * processando nesse momento. */
+  editDisabled?: boolean;
 }
 
 /** Grade ou lista compacta de `OccurrenceCard`, com a divisão por motorista
@@ -43,6 +47,7 @@ export function OccurrenceCardsView({
   relatoriosFolderId,
   medidasFolderId,
   onNeedFolderConfig,
+  editDisabled = false,
 }: OccurrenceCardsViewProps) {
   const items = occurrences.flatMap(splitByDriver);
 
@@ -64,6 +69,7 @@ export function OccurrenceCardsView({
       relatoriosFolderId={relatoriosFolderId}
       medidasFolderId={medidasFolderId}
       onNeedFolderConfig={onNeedFolderConfig}
+      editDisabled={editDisabled}
     />
   ));
 

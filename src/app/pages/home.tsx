@@ -1,5 +1,6 @@
 import {
   AlertTriangle,
+  Gavel,
   Home as HomeIcon,
   LayoutGrid,
   List,
@@ -46,6 +47,37 @@ import { ConfirmActionModal } from "./home/ConfirmActionModal";
 import { SubjectGroup } from "./home/SubjectGroup";
 import { OccurrenceCardsView } from "./home/OccurrenceCardsView";
 
+// ── Persistência da fila de lote (RIZER) ──────────────────────────
+// Sem isso, um F5 (ou queda de conexão) durante o processamento perdia a
+// fila inteira — o usuário tinha que reconferir manualmente o que já tinha
+// ido e reiniciar do zero. Agora, a cada item concluído, gravamos o que
+// ainda falta no localStorage; ao montar a página, se sobrar fila de uma
+// sessão anterior, ela é retomada automaticamente.
+const BATCH_QUEUE_STORAGE_KEY = "rizer_batch_queue_v1";
+
+type PersistedBatchQueue =
+  | { kind: "registro"; subject: string; items: BatchRizerItem[]; total: number; doneCount: number }
+  | { kind: "tratativa"; subject: string; ids: string[]; total: number; doneCount: number }
+  | { kind: "revisar"; subject: string; ids: string[]; total: number; doneCount: number };
+
+function saveBatchQueue(state: PersistedBatchQueue | null) {
+  try {
+    if (state) localStorage.setItem(BATCH_QUEUE_STORAGE_KEY, JSON.stringify(state));
+    else localStorage.removeItem(BATCH_QUEUE_STORAGE_KEY);
+  } catch {
+    // localStorage indisponível — segue sem persistência
+  }
+}
+
+function loadBatchQueue(): PersistedBatchQueue | null {
+  try {
+    const raw = localStorage.getItem(BATCH_QUEUE_STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as PersistedBatchQueue) : null;
+  } catch {
+    return null;
+  }
+}
+
 function getSaudacao(): string {
   const hora = new Date().getHours();
   if (hora < 12) return "Bom dia";
@@ -80,17 +112,33 @@ export function Home({
     ids: string[];
     currentId: string | null;
     doneCount: number;
+    total: number;
     cancelRequested: boolean;
   };
-  const [batchState, setBatchState] = useState<BatchState | null>(null);
+
+  // Semeia o estado visível (fila, contador) direto do que sobrou no
+  // localStorage de uma sessão anterior — assim, se a página recarregar no
+  // meio de um lote, a barra de progresso já nasce no lugar certo (ex.: "5 de
+  // 12") em vez de piscar vazia e recomeçar do zero. O useEffect de retomada,
+  // logo abaixo, cuida de religar as chamadas de rede de fato.
+  function seedBatchState(kind: "registro" | "tratativa" | "revisar"): BatchState | null {
+    if (!isAdmin) return null;
+    const pending = loadBatchQueue();
+    if (!pending || pending.kind !== kind) return null;
+    const ids = pending.kind === "registro" ? pending.items.map((i) => i.id) : pending.ids;
+    if (ids.length === 0) return null;
+    return { subject: pending.subject, ids, currentId: null, doneCount: pending.doneCount, total: pending.total, cancelRequested: false };
+  }
+
+  const [batchState, setBatchState] = useState<BatchState | null>(() => seedBatchState("registro"));
   const batchCancelRef = useRef(false);
   const [batchConfirm, setBatchConfirm] = useState<{ subject: string; occs: OccurrenceDTO[] } | null>(null);
 
-  const [batchTratativaState, setBatchTratativaState] = useState<BatchState | null>(null);
+  const [batchTratativaState, setBatchTratativaState] = useState<BatchState | null>(() => seedBatchState("tratativa"));
   const batchTrataivaCancelRef = useRef(false);
   const [batchTratativaConfirm, setBatchTratativaConfirm] = useState<{ subject: string; ids: string[] } | null>(null);
 
-  const [batchRevisarState, setBatchRevisarState] = useState<BatchState | null>(null);
+  const [batchRevisarState, setBatchRevisarState] = useState<BatchState | null>(() => seedBatchState("revisar"));
   const batchRevisarCancelRef = useRef(false);
   const [batchRevisarConfirm, setBatchRevisarConfirm] = useState<{ subject: string; ids: string[] } | null>(null);
 
@@ -373,15 +421,30 @@ export function Home({
     setCalendarVisible(false);
   }
 
-  async function startBatch(subject: string, items: BatchRizerItem[]) {
+  async function startBatch(subject: string, items: BatchRizerItem[], opts?: { total?: number; startDoneCount?: number }) {
     if (!isAdmin || items.length === 0) return;
     if (!automationFolders.config) { setShowAutomationFolderModal(true); return; }
+    // Sem o agente rodando, toda chamada falha na hora (nem chega a tentar a
+    // rede) — sem esse aviso, o lote "carrega e sai" em menos de 1s sem
+    // nenhuma explicação do porquê nada foi registrado de fato.
+    if (!agentAvailable) {
+      toast.error("O RIZER Agent não está em execução. Abra o agente (RIZER Agent) e tente novamente.");
+      return;
+    }
+    const total = opts?.total ?? items.length;
+    const startDone = opts?.startDoneCount ?? 0;
     batchCancelRef.current = false;
-    setBatchState({ subject, ids: items.map(i => i.id), currentId: null, doneCount: 0, cancelRequested: false });
+    setBatchState({ subject, ids: items.map(i => i.id), currentId: null, doneCount: startDone, total, cancelRequested: false });
+    saveBatchQueue({ kind: "registro", subject, items, total, doneCount: startDone });
+
+    let attempted = 0;
+    let failCount = 0;
+    let lastErrorMsg: string | null = null;
 
     for (let i = 0; i < items.length; i++) {
       if (batchCancelRef.current) break;
       const { id, advertencia } = items[i];
+      attempted++;
       setBatchState(prev => prev ? { ...prev, currentId: id } : null);
       try {
         await registerDisciplinaryOccurrence(
@@ -390,20 +453,36 @@ export function Home({
           automationFolders.config?.medidasFolderId,
           { useAgent: agentAvailable, advertencia },
         );
-      } catch {
-        // falha individual não para a fila
+      } catch (err) {
+        failCount++;
+        lastErrorMsg = getApiErrorMessage(err);
       }
-      setBatchState(prev => prev ? { ...prev, doneCount: i + 1, currentId: null } : null);
+      setBatchState(prev => prev ? { ...prev, doneCount: startDone + i + 1, currentId: null } : null);
+      saveBatchQueue({ kind: "registro", subject, items: items.slice(i + 1), total, doneCount: startDone + i + 1 });
     }
 
+    const wasCancelled = batchCancelRef.current;
     await queryClient.invalidateQueries({ queryKey: ["occurrences", "byCreationDate", selectedDate] });
     setBatchState(null);
     batchCancelRef.current = false;
+    saveBatchQueue(null);
+
+    if (!wasCancelled && attempted > 0) {
+      const okCount = attempted - failCount;
+      if (failCount === 0) {
+        toast.success(`${attempted} ocorrência${attempted !== 1 ? "s" : ""} registrada${attempted !== 1 ? "s" : ""} no RIZER!`);
+      } else if (okCount === 0) {
+        toast.error(`Falha ao registrar no RIZER${attempted !== 1 ? ` (${attempted} ocorrências)` : ""}: ${lastErrorMsg}`);
+      } else {
+        toast.warning(`${okCount} de ${attempted} registradas no RIZER. ${failCount} falharam: ${lastErrorMsg}`);
+      }
+    }
   }
 
   function cancelBatch() {
     batchCancelRef.current = true;
     setBatchState(prev => prev ? { ...prev, cancelRequested: true } : null);
+    saveBatchQueue(null);
   }
 
   // Se todas as ocorrências já têm uma tratativa definida (badge no card),
@@ -422,57 +501,97 @@ export function Home({
     setBatchConfirm({ subject, occs: unregistered });
   }
 
-  function getBatchOverlay(occId: string, subject: string): BatchOverlay | undefined {
-    if (!batchState || batchState.subject !== subject) return undefined;
+  function getBatchOverlay(occId: string): BatchOverlay | undefined {
+    if (!batchState || !batchState.ids.includes(occId)) return undefined;
     if (batchState.currentId === occId) return "processing";
     if (batchState.ids.indexOf(occId) > batchState.ids.indexOf(batchState.currentId ?? "")) return "queued";
     return undefined;
   }
 
-  async function startBatchTratativa(subject: string, ids: string[]) {
+  async function startBatchTratativa(subject: string, ids: string[], opts?: { total?: number; startDoneCount?: number }) {
     if (!isAdmin || ids.length === 0) return;
     if (!automationFolders.config) { setShowAutomationFolderModal(true); return; }
+    if (!agentAvailable) {
+      toast.error("O RIZER Agent não está em execução. Abra o agente (RIZER Agent) e tente novamente.");
+      return;
+    }
+    const total = opts?.total ?? ids.length;
+    const startDone = opts?.startDoneCount ?? 0;
     batchTrataivaCancelRef.current = false;
-    setBatchTratativaState({ subject, ids, currentId: null, doneCount: 0, cancelRequested: false });
+    setBatchTratativaState({ subject, ids, currentId: null, doneCount: startDone, total, cancelRequested: false });
+    saveBatchQueue({ kind: "tratativa", subject, ids, total, doneCount: startDone });
+
+    let attempted = 0;
+    let failCount = 0;
+    let lastErrorMsg: string | null = null;
 
     for (let i = 0; i < ids.length; i++) {
       if (batchTrataivaCancelRef.current) break;
       const id = ids[i];
+      attempted++;
       setBatchTratativaState(prev => prev ? { ...prev, currentId: id } : null);
       try {
         await fillMedidaLink(id, automationFolders.config.medidasFolderId, { useAgent: agentAvailable });
-      } catch {
-        // falha individual não para a fila
+      } catch (err) {
+        failCount++;
+        lastErrorMsg = getApiErrorMessage(err);
       }
-      setBatchTratativaState(prev => prev ? { ...prev, doneCount: i + 1, currentId: null } : null);
+      setBatchTratativaState(prev => prev ? { ...prev, doneCount: startDone + i + 1, currentId: null } : null);
+      saveBatchQueue({ kind: "tratativa", subject, ids: ids.slice(i + 1), total, doneCount: startDone + i + 1 });
     }
 
+    const wasCancelled = batchTrataivaCancelRef.current;
     await queryClient.invalidateQueries({ queryKey: ["occurrences", "byCreationDate", selectedDate] });
     setBatchTratativaState(null);
     batchTrataivaCancelRef.current = false;
+    saveBatchQueue(null);
+
+    if (!wasCancelled && attempted > 0) {
+      const okCount = attempted - failCount;
+      if (failCount === 0) {
+        toast.success(`Tratativa preenchida em ${attempted} ocorrência${attempted !== 1 ? "s" : ""}!`);
+      } else if (okCount === 0) {
+        toast.error(`Falha ao preencher tratativa${attempted !== 1 ? ` (${attempted} ocorrências)` : ""}: ${lastErrorMsg}`);
+      } else {
+        toast.warning(`${okCount} de ${attempted} tratativas preenchidas. ${failCount} falharam: ${lastErrorMsg}`);
+      }
+    }
   }
 
   function cancelBatchTratativa() {
     batchTrataivaCancelRef.current = true;
     setBatchTratativaState(prev => prev ? { ...prev, cancelRequested: true } : null);
+    saveBatchQueue(null);
   }
 
-  function getTratativaOverlay(occId: string, subject: string): BatchOverlay | undefined {
-    if (!batchTratativaState || batchTratativaState.subject !== subject) return undefined;
+  function getTratativaOverlay(occId: string): BatchOverlay | undefined {
+    if (!batchTratativaState || !batchTratativaState.ids.includes(occId)) return undefined;
     if (batchTratativaState.currentId === occId) return "processing";
     if (batchTratativaState.ids.indexOf(occId) > batchTratativaState.ids.indexOf(batchTratativaState.currentId ?? "")) return "queued";
     return undefined;
   }
 
-  async function startBatchRevisar(subject: string, ids: string[]) {
+  async function startBatchRevisar(subject: string, ids: string[], opts?: { total?: number; startDoneCount?: number }) {
     if (!isAdmin || ids.length === 0) return;
     if (!automationFolders.config) { setShowAutomationFolderModal(true); return; }
+    if (!agentAvailable) {
+      toast.error("O RIZER Agent não está em execução. Abra o agente (RIZER Agent) e tente novamente.");
+      return;
+    }
+    const total = opts?.total ?? ids.length;
+    const startDone = opts?.startDoneCount ?? 0;
     batchRevisarCancelRef.current = false;
-    setBatchRevisarState({ subject, ids, currentId: null, doneCount: 0, cancelRequested: false });
+    setBatchRevisarState({ subject, ids, currentId: null, doneCount: startDone, total, cancelRequested: false });
+    saveBatchQueue({ kind: "revisar", subject, ids, total, doneCount: startDone });
+
+    let attempted = 0;
+    let failCount = 0;
+    let lastErrorMsg: string | null = null;
 
     for (let i = 0; i < ids.length; i++) {
       if (batchRevisarCancelRef.current) break;
       const id = ids[i];
+      attempted++;
       setBatchRevisarState(prev => prev ? { ...prev, currentId: id } : null);
       try {
         await updateRizerOccurrence(
@@ -481,24 +600,40 @@ export function Home({
           automationFolders.config?.medidasFolderId,
           { useAgent: agentAvailable },
         );
-      } catch {
-        // falha individual não para a fila
+      } catch (err) {
+        failCount++;
+        lastErrorMsg = getApiErrorMessage(err);
       }
-      setBatchRevisarState(prev => prev ? { ...prev, doneCount: i + 1, currentId: null } : null);
+      setBatchRevisarState(prev => prev ? { ...prev, doneCount: startDone + i + 1, currentId: null } : null);
+      saveBatchQueue({ kind: "revisar", subject, ids: ids.slice(i + 1), total, doneCount: startDone + i + 1 });
     }
 
+    const wasCancelled = batchRevisarCancelRef.current;
     await queryClient.invalidateQueries({ queryKey: ["occurrences", "byCreationDate", selectedDate] });
     setBatchRevisarState(null);
     batchRevisarCancelRef.current = false;
+    saveBatchQueue(null);
+
+    if (!wasCancelled && attempted > 0) {
+      const okCount = attempted - failCount;
+      if (failCount === 0) {
+        toast.success(`${attempted} ocorrência${attempted !== 1 ? "s" : ""} revisada${attempted !== 1 ? "s" : ""} no RIZER!`);
+      } else if (okCount === 0) {
+        toast.error(`Falha ao revisar no RIZER${attempted !== 1 ? ` (${attempted} ocorrências)` : ""}: ${lastErrorMsg}`);
+      } else {
+        toast.warning(`${okCount} de ${attempted} revisadas no RIZER. ${failCount} falharam: ${lastErrorMsg}`);
+      }
+    }
   }
 
   function cancelBatchRevisar() {
     batchRevisarCancelRef.current = true;
     setBatchRevisarState(prev => prev ? { ...prev, cancelRequested: true } : null);
+    saveBatchQueue(null);
   }
 
-  function getRevisarOverlay(occId: string, subject: string): BatchOverlay | undefined {
-    if (!batchRevisarState || batchRevisarState.subject !== subject) return undefined;
+  function getRevisarOverlay(occId: string): BatchOverlay | undefined {
+    if (!batchRevisarState || !batchRevisarState.ids.includes(occId)) return undefined;
     if (batchRevisarState.currentId === occId) return "processing";
     if (batchRevisarState.ids.indexOf(occId) > batchRevisarState.ids.indexOf(batchRevisarState.currentId ?? "")) return "queued";
     return undefined;
@@ -512,7 +647,7 @@ export function Home({
         kind: "registro",
         subject: batchState.subject,
         doneCount: batchState.doneCount,
-        total: batchState.ids.length,
+        total: batchState.total,
         cancelRequested: batchState.cancelRequested,
         onCancel: cancelBatch,
       });
@@ -522,7 +657,7 @@ export function Home({
         kind: "tratativa",
         subject: batchTratativaState.subject,
         doneCount: batchTratativaState.doneCount,
-        total: batchTratativaState.ids.length,
+        total: batchTratativaState.total,
         cancelRequested: batchTratativaState.cancelRequested,
         onCancel: cancelBatchTratativa,
       });
@@ -532,7 +667,7 @@ export function Home({
         kind: "revisar",
         subject: batchRevisarState.subject,
         doneCount: batchRevisarState.doneCount,
-        total: batchRevisarState.ids.length,
+        total: batchRevisarState.total,
         cancelRequested: batchRevisarState.cancelRequested,
         onCancel: cancelBatchRevisar,
       });
@@ -660,6 +795,53 @@ export function Home({
 
   const anyBatchRunning = !!batchState || !!batchTratativaState || !!batchRevisarState;
 
+  /** Todas as ocorrências do dia (de qualquer assunto) ainda não registradas
+   * no RIZER — alimenta o botão global "Registrar todas pendentes". */
+  const unregisteredAll = useMemo(
+    () => ocorrencias.filter((o) => !o.rizerRegistered),
+    [ocorrencias],
+  );
+
+  /** Todas as ocorrências do dia (de qualquer assunto) com tratativa
+   * pendente — alimenta o botão global "Enviar tratativas pendentes". */
+  const pendingTratativaAll = useMemo(
+    () => ocorrencias.filter((o) => o.faltaTratativa),
+    [ocorrencias],
+  );
+
+  // ── Retoma fila de lote interrompida por reload ────────────────
+  // O estado visível (batchState etc.) já nasceu correto via seedBatchState
+  // no useState lazy initializer — a barra de progresso não pisca nem
+  // reseta o contador. Aqui só religamos de fato as chamadas de rede que
+  // ficaram pendentes, continuando do doneCount/total onde paramos.
+  //
+  // Só dispara quando o agente também estiver disponível: se a página
+  // recarrega com o RIZER Agent fechado, a fila fica visível "pausada" (sem
+  // travar em loading) e a retomada acontece sozinha assim que o agente for
+  // detectado de novo (useAgentStatus faz polling), sem precisar de outro F5.
+  const resumedBatchRef = useRef(false);
+  useEffect(() => {
+    if (resumedBatchRef.current) return;
+    if (!isAdmin || !automationFolders.config || !agentAvailable) return;
+    const pending = loadBatchQueue();
+    if (!pending) return;
+    resumedBatchRef.current = true;
+
+    if (pending.kind === "registro" && pending.items.length > 0) {
+      toast.info(`Retomando fila do RIZER… ${pending.doneCount} de ${pending.total}`);
+      startBatch(pending.subject, pending.items, { total: pending.total, startDoneCount: pending.doneCount });
+    } else if (pending.kind === "tratativa" && pending.ids.length > 0) {
+      toast.info(`Retomando envio de tratativas… ${pending.doneCount} de ${pending.total}`);
+      startBatchTratativa(pending.subject, pending.ids, { total: pending.total, startDoneCount: pending.doneCount });
+    } else if (pending.kind === "revisar" && pending.ids.length > 0) {
+      toast.info(`Retomando revisão no RIZER… ${pending.doneCount} de ${pending.total}`);
+      startBatchRevisar(pending.subject, pending.ids, { total: pending.total, startDoneCount: pending.doneCount });
+    } else {
+      saveBatchQueue(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin, automationFolders.config, agentAvailable]);
+
   // ── Render ────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
@@ -755,6 +937,26 @@ export function Home({
                     </button>
                   )}
                 </div>
+                {/* Registrar todas as pendentes no RIZER, de qualquer assunto */}
+                {isAdmin && !anyBatchRunning && unregisteredAll.length > 0 && (
+                  <button
+                    onClick={() => requestRegistrarTodas("Todos os assuntos pendentes", unregisteredAll)}
+                    className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-950/40 transition-colors"
+                  >
+                    <Gavel className="w-3.5 h-3.5" />
+                    Registrar todas pendentes ({unregisteredAll.length})
+                  </button>
+                )}
+                {/* Enviar todas as tratativas pendentes no RIZER, de qualquer assunto */}
+                {isAdmin && !anyBatchRunning && pendingTratativaAll.length > 0 && (
+                  <button
+                    onClick={() => setBatchTratativaConfirm({ subject: "Todos os assuntos pendentes", ids: pendingTratativaAll.map((o) => o.id) })}
+                    className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-950/40 transition-colors"
+                  >
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    Enviar tratativas pendentes ({pendingTratativaAll.length})
+                  </button>
+                )}
                 {/* Toggle agrupamento */}
                 <button
                   onClick={() => setGroupBySubject((v) => { const next = !v; localStorage.setItem("home_groupBySubject", String(next)); return next; })}
@@ -913,21 +1115,21 @@ export function Home({
                   running: batchState?.subject === subject,
                   cancelRequested: batchState?.cancelRequested ?? false,
                   doneCount: batchState?.doneCount ?? 0,
-                  total: batchState?.ids.length ?? 0,
+                  total: batchState?.total ?? 0,
                   onCancel: cancelBatch,
                 }}
                 tratativaBatch={{
                   running: batchTratativaState?.subject === subject,
                   cancelRequested: batchTratativaState?.cancelRequested ?? false,
                   doneCount: batchTratativaState?.doneCount ?? 0,
-                  total: batchTratativaState?.ids.length ?? 0,
+                  total: batchTratativaState?.total ?? 0,
                   onCancel: cancelBatchTratativa,
                 }}
                 revisarBatch={{
                   running: batchRevisarState?.subject === subject,
                   cancelRequested: batchRevisarState?.cancelRequested ?? false,
                   doneCount: batchRevisarState?.doneCount ?? 0,
-                  total: batchRevisarState?.ids.length ?? 0,
+                  total: batchRevisarState?.total ?? 0,
                   onCancel: cancelBatchRevisar,
                 }}
                 vehicleOccurrenceCount={vehicleOccurrenceCount}
@@ -936,9 +1138,9 @@ export function Home({
                 onExcluir={setExcluindoId}
                 getDriveStatus={getDriveStatus}
                 onSendToDrive={handleSendToDrive}
-                getBatchOverlay={(occId) => getBatchOverlay(occId, subject)}
-                getTratativaOverlay={(occId) => getTratativaOverlay(occId, subject)}
-                getRevisarOverlay={(occId) => getRevisarOverlay(occId, subject)}
+                getBatchOverlay={getBatchOverlay}
+                getTratativaOverlay={getTratativaOverlay}
+                getRevisarOverlay={getRevisarOverlay}
                 relatoriosFolderId={automationFolders.config?.relatoriosFolderId}
                 medidasFolderId={automationFolders.config?.medidasFolderId}
                 onNeedFolderConfig={() => setShowAutomationFolderModal(true)}
@@ -956,9 +1158,13 @@ export function Home({
             onExcluir={setExcluindoId}
             getDriveStatus={getDriveStatus}
             onSendToDrive={handleSendToDrive}
+            getBatchOverlay={getBatchOverlay}
+            getTratativaOverlay={getTratativaOverlay}
+            getRevisarOverlay={getRevisarOverlay}
             relatoriosFolderId={automationFolders.config?.relatoriosFolderId}
             medidasFolderId={automationFolders.config?.medidasFolderId}
             onNeedFolderConfig={() => setShowAutomationFolderModal(true)}
+            editDisabled={anyBatchRunning}
           />
         )}
 

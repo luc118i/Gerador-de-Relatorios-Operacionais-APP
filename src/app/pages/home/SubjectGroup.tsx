@@ -197,6 +197,7 @@ export function SubjectGroup({
           relatoriosFolderId={relatoriosFolderId}
           medidasFolderId={medidasFolderId}
           onNeedFolderConfig={onNeedFolderConfig}
+          editDisabled={anyBatchRunning}
         />
       )}
     </div>
