@@ -15,6 +15,7 @@ import {
   KeyRound,
   Table,
   ListChecks,
+  UserPlus,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
@@ -55,8 +56,8 @@ function rand(seed: number) {
 }
 
 export function LoginScreen() {
-  const { signIn, requestPasswordReset } = useAuth();
-  const [mode, setMode] = useState<"login" | "forgot">("login");
+  const { signIn, signUp, requestPasswordReset } = useAuth();
+  const [mode, setMode] = useState<"login" | "forgot" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPwd, setShowPwd] = useState(false);
@@ -68,6 +69,15 @@ export function LoginScreen() {
   const [forgotError, setForgotError] = useState<string | null>(null);
   const [forgotLoading, setForgotLoading] = useState(false);
 
+  const [signupName, setSignupName] = useState("");
+  const [signupEmail, setSignupEmail] = useState("");
+  const [signupPassword, setSignupPassword] = useState("");
+  const [signupConfirm, setSignupConfirm] = useState("");
+  const [showSignupPwd, setShowSignupPwd] = useState(false);
+  const [signupSent, setSignupSent] = useState(false);
+  const [signupError, setSignupError] = useState<string | null>(null);
+  const [signupLoading, setSignupLoading] = useState(false);
+
   function openForgot() {
     setForgotEmail(email);
     setForgotSent(false);
@@ -75,9 +85,35 @@ export function LoginScreen() {
     setMode("forgot");
   }
 
+  function openSignup() {
+    setSignupEmail(email);
+    setSignupSent(false);
+    setSignupError(null);
+    setMode("signup");
+  }
+
   function backToLogin() {
     setMode("login");
     setForgotError(null);
+    setSignupError(null);
+  }
+
+  async function handleSignupSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!signupName || !signupEmail || !signupPassword || !signupConfirm) return;
+    if (signupPassword !== signupConfirm) {
+      setSignupError("As senhas não coincidem.");
+      return;
+    }
+    setSignupLoading(true);
+    setSignupError(null);
+    const { error } = await signUp(signupEmail, signupPassword, signupName);
+    setSignupLoading(false);
+    if (error) {
+      setSignupError(error);
+      return;
+    }
+    setSignupSent(true);
   }
 
   async function handleForgotSubmit(e: React.FormEvent) {
@@ -379,9 +415,18 @@ export function LoginScreen() {
                 )}
                 {loading ? "Entrando…" : "Entrar"}
               </button>
+
+              <button
+                type="button"
+                onClick={openSignup}
+                className="flex h-9 w-full items-center justify-center gap-1 text-xs font-medium text-[#8899bb] hover:text-[#5a6a99] dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
+              >
+                Não tem conta?{" "}
+                <span className="text-[#3a6ee8] dark:text-[#7fa0f0] font-semibold">Criar conta</span>
+              </button>
             </form>
           </>
-        ) : (
+        ) : mode === "forgot" ? (
           <>
             <h1 className="text-center text-[17px] font-semibold text-[#1a2a4a] dark:text-gray-100">
               Esqueci minha senha
@@ -443,6 +488,136 @@ export function LoginScreen() {
                   className="flex h-9 w-full items-center justify-center text-xs font-medium text-[#8899bb] hover:text-[#5a6a99] dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
                 >
                   Voltar ao login
+                </button>
+              </form>
+            )}
+          </>
+        ) : (
+          <>
+            <h1 className="text-center text-[17px] font-semibold text-[#1a2a4a] dark:text-gray-100">
+              Criar conta
+            </h1>
+            <p className="mb-5 text-center text-xs text-[#8899bb] dark:text-gray-500">
+              {signupSent
+                ? "Confirme seu e-mail para continuar"
+                : "Cadastre-se para apurar ocorrências"}
+            </p>
+
+            {signupSent ? (
+              <div className="space-y-4">
+                <p className="text-center text-xs text-[#5a6a99] dark:text-gray-400">
+                  Enviamos um link de confirmação para{" "}
+                  <span className="font-semibold">{signupEmail}</span>. Clique nele para ativar
+                  sua conta e conseguir entrar.
+                </p>
+                <button
+                  type="button"
+                  onClick={backToLogin}
+                  className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#3a6ee8] text-sm font-semibold text-white transition-[background,transform] hover:bg-[#2a5dd4] active:scale-[0.98]"
+                >
+                  Voltar ao login
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleSignupSubmit} className="space-y-2.5">
+                <div className="relative">
+                  <User className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8899cc] dark:text-gray-500" />
+                  <input
+                    type="text"
+                    autoComplete="name"
+                    value={signupName}
+                    onChange={(e) => {
+                      setSignupName(e.target.value);
+                      setSignupError(null);
+                    }}
+                    placeholder="Seu nome"
+                    className={inputBase}
+                    autoFocus
+                  />
+                </div>
+
+                <div className="relative">
+                  <Mail className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8899cc] dark:text-gray-500" />
+                  <input
+                    type="email"
+                    autoComplete="email"
+                    value={signupEmail}
+                    onChange={(e) => {
+                      setSignupEmail(e.target.value);
+                      setSignupError(null);
+                    }}
+                    placeholder="seu@email.com"
+                    className={inputBase}
+                  />
+                </div>
+
+                <div className="relative">
+                  <Lock className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8899cc] dark:text-gray-500" />
+                  <input
+                    type={showSignupPwd ? "text" : "password"}
+                    autoComplete="new-password"
+                    value={signupPassword}
+                    onChange={(e) => {
+                      setSignupPassword(e.target.value);
+                      setSignupError(null);
+                    }}
+                    placeholder="Senha"
+                    className={inputBase}
+                  />
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    onClick={() => setShowSignupPwd((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8899cc] dark:text-gray-500 hover:text-[#5a6a99] dark:hover:text-gray-300 transition-colors"
+                  >
+                    {showSignupPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+
+                <div className="relative">
+                  <Lock className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8899cc] dark:text-gray-500" />
+                  <input
+                    type={showSignupPwd ? "text" : "password"}
+                    autoComplete="new-password"
+                    value={signupConfirm}
+                    onChange={(e) => {
+                      setSignupConfirm(e.target.value);
+                      setSignupError(null);
+                    }}
+                    placeholder="Confirmar senha"
+                    className={inputBase}
+                  />
+                </div>
+
+                {signupError && (
+                  <p className="text-center text-xs text-red-500">{signupError}</p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={
+                    !signupName ||
+                    !signupEmail ||
+                    !signupPassword ||
+                    !signupConfirm ||
+                    signupLoading
+                  }
+                  className="mt-1 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#3a6ee8] text-sm font-semibold text-white transition-[background,transform] hover:bg-[#2a5dd4] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {signupLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <UserPlus className="w-[17px] h-[17px]" />
+                  )}
+                  {signupLoading ? "Criando…" : "Criar conta"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={backToLogin}
+                  className="flex h-9 w-full items-center justify-center text-xs font-medium text-[#8899bb] hover:text-[#5a6a99] dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
+                >
+                  Já tem conta? Entrar
                 </button>
               </form>
             )}

@@ -19,6 +19,8 @@ type AuthContextValue = {
   /** `true` quando o usuário chegou aqui pelo link de "esqueci minha senha" e precisa definir uma nova. */
   passwordRecovery: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  /** Cria uma conta nova (auto-cadastro) e dispara o e-mail de confirmação do Supabase. */
+  signUp: (email: string, password: string, name: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   /** Salva o nome de exibição no perfil do usuário logado. */
   updateProfileName: (name: string) => Promise<{ error: string | null }>;
@@ -125,6 +127,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error ? error.message : null };
   }, []);
 
+  const signUp = useCallback(async (email: string, password: string, name: string) => {
+    const trimmedEmail = email.trim();
+    const trimmedName = name.trim();
+    if (!trimmedEmail) return { error: "Informe um e-mail." };
+    if (!trimmedName) return { error: "Informe seu nome." };
+    if (password.length < 6) return { error: "A senha deve ter pelo menos 6 caracteres." };
+
+    const redirectTo = `${window.location.origin}${window.location.pathname}`;
+    const { error } = await supabase.auth.signUp({
+      email: trimmedEmail,
+      password,
+      options: {
+        // `display_name` é lido pelo dashboard do Supabase; `nome` é o que o app usa primeiro.
+        data: { nome: trimmedName, display_name: trimmedName },
+        emailRedirectTo: redirectTo,
+      },
+    });
+    if (error) {
+      const msg = /already registered|already exists/i.test(error.message)
+        ? "Já existe uma conta com este e-mail."
+        : error.message;
+      return { error: msg };
+    }
+    return { error: null };
+  }, []);
+
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     setPasswordRecovery(false);
@@ -188,6 +216,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loading,
         passwordRecovery,
         signIn,
+        signUp,
         signOut,
         updateProfileName,
         requestPasswordReset,
