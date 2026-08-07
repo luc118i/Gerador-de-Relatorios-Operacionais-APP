@@ -15,6 +15,7 @@ import {
   KeyRound,
   Table,
   ListChecks,
+  UserPlus,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
@@ -55,8 +56,8 @@ function rand(seed: number) {
 }
 
 export function LoginScreen() {
-  const { signIn, requestPasswordReset } = useAuth();
-  const [mode, setMode] = useState<"login" | "forgot">("login");
+  const { signIn, signUp, requestPasswordReset } = useAuth();
+  const [mode, setMode] = useState<"login" | "forgot" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPwd, setShowPwd] = useState(false);
@@ -68,6 +69,15 @@ export function LoginScreen() {
   const [forgotError, setForgotError] = useState<string | null>(null);
   const [forgotLoading, setForgotLoading] = useState(false);
 
+  const [signupName, setSignupName] = useState("");
+  const [signupEmail, setSignupEmail] = useState("");
+  const [signupPassword, setSignupPassword] = useState("");
+  const [signupConfirm, setSignupConfirm] = useState("");
+  const [showSignupPwd, setShowSignupPwd] = useState(false);
+  const [signupSent, setSignupSent] = useState(false);
+  const [signupError, setSignupError] = useState<string | null>(null);
+  const [signupLoading, setSignupLoading] = useState(false);
+
   function openForgot() {
     setForgotEmail(email);
     setForgotSent(false);
@@ -75,9 +85,35 @@ export function LoginScreen() {
     setMode("forgot");
   }
 
+  function openSignup() {
+    setSignupEmail(email);
+    setSignupSent(false);
+    setSignupError(null);
+    setMode("signup");
+  }
+
   function backToLogin() {
     setMode("login");
     setForgotError(null);
+    setSignupError(null);
+  }
+
+  async function handleSignupSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!signupName || !signupEmail || !signupPassword || !signupConfirm) return;
+    if (signupPassword !== signupConfirm) {
+      setSignupError("As senhas não coincidem.");
+      return;
+    }
+    setSignupLoading(true);
+    setSignupError(null);
+    const { error } = await signUp(signupEmail, signupPassword, signupName);
+    setSignupLoading(false);
+    if (error) {
+      setSignupError(error);
+      return;
+    }
+    setSignupSent(true);
   }
 
   async function handleForgotSubmit(e: React.FormEvent) {
@@ -284,7 +320,7 @@ export function LoginScreen() {
       {/* ── Card ─────────────────────────────────────────────────────── */}
       <div className="relative z-10 w-full max-w-[340px] rounded-2xl bg-white dark:bg-[#111a2e] px-8 pt-9 pb-8 shadow-[0_2px_24px_rgba(60,100,200,0.10),0_0.5px_2px_rgba(60,100,200,0.10)]">
         <div className="flex justify-center mb-2">
-          <div className="relative flex h-[52px] w-[52px] items-center justify-center rounded-2xl bg-[#eef3ff] dark:bg-[#1c2b4a]">
+          <div className="relative flex h-[52px] w-[52px] items-center justify-center rounded-2xl overflow-hidden bg-gradient-to-b from-[#e6bdf9] to-[#d79bf5] dark:bg-none dark:bg-[#0b0b0f]">
             {/* Anéis de pulso */}
             {[0, 1, 2].map((i) => (
               <span
@@ -303,7 +339,12 @@ export function LoginScreen() {
             >
               <span className="absolute left-1/2 top-[-2.5px] h-[5px] w-[5px] -translate-x-1/2 rounded-full bg-[#3a6ee8] opacity-50" />
             </span>
-            <LogIn className="relative w-6 h-6 text-[#3a6ee8]" />
+            <img src="/logo.png" alt="Logo" className="relative dark:hidden w-full h-full object-contain" />
+            <img
+              src="/favicon-dark.png"
+              alt="Logo"
+              className="relative hidden dark:block w-full h-full object-contain"
+            />
           </div>
         </div>
 
@@ -349,7 +390,7 @@ export function LoginScreen() {
                   type="button"
                   tabIndex={-1}
                   onClick={() => setShowPwd((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8899cc] dark:text-gray-500 hover:text-[#5a6a99] dark:hover:text-gray-300 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-[#8899cc] dark:text-gray-500 hover:text-[#5a6a99] dark:hover:text-gray-300 transition-[color,transform] active:scale-90"
                 >
                   {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -359,7 +400,7 @@ export function LoginScreen() {
                 <button
                   type="button"
                   onClick={openForgot}
-                  className="text-xs font-medium text-[#3a6ee8] hover:text-[#2a5dd4] dark:text-[#7fa0f0] dark:hover:text-[#9cb6f5] transition-colors"
+                  className="cursor-pointer text-xs font-medium text-[#3a6ee8] hover:text-[#2a5dd4] dark:text-[#7fa0f0] dark:hover:text-[#9cb6f5] transition-[color,transform] active:scale-95"
                 >
                   Esqueci minha senha
                 </button>
@@ -370,7 +411,7 @@ export function LoginScreen() {
               <button
                 type="submit"
                 disabled={!email || !password || loading}
-                className="mt-1 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#3a6ee8] text-sm font-semibold text-white transition-[background,transform] hover:bg-[#2a5dd4] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                className="mt-1 flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#3a6ee8] text-sm font-semibold text-white transition-[background,transform] hover:bg-[#2a5dd4] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {loading ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -379,9 +420,18 @@ export function LoginScreen() {
                 )}
                 {loading ? "Entrando…" : "Entrar"}
               </button>
+
+              <button
+                type="button"
+                onClick={openSignup}
+                className="flex h-9 w-full cursor-pointer items-center justify-center gap-1 text-xs font-medium text-[#8899bb] hover:text-[#5a6a99] dark:text-gray-500 dark:hover:text-gray-300 transition-[color,transform] active:scale-95"
+              >
+                Não tem conta?{" "}
+                <span className="text-[#3a6ee8] dark:text-[#7fa0f0] font-semibold">Criar conta</span>
+              </button>
             </form>
           </>
-        ) : (
+        ) : mode === "forgot" ? (
           <>
             <h1 className="text-center text-[17px] font-semibold text-[#1a2a4a] dark:text-gray-100">
               Esqueci minha senha
@@ -401,7 +451,7 @@ export function LoginScreen() {
                 <button
                   type="button"
                   onClick={backToLogin}
-                  className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#3a6ee8] text-sm font-semibold text-white transition-[background,transform] hover:bg-[#2a5dd4] active:scale-[0.98]"
+                  className="flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#3a6ee8] text-sm font-semibold text-white transition-[background,transform] hover:bg-[#2a5dd4] active:scale-[0.98]"
                 >
                   Voltar ao login
                 </button>
@@ -431,7 +481,7 @@ export function LoginScreen() {
                 <button
                   type="submit"
                   disabled={!forgotEmail || forgotLoading}
-                  className="mt-1 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#3a6ee8] text-sm font-semibold text-white transition-[background,transform] hover:bg-[#2a5dd4] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                  className="mt-1 flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#3a6ee8] text-sm font-semibold text-white transition-[background,transform] hover:bg-[#2a5dd4] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {forgotLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                   {forgotLoading ? "Enviando…" : "Enviar link de recuperação"}
@@ -440,9 +490,139 @@ export function LoginScreen() {
                 <button
                   type="button"
                   onClick={backToLogin}
-                  className="flex h-9 w-full items-center justify-center text-xs font-medium text-[#8899bb] hover:text-[#5a6a99] dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
+                  className="flex h-9 w-full cursor-pointer items-center justify-center text-xs font-medium text-[#8899bb] hover:text-[#5a6a99] dark:text-gray-500 dark:hover:text-gray-300 transition-[color,transform] active:scale-95"
                 >
                   Voltar ao login
+                </button>
+              </form>
+            )}
+          </>
+        ) : (
+          <>
+            <h1 className="text-center text-[17px] font-semibold text-[#1a2a4a] dark:text-gray-100">
+              Criar conta
+            </h1>
+            <p className="mb-5 text-center text-xs text-[#8899bb] dark:text-gray-500">
+              {signupSent
+                ? "Confirme seu e-mail para continuar"
+                : "Cadastre-se para apurar ocorrências"}
+            </p>
+
+            {signupSent ? (
+              <div className="space-y-4">
+                <p className="text-center text-xs text-[#5a6a99] dark:text-gray-400">
+                  Enviamos um link de confirmação para{" "}
+                  <span className="font-semibold">{signupEmail}</span>. Clique nele para ativar
+                  sua conta e conseguir entrar.
+                </p>
+                <button
+                  type="button"
+                  onClick={backToLogin}
+                  className="flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#3a6ee8] text-sm font-semibold text-white transition-[background,transform] hover:bg-[#2a5dd4] active:scale-[0.98]"
+                >
+                  Voltar ao login
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleSignupSubmit} className="space-y-2.5">
+                <div className="relative">
+                  <User className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8899cc] dark:text-gray-500" />
+                  <input
+                    type="text"
+                    autoComplete="name"
+                    value={signupName}
+                    onChange={(e) => {
+                      setSignupName(e.target.value.toUpperCase());
+                      setSignupError(null);
+                    }}
+                    placeholder="Seu nome"
+                    className={inputBase}
+                    autoFocus
+                  />
+                </div>
+
+                <div className="relative">
+                  <Mail className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8899cc] dark:text-gray-500" />
+                  <input
+                    type="email"
+                    autoComplete="email"
+                    value={signupEmail}
+                    onChange={(e) => {
+                      setSignupEmail(e.target.value);
+                      setSignupError(null);
+                    }}
+                    placeholder="seu@email.com"
+                    className={inputBase}
+                  />
+                </div>
+
+                <div className="relative">
+                  <Lock className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8899cc] dark:text-gray-500" />
+                  <input
+                    type={showSignupPwd ? "text" : "password"}
+                    autoComplete="new-password"
+                    value={signupPassword}
+                    onChange={(e) => {
+                      setSignupPassword(e.target.value);
+                      setSignupError(null);
+                    }}
+                    placeholder="Senha"
+                    className={inputBase}
+                  />
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    onClick={() => setShowSignupPwd((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-[#8899cc] dark:text-gray-500 hover:text-[#5a6a99] dark:hover:text-gray-300 transition-[color,transform] active:scale-90"
+                  >
+                    {showSignupPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+
+                <div className="relative">
+                  <Lock className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8899cc] dark:text-gray-500" />
+                  <input
+                    type={showSignupPwd ? "text" : "password"}
+                    autoComplete="new-password"
+                    value={signupConfirm}
+                    onChange={(e) => {
+                      setSignupConfirm(e.target.value);
+                      setSignupError(null);
+                    }}
+                    placeholder="Confirmar senha"
+                    className={inputBase}
+                  />
+                </div>
+
+                {signupError && (
+                  <p className="text-center text-xs text-red-500">{signupError}</p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={
+                    !signupName ||
+                    !signupEmail ||
+                    !signupPassword ||
+                    !signupConfirm ||
+                    signupLoading
+                  }
+                  className="mt-1 flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#3a6ee8] text-sm font-semibold text-white transition-[background,transform] hover:bg-[#2a5dd4] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {signupLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <UserPlus className="w-[17px] h-[17px]" />
+                  )}
+                  {signupLoading ? "Criando…" : "Criar conta"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={backToLogin}
+                  className="flex h-9 w-full cursor-pointer items-center justify-center text-xs font-medium text-[#8899bb] hover:text-[#5a6a99] dark:text-gray-500 dark:hover:text-gray-300 transition-[color,transform] active:scale-95"
+                >
+                  Já tem conta? Entrar
                 </button>
               </form>
             )}
