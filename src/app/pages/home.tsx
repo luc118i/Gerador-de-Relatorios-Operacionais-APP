@@ -104,7 +104,7 @@ export function Home({
 }: HomeProps) {
   const queryClient = useQueryClient();
   const { isAdmin, logout } = useAdminAuth();
-  const { profileName } = useAuth();
+  const { profileName, profileNameAliases } = useAuth();
   const [showAdminLogin, setShowAdminLogin] = useState(false);
 
   type BatchState = {
@@ -273,13 +273,15 @@ export function Home({
   // O Admin (PIN) enxerga as ocorrências de todos.
   const ocorrencias = useMemo<OccurrenceDTO[]>(() => {
     if (isAdmin) return allOcorrencias;
-    const me = normalizeText(profileName);
-    if (!me) return [];
-    return allOcorrencias.filter(
-      (o) => normalizeText(o.analisadoPor ?? "") === me,
+    // Compara contra todos os nomes que o usuário já usou (não só o atual), pra
+    // não perder acesso às próprias ocorrências antigas depois de um rename de
+    // perfil — ver `profileNameAliases` em AuthContext.
+    if (profileNameAliases.size === 0) return [];
+    return allOcorrencias.filter((o) =>
+      profileNameAliases.has(normalizeText(o.analisadoPor ?? "")),
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allOcorrencias, isAdmin, profileName]);
+  }, [allOcorrencias, isAdmin, profileNameAliases]);
 
   // ── Estatísticas da semana (só busca quando o dia selecionado está vazio,
   // pra dar algum contexto no lugar do card de "nada registrado") ──────────
@@ -293,7 +295,6 @@ export function Home({
         d.setDate(d.getDate() - i);
         dates.push(getLocalDateString(d));
       }
-      const me = normalizeText(profileName);
       return Promise.all(
         dates.map((d) =>
           occurrencesApi
@@ -301,7 +302,9 @@ export function Home({
             .then((res) =>
               isAdmin
                 ? res.data.length
-                : res.data.filter((o) => normalizeText(o.analisadoPor ?? "") === me).length,
+                : res.data.filter((o) =>
+                    profileNameAliases.has(normalizeText(o.analisadoPor ?? "")),
+                  ).length,
             )
             .catch(() => 0),
         ),

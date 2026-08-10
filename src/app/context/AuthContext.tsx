@@ -15,6 +15,13 @@ type AuthContextValue = {
   user: User | null;
   /** Nome do analista para a apuração (perfil > metadata > parte do e-mail). */
   profileName: string;
+  /**
+   * Todos os nomes que o usuário já usou (atual + anteriores), normalizados
+   * em minúsculas/sem acento. Usado para filtrar ocorrências por `analisadoPor`
+   * sem perder o acesso às próprias ocorrências antigas depois de um rename
+   * (ver `updateProfileName`).
+   */
+  profileNameAliases: Set<string>;
   loading: boolean;
   /** `true` quando o usuário chegou aqui pelo link de "esqueci minha senha" e precisa definir uma nova. */
   passwordRecovery: boolean;
@@ -48,10 +55,26 @@ function fallbackName(user: User | null): string {
   return local || "Analista";
 }
 
+/** Normaliza (minúsculas, sem acento) pra comparar nomes sem depender de grafia exata. */
+function normalizeName(s: string): string {
+  return s
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+/** Lê os nomes anteriores gravados em `user_metadata.previous_names` (rename history). */
+function previousNames(user: User | null): string[] {
+  const raw = user?.user_metadata?.previous_names;
+  return Array.isArray(raw) ? raw.filter((n): n is string => typeof n === "string") : [];
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profileName, setProfileName] = useState("");
+  const [profileNameAliases, setProfileNameAliases] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [passwordRecovery, setPasswordRecovery] = useState(false);
 
@@ -59,9 +82,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loadProfileName = useCallback(async (u: User | null) => {
     if (!u) {
       setProfileName("");
+      setProfileNameAliases(new Set());
       return;
     }
     const fb = fallbackName(u);
+    const buildAliases = (current: string) =>
+      new Set(
+        [current, fb, ...previousNames(u)]
+          .filter(Boolean)
+          .map(normalizeName),
+      );
     try {
       const { data } = await supabase
         .from("profiles")
@@ -69,9 +99,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .eq("id", u.id)
         .maybeSingle();
       const nome = (data?.nome ?? "").trim();
-      setProfileName(nome || fb);
+      const finalName = nome || fb;
+      setProfileName(finalName);
+      setProfileNameAliases(buildAliases(finalName));
     } catch {
       setProfileName(fb);
+      setProfileNameAliases(buildAliases(fb));
     }
   }, []);
 
@@ -192,9 +225,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: "Sua sessão expirou. Saia e entre novamente para editar o perfil." };
     }
 
+    // Bug: ocorrências antigas ficam gravadas com o nome de `analisadoPor` de quando
+    // foram criadas. Se o usuário troca o nome de exibição sem isso, o filtro por
+    // autor (ver home.tsx) para de bater e ele perde acesso às próprias ocorrências
+    // antigas mesmo logado na mesma conta. Por isso guardamos o nome anterior em
+    // `previous_names` e passamos a comparar contra todos os aliases (ver
+    // `profileNameAliases`), não só o nome atual.
+    // `profileName` é a fonte da verdade do que está sendo comparado contra
+    // `analisadoPor` na hora de filtrar (pode vir de `profiles.nome`, que nem
+    // sempre está espelhado em `user_metadata`), por isso tem prioridade aqui.
+    const oldName = profileName || sessionData.session.user.user_metadata?.nome || "";
+    const priorNames = previousNames(sessionData.session.user);
+    const nextPreviousNames =
+      oldName && normalizeName(oldName) !== normalizeName(trimmed)
+        ? Array.from(new Set([...priorNames, oldName])).slice(-10)
+        : priorNames;
+
     // Grava em `display_name` (coluna do dashboard) e `nome` (lido primeiro pelo app).
     const { data, error } = await supabase.auth.updateUser({
-      data: { display_name: trimmed, nome: trimmed },
+      data: { display_name: trimmed, nome: trimmed, previous_names: nextPreviousNames },
     });
     if (error) {
       const msg = /session|jwt|token/i.test(error.message)
@@ -204,8 +253,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     setUser(data.user);
     setProfileName(trimmed);
+    setProfileNameAliases(
+      new Set([trimmed, ...nextPreviousNames].filter(Boolean).map(normalizeName)),
+    );
     return { error: null };
-  }, []);
+  }, [profileName]);
 
   return (
     <AuthContext.Provider
@@ -213,6 +265,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         session,
         user,
         profileName,
+        profileNameAliases,
         loading,
         passwordRecovery,
         signIn,
