@@ -7,6 +7,7 @@ import type { Plugin } from "vite";
 // Identificador único de build, usado para detectar novas versões em produção.
 // Prioriza o hash de commit (quando disponível no ambiente de deploy) e cai
 // para um timestamp como fallback.
+// (build de teste: notificação de nova versão)
 const buildId =
   process.env.VITE_BUILD_ID ||
   process.env.VERCEL_GIT_COMMIT_SHA ||
