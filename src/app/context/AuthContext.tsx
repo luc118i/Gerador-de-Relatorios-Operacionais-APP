@@ -7,7 +7,9 @@ import {
   type ReactNode,
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
+import { toast } from "sonner";
 import { supabase } from "../../lib/supabase";
+import { renameAnalisadoPorHistory } from "../../api/occurrences.api";
 
 type AuthContextValue = {
   /** Sessão Supabase (contém o access_token / JWT). */
@@ -256,6 +258,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfileNameAliases(
       new Set([trimmed, ...nextPreviousNames].filter(Boolean).map(normalizeName)),
     );
+
+    // Atualização retroativa: reescreve o `analisadoPor` das ocorrências antigas
+    // pro nome novo, pra elas não ficarem "presas" ao nome de exibição de quando
+    // foram criadas. Roda em segundo plano (não trava o save do nome) — se
+    // falhar, o acesso continua garantido pelos aliases acima de qualquer forma.
+    if (nextPreviousNames.length > priorNames.length) {
+      const sinceDateISO = (data.user.created_at ?? "").slice(0, 10);
+      void renameAnalisadoPorHistory(nextPreviousNames, trimmed, sinceDateISO)
+        .then(({ updated, failed }) => {
+          if (updated > 0) {
+            toast.success(
+              `${updated} ocorrência${updated > 1 ? "s" : ""} antiga${updated > 1 ? "s" : ""} atualizada${updated > 1 ? "s" : ""} para o novo nome.`,
+            );
+          }
+          if (failed > 0) {
+            toast.error(
+              `${failed} ocorrência${failed > 1 ? "s" : ""} antiga${failed > 1 ? "s" : ""} não puderam ser atualizada${failed > 1 ? "s" : ""} — mas o acesso a elas continua garantido.`,
+            );
+          }
+        })
+        .catch(() => {
+          // Silencioso: o acesso não depende disso (ver profileNameAliases).
+        });
+    }
+
     return { error: null };
   }, [profileName]);
 
