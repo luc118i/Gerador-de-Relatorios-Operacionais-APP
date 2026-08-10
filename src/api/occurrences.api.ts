@@ -129,11 +129,14 @@ export const occurrencesApi = {
     tratativa: string | null,
     analisadoPor: string | null,
     justificativaRegistro?: string | null,
+    // Omitido (undefined) = não mexe no vínculo já gravado; `null` explícito
+    // = limpa. Ver resolveAnalisadoPorUserId e updateTratativa no backend.
+    analisadoPorUserId?: string | null,
   ): Promise<void> {
     await request<{ ok: boolean }>({
       method: "PATCH",
       path: `/occurrences/${id}/tratativa`,
-      body: { tratativa, analisadoPor, justificativaRegistro },
+      body: { tratativa, analisadoPor, justificativaRegistro, analisadoPorUserId },
     });
   },
 
@@ -201,6 +204,11 @@ export async function renameAnalisadoPorHistory(
   oldNames: string[],
   newName: string,
   sinceDateISO: string,
+  // ID do usuário logado (auth.user.id) — grava junto com o nome novo pra
+  // essas ocorrências passarem a ter um vínculo estável a rename, em vez de
+  // dependerem só da grafia do nome. `undefined` (rename disparado antes
+  // dessa feature existir) segue funcionando, só sem o vínculo.
+  newUserId?: string | null,
 ): Promise<RenameAnalisadoPorResult> {
   const oldSet = new Set(oldNames.map(normalizeAuthorName).filter(Boolean));
   const normalizedNew = normalizeAuthorName(newName);
@@ -240,6 +248,7 @@ export async function renameAnalisadoPorHistory(
           o.tratativa ?? null,
           newName,
           o.justificativaRegistro ?? null,
+          newUserId ?? null,
         );
         updated++;
       } catch {

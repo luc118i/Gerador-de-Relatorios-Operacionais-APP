@@ -54,6 +54,14 @@ export type CreateOccurrenceInput = {
 
   tratativa?: "SUSPEICAO" | "ADVERTENCIA" | "VALE" | "REGISTRO" | null;
   analisadoPor?: string | null;
+  /**
+   * Vínculo best-effort com o usuário logado (auth.user.id) no momento em
+   * que `analisadoPor` foi definido pelo app — não confirmado por sessão no
+   * backend, mas estável a rename de perfil (ao contrário do nome). Ausente
+   * em ocorrências importadas via GAS. Ver ApuracaoPodium/home.tsx, que
+   * priorizam isso sobre o nome pra ranking/filtro por autor.
+   */
+  analisadoPorUserId?: string | null;
 };
 // envelope padrão que o backend usa em listas (GET /drivers, GET /occurrences)
 export type ApiData<T> = { data: T };
@@ -125,6 +133,7 @@ export type OccurrenceDTO = {
   faltaTratativa?: boolean;
   tratativa?: "SUSPEICAO" | "ADVERTENCIA" | "VALE" | "REGISTRO" | null;
   analisadoPor?: string | null;
+  analisadoPorUserId?: string | null;
   justificativaRegistro?: string | null;
   // Preenchidos depois de "Enviar ao Drive" (ver POST /reports/occurrences/:id/drive) —
   // o backend já devolve isso, só não estava declarado aqui.

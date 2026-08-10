@@ -53,6 +53,7 @@ import { getOccurrencesByDay, getDailyReportPdf, occurrencesApi } from "../../ap
 import type { OccurrenceDTO } from "../../domain/occurrences";
 import { buildDailyReport } from "../../utils/relatorio-diario";
 import { TratativaSelect, type TratativaKey } from "../components/TratativaSelect";
+import { resolveAnalisadoPorUserId } from "../../utils/analisadoPor";
 
 // ── Score / status ────────────────────────────────────────────────────────────
 
@@ -174,6 +175,7 @@ interface RelatorioDiarioProps {
 
 export function RelatorioDiario({ onVoltar }: RelatorioDiarioProps) {
   const { isAdmin } = useAdminAuth();
+  const { profileName, profileNameAliases, user } = useAuth();
   const [dataSelecionada, setDataSelecionada] = useState(todayISO);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -769,7 +771,12 @@ export function RelatorioDiario({ onVoltar }: RelatorioDiarioProps) {
             </div>
 
             {/* ── Pódio de apuração ─────────────────────────────────────── */}
-            <ApuracaoPodium occurrences={occurrences} />
+            <ApuracaoPodium
+              occurrences={occurrences}
+              currentProfileName={profileName}
+              currentProfileAliases={profileNameAliases}
+              currentUserId={user?.id}
+            />
 
             {/* ── Bloco 2: Gráficos (modo gestor) ──────────────────────── */}
             {mode === "gestor" && (
@@ -1303,7 +1310,7 @@ function ApuracaoRow({
   onSavingStart: () => void;
   onSavingEnd: () => void;
 }) {
-  const { profileName } = useAuth();
+  const { profileName, user } = useAuth();
   const zebra = index % 2 === 1 ? "bg-gray-50 dark:bg-gray-950" : "bg-white dark:bg-gray-900";
   const [tratativa, setTratativa]               = useState<TratativaKey | null>((o.tratativa as TratativaKey) ?? null);
   const [analista, setAnalista]                 = useState(o.analisadoPor ?? "");
@@ -1326,7 +1333,13 @@ function ApuracaoRow({
     onSavingStart();
     setSaveState("saving");
     try {
-      await occurrencesApi.patchTratativa(o.id, t, a.trim() || null, j.trim() || null);
+      await occurrencesApi.patchTratativa(
+        o.id,
+        t,
+        a.trim() || null,
+        j.trim() || null,
+        resolveAnalisadoPorUserId(a, profileName, user?.id, o.analisadoPorUserId),
+      );
       setSaveState("saved");
       setTimeout(() => setSaveState("idle"), 1800);
     } catch {

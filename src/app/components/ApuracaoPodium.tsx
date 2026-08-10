@@ -35,6 +35,7 @@ export function ApuracaoPodium({
   className = "",
   currentProfileName,
   currentProfileAliases,
+  currentUserId,
 }: {
   occurrences: OccurrenceDTO[];
   className?: string;
@@ -43,10 +44,14 @@ export function ApuracaoPodium({
    * `profileNameAliases` no AuthContext. Usado pra mesclar, na exibição,
    * ocorrências antigas gravadas com o nome de exibição anterior do próprio
    * usuário, mesmo que a atualização retroativa em segundo plano (ver
-   * `renameAnalisadoPorHistory`) ainda não tenha reescrito o backend.
+   * `renameAnalisadoPorHistory`) ainda não tenha reescrito o backend, e
+   * também como fallback pra ocorrências sem `analisadoPorUserId` (ex.
+   * importadas via GAS ou criadas antes dessa coluna existir).
    */
   currentProfileName?: string;
   currentProfileAliases?: Set<string>;
+  /** ID (auth.user.id) do usuário logado — ver `analisadoPorUserId` em domain/occurrences.ts. */
+  currentUserId?: string;
 }) {
   const layerRef = useRef<HTMLDivElement | null>(null);
 
@@ -56,22 +61,29 @@ export function ApuracaoPodium({
           currentProfileAliases.has(normalizeName(name)) ? currentProfileName : name
       : (name: string) => name;
 
-  // Agrupa por nome normalizado (sem acento/caixa) pra "MAURICIO", "Mauricio"
-  // e "mauricio " contarem como a mesma pessoa — o campo `analisadoPor` é
-  // texto livre, sem vínculo com e-mail/conta, então grafias variam. Guarda,
-  // por bucket, a contagem de cada grafia original pra exibir a mais comum.
+  // Agrupa preferencialmente por `analisadoPorUserId` — estável a rename e a
+  // grafia — e só cai pro nome-texto normalizado (fallback de sempre) pras
+  // ocorrências sem esse vínculo (GAS, ou criadas antes da coluna existir).
+  // "MAURICIO", "Mauricio" e "mauricio " sem ID viram a mesma pessoa; com
+  // ID, nem precisa disso. Guarda, por bucket, a contagem de cada grafia
+  // original pra exibir a mais comum (ou o nome atual, se o bucket for do
+  // próprio usuário logado — reflete rename na hora, sem esperar frequência).
   const map = new Map<string, { count: number; spellings: Map<string, number> }>();
   let apurado = 0;
   for (const o of occurrences) {
-    const analyst = canonicalName((o.analisadoPor ?? "").trim());
-    if (analyst) {
-      apurado++;
-      const key = normalizeName(analyst);
-      const entry = map.get(key) ?? { count: 0, spellings: new Map<string, number>() };
-      entry.count++;
-      entry.spellings.set(analyst, (entry.spellings.get(analyst) ?? 0) + 1);
-      map.set(key, entry);
-    }
+    const rawName = (o.analisadoPor ?? "").trim();
+    if (!rawName) continue;
+    apurado++;
+    const analyst = canonicalName(rawName);
+    const key = o.analisadoPorUserId ? `id:${o.analisadoPorUserId}` : `name:${normalizeName(analyst)}`;
+    const entry = map.get(key) ?? { count: 0, spellings: new Map<string, number>() };
+    entry.count++;
+    const displayAs =
+      currentUserId && o.analisadoPorUserId === currentUserId && currentProfileName
+        ? currentProfileName
+        : analyst;
+    entry.spellings.set(displayAs, (entry.spellings.get(displayAs) ?? 0) + 1);
+    map.set(key, entry);
   }
 
   const byAnalyst = [...map.values()]

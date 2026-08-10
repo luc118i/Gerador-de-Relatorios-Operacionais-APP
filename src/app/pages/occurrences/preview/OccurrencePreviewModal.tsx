@@ -26,6 +26,7 @@ import { useAuth } from "../../../context/AuthContext";
 import { useDriveFolder } from "../../../../hooks/useDriveFolder";
 import { requestDriveToken } from "../../../../utils/googleAuth";
 import { getDriveLink, setDriveLink } from "../../../../utils/driveLinkCache";
+import { resolveAnalisadoPorUserId } from "../../../../utils/analisadoPor";
 
 import {
   buildDriverPdfFileName,
@@ -379,7 +380,7 @@ function EvidenceViewerButton({ occ }: { occ: OccurrenceDTO }) {
  * O analista é preenchido automaticamente com o usuário logado.
  */
 function TratativaBlock({ occ, onSaved }: { occ: OccurrenceDTO; onSaved: () => void }) {
-  const { profileName } = useAuth();
+  const { profileName, user } = useAuth();
   const qc = useQueryClient();
 
   const initialTratativa = (occ.tratativa as TratativaKey) ?? null;
@@ -417,6 +418,7 @@ function TratativaBlock({ occ, onSaved }: { occ: OccurrenceDTO; onSaved: () => v
         tratativa,
         apurador || null,
         observacoes.trim() || null,
+        resolveAnalisadoPorUserId(apurador, profileName, user?.id, occ.analisadoPorUserId),
       );
       toast.success("Tratativa salva!");
       void qc.invalidateQueries({ queryKey: ["occurrence", occ.id] });

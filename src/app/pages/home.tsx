@@ -104,7 +104,7 @@ export function Home({
 }: HomeProps) {
   const queryClient = useQueryClient();
   const { isAdmin, logout } = useAdminAuth();
-  const { profileName, profileNameAliases } = useAuth();
+  const { profileName, profileNameAliases, user } = useAuth();
   const [showAdminLogin, setShowAdminLogin] = useState(false);
 
   type BatchState = {
@@ -268,20 +268,27 @@ export function Home({
       .trim();
 
   // ── Visibilidade por autor ────────────────────────────────
-  // Cada analista vê apenas as ocorrências que ele mesmo registrou
-  // (campo `analisadoPor`, pré-preenchido com o nome do usuário logado).
-  // O Admin (PIN) enxerga as ocorrências de todos.
+  // Cada analista vê apenas as ocorrências que ele mesmo registrou. Prioriza
+  // `analisadoPorUserId` (estável a rename/grafia) quando presente; cai pro
+  // nome-texto (comparado contra todos os nomes que o usuário já usou, não
+  // só o atual — ver `profileNameAliases` em AuthContext) pras ocorrências
+  // sem esse vínculo (GAS, ou criadas antes da coluna existir). O Admin
+  // (PIN) enxerga as ocorrências de todos.
+  const isMine = useMemo(
+    () => (o: OccurrenceDTO) =>
+      o.analisadoPorUserId
+        ? o.analisadoPorUserId === user?.id
+        : profileNameAliases.has(normalizeText(o.analisadoPor ?? "")),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [user?.id, profileNameAliases],
+  );
+
   const ocorrencias = useMemo<OccurrenceDTO[]>(() => {
     if (isAdmin) return allOcorrencias;
-    // Compara contra todos os nomes que o usuário já usou (não só o atual), pra
-    // não perder acesso às próprias ocorrências antigas depois de um rename de
-    // perfil — ver `profileNameAliases` em AuthContext.
-    if (profileNameAliases.size === 0) return [];
-    return allOcorrencias.filter((o) =>
-      profileNameAliases.has(normalizeText(o.analisadoPor ?? "")),
-    );
+    if (profileNameAliases.size === 0 && !user?.id) return [];
+    return allOcorrencias.filter(isMine);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allOcorrencias, isAdmin, profileNameAliases]);
+  }, [allOcorrencias, isAdmin, profileNameAliases, user?.id, isMine]);
 
   // ── Estatísticas da semana (só busca quando o dia selecionado está vazio,
   // pra dar algum contexto no lugar do card de "nada registrado") ──────────
@@ -302,9 +309,7 @@ export function Home({
             .then((res) =>
               isAdmin
                 ? res.data.length
-                : res.data.filter((o) =>
-                    profileNameAliases.has(normalizeText(o.analisadoPor ?? "")),
-                  ).length,
+                : res.data.filter(isMine).length,
             )
             .catch(() => 0),
         ),
@@ -1213,6 +1218,7 @@ export function Home({
             className="mt-16 w-full"
             currentProfileName={profileName}
             currentProfileAliases={profileNameAliases}
+            currentUserId={user?.id}
           />
         )}
 

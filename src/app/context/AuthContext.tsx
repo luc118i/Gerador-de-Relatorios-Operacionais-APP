@@ -265,7 +265,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // falhar, o acesso continua garantido pelos aliases acima de qualquer forma.
     if (nextPreviousNames.length > priorNames.length) {
       const sinceDateISO = (data.user.created_at ?? "").slice(0, 10);
-      void renameAnalisadoPorHistory(nextPreviousNames, trimmed, sinceDateISO)
+      void renameAnalisadoPorHistory(nextPreviousNames, trimmed, sinceDateISO, data.user.id)
         .then(({ updated, failed }) => {
           if (updated > 0) {
             toast.success(
