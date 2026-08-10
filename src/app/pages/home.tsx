@@ -183,6 +183,17 @@ export function Home({
 
   const calendarRef = useRef<HTMLDivElement | null>(null);
 
+  // ── Fade suave da saudação ao rolar, deixando só o badge "Painel Inicial"
+  // grudado no topo. ──
+  const [scrollY, setScrollY] = useState(0);
+  useEffect(() => {
+    const onScroll = () => setScrollY(window.scrollY);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  const greetingOpacity = Math.max(0, 1 - scrollY / 60);
+
   // ── Agente local (localhost:3334) ─────────────────────────
   const agentAvailable = useAgentStatus();
 
@@ -858,44 +869,63 @@ export function Home({
           panelOpen ? "scale-[0.97] rounded-2xl overflow-hidden brightness-[0.92]" : "scale-100"
         }`}
       >
-      <HomeHeader
-        isAdmin={isAdmin}
-        onOpenDrawer={onOpenDrawer}
-        calendarRef={calendarRef}
-        calendarVisible={calendarVisible}
-        onToggleCalendar={() => setCalendarVisible((v) => !v)}
-        changeDay={changeDay}
-        formattedDate={formattedDate}
-        dateDiffLabel={dateDiffLabel}
-        goToday={goToday}
-        selectedDateObj={selectedDateObj}
-        onSelectDate={handleSelect}
-        onGerarRelatorio={onGerarRelatorio}
-        onGerenciarMotoristas={onGerenciarMotoristas}
-        onGerenciarNomes={onGerenciarNomes}
-        onGerenciarBaseResponsaveis={onGerenciarBaseResponsaveis}
-        onNovaOcorrencia={onNovaOcorrencia}
-        onShowAdminLogin={() => setShowAdminLogin(true)}
-        logout={logout}
-        agentAvailable={agentAvailable}
-        automationFolders={automationFolders.config}
-        onShowAutomationFolderModal={() => setShowAutomationFolderModal(true)}
-      />
+      {/* Header + badge "Painel Inicial" formam um único grupo sticky: assim
+          eles sempre se movem juntos, sem depender de medir a altura de um
+          pelo outro (evita qualquer dessincronia/flicker entre os dois). */}
+      <div className="sticky top-0 z-30">
+        <HomeHeader
+          isAdmin={isAdmin}
+          onOpenDrawer={onOpenDrawer}
+          calendarRef={calendarRef}
+          calendarVisible={calendarVisible}
+          onToggleCalendar={() => setCalendarVisible((v) => !v)}
+          changeDay={changeDay}
+          formattedDate={formattedDate}
+          dateDiffLabel={dateDiffLabel}
+          goToday={goToday}
+          selectedDateObj={selectedDateObj}
+          onSelectDate={handleSelect}
+          onGerarRelatorio={onGerarRelatorio}
+          onGerenciarMotoristas={onGerenciarMotoristas}
+          onGerenciarNomes={onGerenciarNomes}
+          onGerenciarBaseResponsaveis={onGerenciarBaseResponsaveis}
+          onNovaOcorrencia={onNovaOcorrencia}
+          onShowAdminLogin={() => setShowAdminLogin(true)}
+          logout={logout}
+          agentAvailable={agentAvailable}
+          automationFolders={automationFolders.config}
+          onShowAutomationFolderModal={() => setShowAutomationFolderModal(true)}
+        />
+        {isEmptyToday && (
+          <div className="bg-gray-50 dark:bg-gray-950">
+            {/* pt-8 replica o respiro que a badge tinha como 1º filho do
+                <main> (py-8); pb-4 replica o mb-4 que existia antes da
+                saudação — mesma métrica de espaçamento de antes. */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex items-center gap-2 pt-8 pb-4">
+                <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center shrink-0">
+                  <HomeIcon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                </div>
+                <span className="text-gray-300 dark:text-gray-700">|</span>
+                <span className="text-xs font-bold tracking-wide text-blue-600 dark:text-blue-400 uppercase">
+                  Painel Inicial
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {!isLoading && !isError && ocorrencias.length === 0 && (
-          <div className="mb-6">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center shrink-0">
-                <HomeIcon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-              </div>
-              <span className="text-gray-300 dark:text-gray-700">|</span>
-              <span className="text-xs font-bold tracking-wide text-blue-600 dark:text-blue-400 uppercase">
-                Painel Inicial
-              </span>
-            </div>
-            <div className="flex items-center gap-3">
+        {isEmptyToday && (
+          // -mt-8 cancela o py-8 do <main> (que já foi "gasto" pela badge
+          // acima, fora do <main>), preservando o mesmo espaçamento final.
+          <div className="-mt-8 mb-6">
+            <div
+              className="flex items-center gap-3 transition-opacity duration-150 ease-out"
+              style={{ opacity: greetingOpacity, pointerEvents: greetingOpacity < 0.05 ? "none" : "auto" }}
+            >
               <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center text-xl shrink-0">
                 👋
               </div>
@@ -903,7 +933,10 @@ export function Home({
                 {getSaudacao()}{profileName ? `, ${profileName.split(" ")[0]}` : ""}!
               </h2>
             </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 ml-[52px]">
+            <p
+              className="text-sm text-gray-500 dark:text-gray-400 mt-1 ml-[52px] transition-opacity duration-150 ease-out"
+              style={{ opacity: greetingOpacity, pointerEvents: greetingOpacity < 0.05 ? "none" : "auto" }}
+            >
               Que bom te ver por aqui. 😊
             </p>
           </div>
