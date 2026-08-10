@@ -211,8 +211,13 @@ export async function renameAnalisadoPorHistory(
   const end = new Date();
   if (Number.isNaN(start.getTime()) || start > end) return { scannedDays: 0, updated: 0, failed: 0 };
 
+  // De hoje pra trás: o dia mais recente é o mais provável de ter ocorrências
+  // recém-criadas com o nome antigo (ex. o próprio dia da troca de nome) e
+  // também o mais provável de o usuário conferir logo em seguida. Se a conta
+  // tem muito histórico, escanear em ordem crescente deixaria "hoje" por
+  // último — potencialmente demorando muito pra atualizar o que mais importa.
   const dates: string[] = [];
-  for (const d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+  for (const d = new Date(end); d >= start; d.setDate(d.getDate() - 1)) {
     dates.push(getLocalDateString(d));
   }
 
