@@ -21,27 +21,65 @@ function prefersReducedMotion() {
   );
 }
 
+/** Normaliza (minúsculas, sem acento) pra comparar nomes sem depender de grafia exata. */
+function normalizeName(s: string): string {
+  return s
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
 export function ApuracaoPodium({
   occurrences,
   className = "",
+  currentProfileName,
+  currentProfileAliases,
 }: {
   occurrences: OccurrenceDTO[];
   className?: string;
+  /**
+   * Nome atual e aliases (nomes anteriores) do usuário logado — ver
+   * `profileNameAliases` no AuthContext. Usado pra mesclar, na exibição,
+   * ocorrências antigas gravadas com o nome de exibição anterior do próprio
+   * usuário, mesmo que a atualização retroativa em segundo plano (ver
+   * `renameAnalisadoPorHistory`) ainda não tenha reescrito o backend.
+   */
+  currentProfileName?: string;
+  currentProfileAliases?: Set<string>;
 }) {
   const layerRef = useRef<HTMLDivElement | null>(null);
 
-  const map = new Map<string, number>();
+  const canonicalName =
+    currentProfileName && currentProfileAliases?.size
+      ? (name: string) =>
+          currentProfileAliases.has(normalizeName(name)) ? currentProfileName : name
+      : (name: string) => name;
+
+  // Agrupa por nome normalizado (sem acento/caixa) pra "MAURICIO", "Mauricio"
+  // e "mauricio " contarem como a mesma pessoa — o campo `analisadoPor` é
+  // texto livre, sem vínculo com e-mail/conta, então grafias variam. Guarda,
+  // por bucket, a contagem de cada grafia original pra exibir a mais comum.
+  const map = new Map<string, { count: number; spellings: Map<string, number> }>();
   let apurado = 0;
   for (const o of occurrences) {
-    const analyst = (o.analisadoPor ?? "").trim();
+    const analyst = canonicalName((o.analisadoPor ?? "").trim());
     if (analyst) {
       apurado++;
-      map.set(analyst, (map.get(analyst) ?? 0) + 1);
+      const key = normalizeName(analyst);
+      const entry = map.get(key) ?? { count: 0, spellings: new Map<string, number>() };
+      entry.count++;
+      entry.spellings.set(analyst, (entry.spellings.get(analyst) ?? 0) + 1);
+      map.set(key, entry);
     }
   }
 
-  const byAnalyst = [...map.entries()]
-    .map(([name, count]) => ({ name, count }))
+  const byAnalyst = [...map.values()]
+    .map(({ count, spellings }) => ({
+      // Grafia mais frequente entre as ocorrências do bucket.
+      name: [...spellings.entries()].sort((a, b) => b[1] - a[1])[0]![0],
+      count,
+    }))
     .sort((a, b) => b.count - a.count);
 
   const total = occurrences.length;

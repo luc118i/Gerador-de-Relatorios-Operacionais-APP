@@ -1208,7 +1208,12 @@ export function Home({
         {/* O ranking conta as apurações de TODOS os analistas, mesmo que a
             lista acima esteja filtrada para mostrar só as do usuário logado. */}
         {!isLoading && !isError && allOcorrencias.length > 0 && (
-          <ApuracaoPodium occurrences={allOcorrencias} className="mt-16 w-full" />
+          <ApuracaoPodium
+            occurrences={allOcorrencias}
+            className="mt-16 w-full"
+            currentProfileName={profileName}
+            currentProfileAliases={profileNameAliases}
+          />
         )}
 
       </main>
