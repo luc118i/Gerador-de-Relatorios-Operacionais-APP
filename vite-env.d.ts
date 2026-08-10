@@ -21,3 +21,6 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+/** Injetado em build time pelo vite.config.ts — identifica a versão atual do bundle. */
+declare const __APP_BUILD_ID__: string;

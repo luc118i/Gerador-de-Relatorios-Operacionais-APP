@@ -18,6 +18,7 @@ import { AppDrawer, type DrawerPage } from "./components/AppDrawer";
 import { AnaliseTelemetriaPage } from "./pages/AnaliseTelemetriaPage";
 import { EsquemasRotaPage } from "./pages/EsquemasRotaPage";
 import { LocaisPage } from "./pages/LocaisPage";
+import { useAppUpdateNotifier } from "../hooks/useAppUpdateNotifier";
 
 type Page =
   | "home"
@@ -248,6 +249,8 @@ function AuthGate() {
 }
 
 export default function App() {
+  useAppUpdateNotifier();
+
   return (
     <AuthProvider>
       <AuthGate />
