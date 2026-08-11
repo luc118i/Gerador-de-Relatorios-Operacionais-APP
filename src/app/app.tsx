@@ -4,7 +4,7 @@ import { NovaOcorrencia } from "./pages/nova-ocorrencia";
 import { RelatorioDiario } from "./pages/relatorio-diario";
 import { Ocorrencia } from "./types";
 
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 import { OccurrencePreviewPage } from "./pages/occurrences/preview/OccurrencePreviewPage";
 import { DriversPage } from "./pages/DriversPage";
 import { GerenciarNomesPage } from "./pages/GerenciarNomesPage";
@@ -58,8 +58,6 @@ function AppShell() {
   return (
     <AdminAuthProvider>
       <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950">
-        <Toaster position="bottom-left" />
-
         <AppDrawer
           open={drawerOpen}
           currentPage={drawerPage}
