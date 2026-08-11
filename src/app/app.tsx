@@ -58,7 +58,7 @@ function AppShell() {
   return (
     <AdminAuthProvider>
       <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950">
-        <Toaster position="top-right" />
+        <Toaster position="bottom-left" />
 
         <AppDrawer
           open={drawerOpen}

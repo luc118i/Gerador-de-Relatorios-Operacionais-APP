@@ -64,7 +64,7 @@ createRoot(document.getElementById("root")!).render(
   <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
     <QueryClientProvider client={queryClient}>
       <App />
-      <Toaster richColors position="top-right" />
+      <Toaster richColors position="bottom-left" />
     </QueryClientProvider>
   </ThemeProvider>,
 );
