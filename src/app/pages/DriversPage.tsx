@@ -97,6 +97,7 @@ export function DriversPage({ onVoltar }: DriversPageProps) {
       <DriverProfilePage
         driver={viewingDriver}
         onVoltar={() => setViewingDriver(null)}
+        onHome={onVoltar}
       />
     );
   }

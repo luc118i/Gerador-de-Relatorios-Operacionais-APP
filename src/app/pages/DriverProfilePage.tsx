@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, AlertTriangle, ShieldAlert, ShieldCheck, Info, ExternalLink, FileDown, Loader2, RefreshCw } from "lucide-react";
+import { ArrowLeft, Home, AlertTriangle, ShieldAlert, ShieldCheck, Info, ExternalLink, FileDown, Loader2, RefreshCw } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -16,6 +16,7 @@ import {
 } from "recharts";
 import type { Driver, DriverOccurrenceHistoryEntry, DriverRizerComparison } from "../../domain/drivers";
 import { driversApi } from "../../api/drivers.api";
+import { getBaseBannerImage } from "../lib/baseImages";
 import {
   useDriverSituation,
   useDriverMonthlyOccurrences,
@@ -25,6 +26,9 @@ import {
 interface DriverProfilePageProps {
   driver: Driver;
   onVoltar: () => void;
+  // Vai direto pra tela principal, pulando a listagem de motoristas.
+  // Opcional pra não quebrar quem ainda monta esse componente sem ele.
+  onHome?: () => void;
 }
 
 const MES_ABREV = [
@@ -167,7 +171,7 @@ const SITUACAO_STYLE: Record<
   },
 };
 
-export function DriverProfilePage({ driver, onVoltar }: DriverProfilePageProps) {
+export function DriverProfilePage({ driver, onVoltar, onHome }: DriverProfilePageProps) {
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [isComparingRizer, setIsComparingRizer] = useState(false);
   const [rizerComparison, setRizerComparison] = useState<DriverRizerComparison | null>(null);
@@ -218,6 +222,7 @@ export function DriverProfilePage({ driver, onVoltar }: DriverProfilePageProps) 
   })();
 
   const situacaoInfo = situation ? SITUACAO_STYLE[situation.situacao] : null;
+  const bannerImage = getBaseBannerImage(driver.base);
 
   async function handleGerarRelatorio() {
     if (isGeneratingReport) return;
@@ -265,11 +270,20 @@ export function DriverProfilePage({ driver, onVoltar }: DriverProfilePageProps) 
           <div className="flex items-center gap-3">
             <button
               onClick={onVoltar}
-              className="cursor-pointer flex items-center gap-1 text-sm px-3 py-1 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="cursor-pointer flex items-center gap-1 h-7 text-sm px-3 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
             >
               <ArrowLeft className="w-4 h-4" />
               Voltar
             </button>
+            {onHome && (
+              <button
+                onClick={onHome}
+                title="Ir para a tela principal"
+                className="cursor-pointer flex items-center justify-center gap-1 h-7 w-7 text-sm rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                <Home className="w-4 h-4" />
+              </button>
+            )}
             <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
               Perfil do Motorista
             </h1>
@@ -307,25 +321,34 @@ export function DriverProfilePage({ driver, onVoltar }: DriverProfilePageProps) 
       </header>
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-        {/* Cabeçalho do motorista */}
-        <div className="flex items-start justify-between">
-          <div>
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-              {driver.name}
-            </h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              Código {driver.code} • Base: {driver.base ?? "-"}
-            </p>
-          </div>
+        {/* Cabeçalho do motorista — banner com foto da base quando disponível
+            (ver src/app/lib/baseImages.ts); sem foto, cai num gradiente. */}
+        <div
+          className="relative rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 min-h-[128px] flex items-end bg-gradient-to-br from-blue-600 to-blue-900 bg-cover bg-center"
+          style={bannerImage ? { backgroundImage: `url(${bannerImage})` } : undefined}
+        >
+          {bannerImage && (
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/35 to-transparent" />
+          )}
 
           {situacaoInfo && (
             <span
-              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-semibold ${situacaoInfo.className}`}
+              className={`absolute top-3 right-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-semibold shadow-sm ${situacaoInfo.className}`}
             >
               <situacaoInfo.Icon className="w-3.5 h-3.5" />
               {situacaoInfo.label}
             </span>
           )}
+
+          <div className="relative p-4 sm:p-5">
+            <h2 className="text-2xl font-bold uppercase tracking-tight text-white [text-shadow:_0_1px_3px_rgb(0_0_0_/_60%)]">
+              {driver.name}
+            </h2>
+            <p className="text-sm mt-1 text-white/90 [text-shadow:_0_1px_2px_rgb(0_0_0_/_60%)]">
+              Código <span className="font-semibold">{driver.code}</span> • Base:{" "}
+              <span className="font-semibold">{driver.base ?? "-"}</span>
+            </p>
+          </div>
         </div>
 
         {situationQuery.isError && (
