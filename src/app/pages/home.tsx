@@ -319,8 +319,18 @@ export function Home({
     staleTime: 5 * 60_000,
   });
   const weekTotal = weekCounts?.reduce((a, b) => a + b, 0) ?? 0;
-  const weekAvg = weekCounts ? (weekTotal / 7).toFixed(1) : "—";
+  const weekAvgNum = weekCounts ? weekTotal / 7 : null;
+  const weekAvg = weekAvgNum !== null ? weekAvgNum.toFixed(1) : "—";
   const weekActiveDays = weekCounts?.filter((c) => c > 0).length ?? 0;
+
+  // ── Mensagem motivacional da saudação ──────────────────────
+  // Enquanto a média semanal não chega (ainda buscando), mantém a mensagem
+  // padrão. Assim que chega: abaixo de 9.0/dia, troca por um empurrão pra
+  // subir a média; 9.0 ou mais, mantém a mensagem de sempre.
+  const greetingSubtitle =
+    weekAvgNum !== null && weekAvgNum < 9.0
+      ? `Sua média diária está em ${weekAvg}. Bora registrar mais algumas hoje e subir esse número! 💪`
+      : "Que bom te ver por aqui. 😊";
 
   const filteredOcorrencias = useMemo(() => {
     const q = normalizeText(search);
@@ -945,7 +955,7 @@ export function Home({
               className="text-sm text-gray-500 dark:text-gray-400 mt-1 ml-[52px] transition-opacity duration-150 ease-out"
               style={{ opacity: greetingOpacity, pointerEvents: greetingOpacity < 0.05 ? "none" : "auto" }}
             >
-              Que bom te ver por aqui. 😊
+              {greetingSubtitle}
             </p>
           </div>
         )}
