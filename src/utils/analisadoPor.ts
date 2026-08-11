@@ -11,9 +11,14 @@ function normalizeName(s: string): string {
  * Decide qual `analisadoPorUserId` salvar junto do `analisadoPor` (texto
  * livre) que está prestes a ser gravado.
  *
- * - Se o texto do campo "Quem apurou" bate com o nome atual de quem está
+ * - Se o texto do campo "Quem apurou" bate com o nome atual (ou qualquer
+ *   nome anterior — ver `profileNameAliases` no AuthContext) de quem está
  *   logado, anexa o ID de quem está logado (é razoável assumir que é a
- *   mesma pessoa se atribuindo a ocorrência).
+ *   mesma pessoa se atribuindo a ocorrência). Usar os aliases, e não só o
+ *   nome atual, evita que duas ocorrências do mesmo usuário caiam em
+ *   buckets diferentes no Pódio de Apuração quando o campo foi
+ *   pré-preenchido antes do `profileName` carregar (race de login) ou
+ *   segurava uma grafia antiga.
  * - Se o texto foi editado pra outro nome (ex. reatribuindo pra um colega,
  *   ou preservando quem gerou a ocorrência via GAS), NÃO assume que é quem
  *   está logado — mas também não apaga um vínculo que já existia pra essa
@@ -26,14 +31,11 @@ function normalizeName(s: string): string {
  */
 export function resolveAnalisadoPorUserId(
   analisadoPorText: string,
-  profileName: string,
+  profileNameAliases: Set<string>,
   userId: string | null | undefined,
   existingUserId?: string | null,
 ): string | null {
-  const matchesLoggedInUser =
-    !!userId &&
-    !!analisadoPorText.trim() &&
-    !!profileName.trim() &&
-    normalizeName(analisadoPorText) === normalizeName(profileName);
+  const text = analisadoPorText.trim();
+  const matchesLoggedInUser = !!userId && !!text && profileNameAliases.has(normalizeName(text));
   return matchesLoggedInUser ? userId! : existingUserId ?? null;
 }

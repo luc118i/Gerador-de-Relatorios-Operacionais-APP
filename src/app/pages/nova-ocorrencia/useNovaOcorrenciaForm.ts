@@ -29,7 +29,7 @@ interface NovaOcorrenciaProps {
 
 export function useNovaOcorrenciaForm({ onSaved, edicao }: NovaOcorrenciaProps) {
   const today = new Date().toISOString().split("T")[0];
-  const { profileName, user } = useAuth();
+  const { profileName, profileNameAliases, user } = useAuth();
 
   // ── Tipo ─────────────────────────────────────────────────────────────────
   const [typeCode, setTypeCode] = useState("DESCUMP_OP_PARADA_FORA");
@@ -404,7 +404,7 @@ export function useNovaOcorrenciaForm({ onSaved, edicao }: NovaOcorrenciaProps) 
   async function handleSalvar() {
     const analisadoPorUserId = resolveAnalisadoPorUserId(
       analisadoPor,
-      profileName,
+      profileNameAliases,
       user?.id,
       edicao?.analisadoPorUserId,
     );

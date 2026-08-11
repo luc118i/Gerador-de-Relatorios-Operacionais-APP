@@ -380,7 +380,7 @@ function EvidenceViewerButton({ occ }: { occ: OccurrenceDTO }) {
  * O analista é preenchido automaticamente com o usuário logado.
  */
 function TratativaBlock({ occ, onSaved }: { occ: OccurrenceDTO; onSaved: () => void }) {
-  const { profileName, user } = useAuth();
+  const { profileName, profileNameAliases, user } = useAuth();
   const qc = useQueryClient();
 
   const initialTratativa = (occ.tratativa as TratativaKey) ?? null;
@@ -418,7 +418,7 @@ function TratativaBlock({ occ, onSaved }: { occ: OccurrenceDTO; onSaved: () => v
         tratativa,
         apurador || null,
         observacoes.trim() || null,
-        resolveAnalisadoPorUserId(apurador, profileName, user?.id, occ.analisadoPorUserId),
+        resolveAnalisadoPorUserId(apurador, profileNameAliases, user?.id, occ.analisadoPorUserId),
       );
       toast.success("Tratativa salva!");
       void qc.invalidateQueries({ queryKey: ["occurrence", occ.id] });

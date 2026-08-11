@@ -1310,7 +1310,7 @@ function ApuracaoRow({
   onSavingStart: () => void;
   onSavingEnd: () => void;
 }) {
-  const { profileName, user } = useAuth();
+  const { profileName, profileNameAliases, user } = useAuth();
   const zebra = index % 2 === 1 ? "bg-gray-50 dark:bg-gray-950" : "bg-white dark:bg-gray-900";
   const [tratativa, setTratativa]               = useState<TratativaKey | null>((o.tratativa as TratativaKey) ?? null);
   const [analista, setAnalista]                 = useState(o.analisadoPor ?? "");
@@ -1338,7 +1338,7 @@ function ApuracaoRow({
         t,
         a.trim() || null,
         j.trim() || null,
-        resolveAnalisadoPorUserId(a, profileName, user?.id, o.analisadoPorUserId),
+        resolveAnalisadoPorUserId(a, profileNameAliases, user?.id, o.analisadoPorUserId),
       );
       setSaveState("saved");
       setTimeout(() => setSaveState("idle"), 1800);
