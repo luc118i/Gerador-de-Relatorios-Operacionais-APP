@@ -61,6 +61,66 @@ const TYPE_COLORS = [
   "#8b5cf6", "#06b6d4", "#f97316", "#6b7280",
 ];
 
+// Label de porcentagem DENTRO da fatia — o label padrão do Recharts (mesmo
+// com labelLine={false}) fica fora do raio externo e transborda o card
+// quando a fatia é pequena ou o nome do tipo é longo.
+function renderPieLabel(props: {
+  cx: number;
+  cy: number;
+  midAngle: number;
+  innerRadius: number;
+  outerRadius: number;
+  percent: number;
+}) {
+  const { cx, cy, midAngle, innerRadius, outerRadius, percent } = props;
+  const RADIAN = Math.PI / 180;
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.6;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+  return (
+    <text
+      x={x}
+      y={y}
+      fill="#fff"
+      textAnchor="middle"
+      dominantBaseline="central"
+      fontSize={11}
+      fontWeight={600}
+    >
+      {`${Math.round(percent * 100)}%`}
+    </text>
+  );
+}
+
+// Legenda com truncamento — nomes de tipo podem ser bem longos (ex.:
+// "DESCUMPRIMENTO OPERACIONAL / PARADA FORA DO PROGRAMADO") e o Legend
+// padrão do Recharts só quebra linha, empurrando o layout. Trunca com
+// reticências e mostra o nome completo no title (hover).
+function TypeDistributionLegend({
+  payload,
+}: {
+  payload?: Array<{ value?: string; color?: string }>;
+}) {
+  if (!payload?.length) return null;
+  return (
+    <ul className="flex flex-col gap-1 mt-2 px-1">
+      {payload.map((entry, i) => (
+        <li
+          key={i}
+          title={entry.value}
+          className="flex items-center gap-1.5 text-[11px] text-gray-600 dark:text-gray-400 min-w-0"
+        >
+          <span
+            className="inline-block w-2.5 h-2.5 rounded-sm shrink-0"
+            style={{ backgroundColor: entry.color }}
+          />
+          <span className="truncate">{entry.value}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function formatDate(dateISO: string): string {
   const [year, month, day] = dateISO.split("-");
   return `${day}/${month}/${year}`;
@@ -140,11 +200,16 @@ export function DriverProfilePage({ driver, onVoltar }: DriverProfilePageProps) 
   }));
 
   // Distribuição por tipo de ocorrência, calculada a partir do histórico já
-  // carregado — sem endpoint novo.
+  // carregado — sem endpoint novo. Tipos cujo título sozinho não distingue
+  // nada ("Genérico" cobre qualquer ocorrência fora das categorias
+  // conhecidas) usam o occurrenceName específico da ocorrência quando
+  // disponível — mesmo raciocínio já aplicado na comparação com o RIZER
+  // (ver TIPO_RIZER_ALIASES/tipoAliasesOverride no backend).
   const typeDistribution = (() => {
     const counts = new Map<string, number>();
     for (const h of history) {
-      const key = h.typeTitle ?? h.typeCode ?? "Outro";
+      const tipo = h.typeTitle ?? h.typeCode ?? "Outro";
+      const key = tipo === "Genérico" && h.occurrenceName ? h.occurrenceName : tipo;
       counts.set(key, (counts.get(key) ?? 0) + 1);
     }
     return Array.from(counts.entries())
@@ -391,7 +456,7 @@ export function DriverProfilePage({ driver, onVoltar }: DriverProfilePageProps) 
                 Nenhuma ocorrência registrada.
               </p>
             ) : (
-              <div className="h-56">
+              <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -399,9 +464,9 @@ export function DriverProfilePage({ driver, onVoltar }: DriverProfilePageProps) 
                       dataKey="value"
                       nameKey="name"
                       cx="50%"
-                      cy="50%"
-                      outerRadius={75}
-                      label={({ percent }) => `${Math.round((percent ?? 0) * 100)}%`}
+                      cy="42%"
+                      outerRadius={65}
+                      label={renderPieLabel}
                       labelLine={false}
                     >
                       {typeDistribution.map((_, i) => (
@@ -409,7 +474,7 @@ export function DriverProfilePage({ driver, onVoltar }: DriverProfilePageProps) 
                       ))}
                     </Pie>
                     <ReTooltip />
-                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                    <Legend content={<TypeDistributionLegend />} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>

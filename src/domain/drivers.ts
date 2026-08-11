@@ -51,6 +51,10 @@ export type DriverOccurrenceHistoryEntry = {
   eventDate: string; // YYYY-MM-DD
   typeCode: string | null;
   typeTitle: string | null;
+  // Nome específico da ocorrência (texto livre, sourced dos presets do
+  // RIZER). Mais descritivo que typeTitle quando o tipo é genérico (ver
+  // TYPE_TITLES_TOO_GENERIC em DriverProfilePage.tsx).
+  occurrenceName: string | null;
   place: string | null;
   vehicleNumber: string | null;
   tratativa: "SUSPEICAO" | "ADVERTENCIA" | "VALE" | "REGISTRO" | null;
