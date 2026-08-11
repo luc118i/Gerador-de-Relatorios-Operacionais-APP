@@ -85,10 +85,13 @@ function getSaudacao(): string {
   return "Boa noite";
 }
 
-// Sol de dia (6h–18h), lua à noite — só um toque visual na saudação.
+// Um ícone por período, acompanhando os mesmos cortes de getSaudacao():
+// sol de manhã, sol com nuvens à tarde, lua à noite.
 function getSaudacaoIcone(): string {
   const hora = new Date().getHours();
-  return hora >= 6 && hora < 18 ? "☀️" : "🌙";
+  if (hora < 12) return "☀️";
+  if (hora < 18) return "⛅";
+  return "🌙";
 }
 
 interface HomeProps {
