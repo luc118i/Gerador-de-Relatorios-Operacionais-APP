@@ -85,6 +85,12 @@ function getSaudacao(): string {
   return "Boa noite";
 }
 
+// Sol de dia (6h–18h), lua à noite — só um toque visual na saudação.
+function getSaudacaoIcone(): string {
+  const hora = new Date().getHours();
+  return hora >= 6 && hora < 18 ? "☀️" : "🌙";
+}
+
 interface HomeProps {
   onNovaOcorrencia: () => void;
   onGerarRelatorio: () => void;
@@ -948,7 +954,7 @@ export function Home({
                 👋
               </div>
               <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-                {getSaudacao()}{profileName ? `, ${profileName.split(" ")[0]}` : ""}!
+                {getSaudacao()}{profileName ? `, ${profileName.split(" ")[0]}` : ""}! {getSaudacaoIcone()}
               </h2>
             </div>
             <p
