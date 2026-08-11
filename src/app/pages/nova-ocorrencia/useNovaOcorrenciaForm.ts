@@ -79,6 +79,23 @@ export function useNovaOcorrenciaForm({ onSaved, edicao }: NovaOcorrenciaProps) 
   // ── Análise e Tratativa ──────────────────────────────────────────────────
   const [tratativa, setTratativa] = useState<"SUSPEICAO" | "ADVERTENCIA" | "VALE" | "REGISTRO" | null>(null);
   const [analisadoPor, setAnalisadoPor] = useState("");
+  // Guarda o valor exato que o próprio app pré-preencheu em "Quem apurou"
+  // (ver efeito abaixo). Se o campo ainda está intocado na hora de salvar,
+  // sabemos com certeza que é o usuário logado, sem depender de bater o
+  // texto contra `profileNameAliases` — evita ficar refém de uma corrida
+  // entre esse preenchimento e o carregamento assíncrono dos aliases no
+  // AuthContext (foi essa corrida que deixava analisadoPorUserId nulo às
+  // vezes mesmo com o texto certo, duplicando o analista no Pódio).
+  const autoFilledAnalisadoPorRef = useRef<string | null>(null);
+
+  // Em registro novo, pré-preenche o analista responsável com o usuário logado.
+  useEffect(() => {
+    if (!edicao && !analisadoPor && profileName) {
+      setAnalisadoPor(profileName);
+      autoFilledAnalisadoPorRef.current = profileName;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileName]);
 
   // ── Evidências ───────────────────────────────────────────────────────────
   const [evidencias, setEvidencias] = useState<Evidencia[]>([]);
@@ -402,12 +419,22 @@ export function useNovaOcorrenciaForm({ onSaved, edicao }: NovaOcorrenciaProps) 
   }
 
   async function handleSalvar() {
-    const analisadoPorUserId = resolveAnalisadoPorUserId(
-      analisadoPor,
-      profileNameAliases,
-      user?.id,
-      edicao?.analisadoPorUserId,
-    );
+    // Se "Quem apurou" ainda é exatamente o que o app pré-preencheu (usuário
+    // não editou o campo), usa o ID de quem está logado direto — não há
+    // ambiguidade nesse caso, então não precisa (nem deve) depender de
+    // `profileNameAliases` já ter carregado (ver comentário no ref).
+    const isUntouchedAutoFill =
+      !edicao &&
+      autoFilledAnalisadoPorRef.current !== null &&
+      analisadoPor.trim() === autoFilledAnalisadoPorRef.current.trim();
+    const analisadoPorUserId = isUntouchedAutoFill
+      ? user?.id ?? null
+      : resolveAnalisadoPorUserId(
+          analisadoPor,
+          profileNameAliases,
+          user?.id,
+          edicao?.analisadoPorUserId,
+        );
     setTriedSave(true);
     if (!isFormValido()) return;
 

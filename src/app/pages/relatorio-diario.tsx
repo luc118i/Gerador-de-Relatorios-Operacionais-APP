@@ -1318,6 +1318,11 @@ function ApuracaoRow({
   const [showJustificativa, setShowJustificativa] = useState(() => (o.justificativaRegistro ?? "").trim().length > 0);
   const [saveState, setSaveState]               = useState<"idle" | "saving" | "saved">("idle");
   const [justificativaDirty, setJustificativaDirty] = useState(false);
+  // Guarda o valor exato que o pré-preenchimento abaixo colocou em `analista`
+  // (ver comentário equivalente em useNovaOcorrenciaForm.ts). Se o texto
+  // ainda for esse na hora de salvar, usa o ID de quem está logado direto —
+  // sem depender de `profileNameAliases` já ter carregado.
+  const autoFilledAnalistaRef = useRef<string | null>(null);
 
   const driver = o.drivers[0];
   const title  = o.typeCode === "GENERICO" && o.reportTitle ? o.reportTitle : o.typeTitle;
@@ -1325,7 +1330,10 @@ function ApuracaoRow({
   // Apuração automatizada: o "Quem apurou" reflete o usuário logado.
   // Linhas ainda sem apurador exibem o seu nome; linhas já apuradas mantêm o histórico até você agir.
   useEffect(() => {
-    if (!analista && profileName) setAnalista(profileName);
+    if (!analista && profileName) {
+      setAnalista(profileName);
+      autoFilledAnalistaRef.current = profileName;
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profileName]);
 
@@ -1333,12 +1341,16 @@ function ApuracaoRow({
     onSavingStart();
     setSaveState("saving");
     try {
+      const isUntouchedAutoFill =
+        autoFilledAnalistaRef.current !== null && a.trim() === autoFilledAnalistaRef.current.trim();
       await occurrencesApi.patchTratativa(
         o.id,
         t,
         a.trim() || null,
         j.trim() || null,
-        resolveAnalisadoPorUserId(a, profileNameAliases, user?.id, o.analisadoPorUserId),
+        isUntouchedAutoFill
+          ? user?.id ?? null
+          : resolveAnalisadoPorUserId(a, profileNameAliases, user?.id, o.analisadoPorUserId),
       );
       setSaveState("saved");
       setTimeout(() => setSaveState("idle"), 1800);

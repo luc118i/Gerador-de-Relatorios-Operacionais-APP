@@ -16,7 +16,6 @@ import { SaveStatusOverlay } from "./nova-ocorrencia/sections/SaveStatusOverlay"
 import { occurrencesApi } from "../../api/occurrences.api";
 import { presetsApi } from "../../api/presets.api";
 import { useAdminAuth } from "../context/AdminAuthContext";
-import { useAuth } from "../context/AuthContext";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 interface NovaOcorrenciaProps {
@@ -29,7 +28,6 @@ export function NovaOcorrencia({ onVoltar, onSaved, edicao }: NovaOcorrenciaProp
   const form = useNovaOcorrenciaForm({ onVoltar, onSaved, edicao });
   const typeConfig = getOccurrenceTypeConfig(form.typeCode);
   const { isAdmin } = useAdminAuth();
-  const { profileName } = useAuth();
 
   const headerRef = useRef<HTMLElement>(null);
   const [topBase, setTopBase] = useState(73);
@@ -44,14 +42,6 @@ export function NovaOcorrencia({ onVoltar, onSaved, edicao }: NovaOcorrenciaProp
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
   }, []);
-
-  // Em registro novo, pré-preenche o analista responsável com o usuário logado.
-  useEffect(() => {
-    if (!edicao && !form.analisadoPor && profileName) {
-      form.setAnalisadoPor(profileName);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profileName]);
 
   const { data: reportTitleSuggestions = [] } = useQuery({
     queryKey: ["occurrences", "report-titles"],

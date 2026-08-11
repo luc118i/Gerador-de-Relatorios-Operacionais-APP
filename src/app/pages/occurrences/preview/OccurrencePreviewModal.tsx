@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   X,
@@ -390,10 +390,18 @@ function TratativaBlock({ occ, onSaved }: { occ: OccurrenceDTO; onSaved: () => v
   const [observacoes, setObservacoes] = useState(initialObs);
   const [analista, setAnalista] = useState(occ.analisadoPor ?? "");
   const [saving, setSaving] = useState(false);
+  // Guarda o valor exato que o pré-preenchimento abaixo colocou em `analista`
+  // (ver comentário equivalente em useNovaOcorrenciaForm.ts). Se o texto
+  // ainda for esse na hora de salvar, usa o ID de quem está logado direto —
+  // sem depender de `profileNameAliases` já ter carregado.
+  const autoFilledAnalistaRef = useRef<string | null>(null);
 
   // Preenche o analista com o usuário logado quando ainda não há um.
   useEffect(() => {
-    if (!analista && profileName) setAnalista(profileName);
+    if (!analista && profileName) {
+      setAnalista(profileName);
+      autoFilledAnalistaRef.current = profileName;
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profileName]);
 
@@ -410,6 +418,8 @@ function TratativaBlock({ occ, onSaved }: { occ: OccurrenceDTO; onSaved: () => v
     // (ex. escolher "Só o Registro") reatribuía a ocorrência pra quem
     // estivesse logado no front, sumindo ela da conta do analista real.
     const apurador = (analista || profileName).trim();
+    const isUntouchedAutoFill =
+      autoFilledAnalistaRef.current !== null && apurador === autoFilledAnalistaRef.current.trim();
     setAnalista(apurador);
     setSaving(true);
     try {
@@ -418,7 +428,9 @@ function TratativaBlock({ occ, onSaved }: { occ: OccurrenceDTO; onSaved: () => v
         tratativa,
         apurador || null,
         observacoes.trim() || null,
-        resolveAnalisadoPorUserId(apurador, profileNameAliases, user?.id, occ.analisadoPorUserId),
+        isUntouchedAutoFill
+          ? user?.id ?? null
+          : resolveAnalisadoPorUserId(apurador, profileNameAliases, user?.id, occ.analisadoPorUserId),
       );
       toast.success("Tratativa salva!");
       void qc.invalidateQueries({ queryKey: ["occurrence", occ.id] });
