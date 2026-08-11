@@ -3,6 +3,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2, Edit2, X } from "lucide-react";
 import { driversApi } from "../../api/drivers.api";
 import type { Driver } from "../../domain/drivers";
+import { DriverProfilePage } from "./DriverProfilePage";
+import { DriversDashboard } from "../components/DriversDashboard";
 
 interface DriversPageProps {
   onVoltar: () => void;
@@ -14,6 +16,7 @@ export function DriversPage({ onVoltar }: DriversPageProps) {
   const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState<Driver | null>(null);
+  const [viewingDriver, setViewingDriver] = useState<Driver | null>(null);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["drivers", { search }],
@@ -89,6 +92,15 @@ export function DriversPage({ onVoltar }: DriversPageProps) {
     }
   }
 
+  if (viewingDriver) {
+    return (
+      <DriverProfilePage
+        driver={viewingDriver}
+        onVoltar={() => setViewingDriver(null)}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-10">
@@ -104,6 +116,8 @@ export function DriversPage({ onVoltar }: DriversPageProps) {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <DriversDashboard onSelectDriver={setViewingDriver} />
+
         <div className="flex items-center justify-between mb-4 gap-3">
           <input
             type="text"
@@ -149,20 +163,30 @@ export function DriversPage({ onVoltar }: DriversPageProps) {
               </thead>
               <tbody>
                 {drivers.map((d) => (
-                  <tr key={d.id} className="border-b last:border-b-0">
+                  <tr
+                    key={d.id}
+                    onClick={() => setViewingDriver(d)}
+                    className="cursor-pointer border-b last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-800/60"
+                  >
                     <td className="px-4 py-2">{d.code}</td>
                     <td className="px-4 py-2">{d.name}</td>
                     <td className="px-4 py-2">{d.base ?? "-"}</td>
                     <td className="px-4 py-2 text-right space-x-2">
                       <button
-                        onClick={() => openEdit(d)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEdit(d);
+                        }}
                         className="cursor-pointer inline-flex items-center gap-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
                       >
                         <Edit2 className="w-3 h-3" />
                         Editar
                       </button>
                       <button
-                        onClick={() => setIsDeleting(d)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsDeleting(d);
+                        }}
                         className="cursor-pointer inline-flex items-center gap-1 px-2 py-1 text-xs border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-md hover:bg-red-50 dark:hover:bg-red-950/40"
                       >
                         <Trash2 className="w-3 h-3" />

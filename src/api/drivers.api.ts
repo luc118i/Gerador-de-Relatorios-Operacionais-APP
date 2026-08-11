@@ -1,5 +1,16 @@
 import { request } from "./http";
-import type { Driver, CreateDriverInput, DriverStats } from "../domain/drivers";
+import type {
+  Driver,
+  CreateDriverInput,
+  DriverStats,
+  DriverSituation,
+  DriverMonthlyOccurrence,
+  DriverDashboardSummary,
+  DriverOccurrenceHistoryEntry,
+  DriverRizerComparison,
+} from "../domain/drivers";
+
+const BASE_URL = import.meta.env.VITE_API_URL as string;
 
 type DriversSearchResponse = { data: Driver[] };
 
@@ -63,6 +74,58 @@ export const driversApi = {
     return request<{ data: DriverStats }>({
       method: "GET",
       path: `/drivers/${id}/stats`,
+    }).then((res) => res.data);
+  },
+
+  // Situação disciplinar calculada (REGULAR/ATENCAO/CRITICO) + índice.
+  getDriverSituation(id: string) {
+    return request<{ data: DriverSituation }>({
+      method: "GET",
+      path: `/drivers/${id}/situation`,
+    }).then((res) => res.data);
+  },
+
+  // Evolução mensal de ocorrências do motorista (perfil disciplinar).
+  getDriverMonthlyOccurrences(id: string, months?: number) {
+    return request<{ data: DriverMonthlyOccurrence[] }>({
+      method: "GET",
+      path: `/drivers/${id}/monthly-occurrences`,
+      query: months !== undefined ? { months } : undefined,
+    }).then((res) => res.data);
+  },
+
+  // BI geral: totais, ocorrências por base e ranking dos piores motoristas.
+  getDashboardSummary() {
+    return request<{ data: DriverDashboardSummary }>({
+      method: "GET",
+      path: "/dashboard/motoristas",
+    }).then((res) => res.data);
+  },
+
+  // Histórico de ocorrências do motorista (perfil disciplinar).
+  getDriverOccurrenceHistory(id: string) {
+    return request<{ data: DriverOccurrenceHistoryEntry[] }>({
+      method: "GET",
+      path: `/drivers/${id}/occurrences`,
+    }).then((res) => res.data);
+  },
+
+  // Ficha de Conduta em PDF (relatório disciplinar consolidado).
+  async getDriverConductPdf(id: string): Promise<Blob> {
+    const res = await fetch(`${BASE_URL}/reports/drivers/${id}/conduct-pdf`);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body?.error?.message ?? `HTTP ${res.status}`);
+    }
+    return res.blob();
+  },
+
+  // Compara contagem de ocorrências por tipo com a listagem do RIZER
+  // (automação de browser real — ~10-30s de resposta).
+  compareDriverWithRizer(id: string) {
+    return request<{ data: DriverRizerComparison }>({
+      method: "POST",
+      path: `/drivers/${id}/rizer-check`,
     }).then((res) => res.data);
   },
 };

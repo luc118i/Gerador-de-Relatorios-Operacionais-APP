@@ -27,6 +27,56 @@ export function useDriverStats(id: string | null) {
   });
 }
 
+// Situação disciplinar calculada (REGULAR/ATENCAO/CRITICO) + índice.
+// Fórmula do índice documentada em domain/drivers.ts (DriverSituation).
+export function useDriverSituation(id: string | null) {
+  return useQuery({
+    queryKey: driversKeys.situation(id ?? ""),
+    queryFn: () => driversApi.getDriverSituation(id as string),
+    enabled: !!id,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+}
+
+// Evolução mensal de ocorrências do motorista (gráfico do perfil disciplinar).
+// Default 3: occurrences tem retenção de 90 dias (purge mensal no banco),
+// pedir mais meses por padrão só mostraria buracos vazios.
+export function useDriverMonthlyOccurrences(id: string | null, months = 3) {
+  return useQuery({
+    queryKey: driversKeys.monthlyOccurrences(id ?? "", months),
+    queryFn: () => driversApi.getDriverMonthlyOccurrences(id as string, months),
+    enabled: !!id,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+}
+
+// BI geral da tela de Motoristas (cards + por base + ranking).
+export function useDriverDashboard() {
+  return useQuery({
+    queryKey: driversKeys.dashboard,
+    queryFn: () => driversApi.getDashboardSummary(),
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+}
+
+// Histórico de ocorrências do motorista (seção "Histórico Disciplinar" do perfil).
+export function useDriverOccurrenceHistory(id: string | null) {
+  return useQuery({
+    queryKey: driversKeys.occurrenceHistory(id ?? ""),
+    queryFn: () => driversApi.getDriverOccurrenceHistory(id as string),
+    enabled: !!id,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+}
+
 export function useCreateDriver() {
   const qc = useQueryClient();
 
