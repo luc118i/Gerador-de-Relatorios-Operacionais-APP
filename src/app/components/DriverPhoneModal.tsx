@@ -3,6 +3,7 @@ import { Loader2, Phone, X } from "lucide-react";
 import { toast } from "sonner";
 import { getApiErrorMessage } from "../../api/http";
 import { useUpdateDriver } from "../../features/occurrences/queries/drivers.queries";
+import { formatPhoneInputMask } from "../../utils/whatsapp";
 
 interface Props {
   driverId: string;
@@ -68,8 +69,9 @@ export function DriverPhoneModal({ driverId, driverName, onClose, onSaved }: Pro
             <input
               autoFocus
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => setPhone(formatPhoneInputMask(e.target.value))}
               onKeyDown={(e) => { if (e.key === "Enter") handleSave(); }}
+              inputMode="numeric"
               placeholder="Ex: (31) 99999-9999"
               className="w-full h-10 px-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400"
             />

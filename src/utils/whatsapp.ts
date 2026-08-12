@@ -19,6 +19,18 @@ export function formatPhoneForWhatsApp(rawPhone: string): string | null {
   return digits;
 }
 
+// Máscara "(DD) 9XXXX-XXXX" aplicada enquanto o usuário digita — 10 dígitos
+// (fixo) vira "(DD) XXXX-XXXX", 11 (celular) vira "(DD) XXXXX-XXXX". Usada no
+// cadastro rápido de telefone (DriverPhoneModal).
+export function formatPhoneInputMask(rawValue: string): string {
+  const digits = rawValue.replace(/\D/g, "").slice(0, 11);
+  if (!digits) return "";
+  if (digits.length <= 2) return `(${digits}`;
+  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  if (digits.length <= 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+}
+
 // Remove emoji (inclusive sequências com seletor de variação, ex.: ⏱️) do
 // texto interno usado pelo time de operação — mensagem para o motorista deve
 // ter tom institucional, sem emoji. Também evita o caractere "�" que aparece
