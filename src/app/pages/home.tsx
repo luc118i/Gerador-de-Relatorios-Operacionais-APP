@@ -525,10 +525,14 @@ export function Home({
 
   // Se todas as ocorrências já têm uma tratativa definida (badge no card),
   // registra direto no RIZER sem perguntar de novo. Só abre o modal quando
-  // alguma ocorrência ainda não tem tratativa marcada.
+  // alguma ocorrência ainda não tem tratativa marcada — OU quando o lote tem
+  // alguma "Só o Registro": esse tipo passa direto (RIZER sem advertência/
+  // suspensão) e é fácil mandar um lote inteiro sem reparar que tinha uma
+  // no meio, então sempre para pra confirmar nesse caso.
   function requestRegistrarTodas(subject: string, unregistered: OccurrenceDTO[]) {
     const mapped = unregistered.map((o) => tratativaToTipoMedida(o.tratativa));
-    if (mapped.every((m) => m !== null)) {
+    const hasSoRegistro = unregistered.some((o) => o.tratativa === "REGISTRO");
+    if (mapped.every((m) => m !== null) && !hasSoRegistro) {
       const items: BatchRizerItem[] = unregistered.map((o, i) => ({
         id: o.id,
         advertencia: mapped[i] === "advertencia",
