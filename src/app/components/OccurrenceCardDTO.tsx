@@ -888,40 +888,46 @@ export function OccurrenceCard({
               )}
             </button>
           )}
-          <button
-            onClick={handleRizerClick}
-            disabled={disciplinaryState === "loading"}
-            title={
-              disciplinaryState === "success"
-                ? "Enviado ao RIZER — clique para verificar o status"
-                : disciplinaryState === "loading"
-                  ? (disciplinaryAction === "verifying" ? "Verificando no RIZER..." : "Enviando ao RIZER...")
+          {/* Some quando falta tratativa: "Enviado ao RIZER" (check verde) ao
+              lado de "Falta a tratativa" (alerta âmbar) é contraditório e
+              redundante — o botão de completar tratativa já deixa claro que
+              foi enviado (só falta esse passo). */}
+          {!localFaltaTratativa && (
+            <button
+              onClick={handleRizerClick}
+              disabled={disciplinaryState === "loading"}
+              title={
+                disciplinaryState === "success"
+                  ? "Enviado ao RIZER — clique para verificar o status"
+                  : disciplinaryState === "loading"
+                    ? (disciplinaryAction === "verifying" ? "Verificando no RIZER..." : "Enviando ao RIZER...")
+                    : disciplinaryState === "error"
+                      ? "Falha ao enviar — clique para tentar novamente"
+                      : !isAdmin
+                        ? "Apenas administradores podem registrar no RIZER"
+                        : "Enviar ocorrência ao RIZER"
+              }
+              className={`p-2 rounded flex-shrink-0 transition-colors disabled:opacity-60 disabled:cursor-wait ${
+                disciplinaryState === "success"
+                  ? "text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/40"
                   : disciplinaryState === "error"
-                    ? "Falha ao enviar — clique para tentar novamente"
+                    ? "text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40"
                     : !isAdmin
-                      ? "Apenas administradores podem registrar no RIZER"
-                      : "Enviar ocorrência ao RIZER"
-            }
-            className={`p-2 rounded flex-shrink-0 transition-colors disabled:opacity-60 disabled:cursor-wait ${
-              disciplinaryState === "success"
-                ? "text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/40"
-                : disciplinaryState === "error"
-                  ? "text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40"
-                  : !isAdmin
-                    ? "text-gray-300 dark:text-gray-600 cursor-not-allowed"
-                    : "text-gray-400 hover:text-orange-600 hover:bg-orange-50 dark:text-gray-500 dark:hover:text-orange-400 dark:hover:bg-orange-950/40"
-            }`}
-          >
-            {disciplinaryState === "loading" ? (
-              <Loader2 className="w-4 h-4 animate-spin text-orange-500" />
-            ) : disciplinaryState === "success" ? (
-              <Check className="w-4 h-4" />
-            ) : disciplinaryState === "error" ? (
-              <AlertTriangle className="w-4 h-4" />
-            ) : (
-              <RizerLogo className="w-4 h-4" />
-            )}
-          </button>
+                      ? "text-gray-300 dark:text-gray-600 cursor-not-allowed"
+                      : "text-gray-400 hover:text-orange-600 hover:bg-orange-50 dark:text-gray-500 dark:hover:text-orange-400 dark:hover:bg-orange-950/40"
+              }`}
+            >
+              {disciplinaryState === "loading" ? (
+                <Loader2 className="w-4 h-4 animate-spin text-orange-500" />
+              ) : disciplinaryState === "success" ? (
+                <Check className="w-4 h-4" />
+              ) : disciplinaryState === "error" ? (
+                <AlertTriangle className="w-4 h-4" />
+              ) : (
+                <RizerLogo className="w-4 h-4" />
+              )}
+            </button>
+          )}
           <button
             onClick={(e) => { e.stopPropagation(); onExcluir?.(); }}
             title="Excluir"
