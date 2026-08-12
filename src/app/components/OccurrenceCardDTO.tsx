@@ -20,7 +20,6 @@ import {
   Send,
   QrCode,
   Phone,
-  PencilLine,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -463,7 +462,11 @@ export function OccurrenceCard({
     sendNotification(driverPhone);
   }
 
+  // Clique direito no botão de WhatsApp abre direto a edição do telefone —
+  // economiza um botão dedicado no card (ver handleSendWpp: clique normal já
+  // cobre o cadastro quando falta número).
   function handleEditPhone(e: React.MouseEvent) {
+    e.preventDefault();
     e.stopPropagation();
     if (!cardDriver) return;
     setPhoneModalMode("edit");
@@ -480,8 +483,8 @@ export function OccurrenceCard({
         : driverPhone
           ? `Notificar ${cardDriver?.name?.split(/\s+/)[0] ?? "motorista"} via WhatsApp${
               localWhatsappSentCount > 0 ? ` — já enviado ${localWhatsappSentCount}x, clique para enviar de novo` : ""
-            }`
-          : "Motorista sem telefone cadastrado — clique para cadastrar";
+            } (clique direito para editar o telefone)`
+          : "Motorista sem telefone cadastrado — clique para cadastrar (clique direito para editar)";
   const whatsappSendDisabled = !whatsappAgent.agentAvailable || whatsappSendBusy || !cardDriver;
 
   // No card: GENERICO → reportTitle, demais → linha (contexto da viagem)
@@ -824,6 +827,7 @@ export function OccurrenceCard({
           </button>
           <button
             onClick={handleSendWpp}
+            onContextMenu={handleEditPhone}
             disabled={whatsappSendDisabled}
             title={whatsappSendTitle}
             className={`relative p-2 rounded transition-colors disabled:opacity-40 ${
@@ -847,15 +851,6 @@ export function OccurrenceCard({
               </span>
             )}
           </button>
-          {cardDriver && (
-            <button
-              onClick={handleEditPhone}
-              title={driverPhone ? `Editar telefone (${driverPhone})` : "Cadastrar telefone"}
-              className="p-2 rounded text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:text-gray-500 dark:hover:text-blue-400 dark:hover:bg-blue-950/40 transition-colors"
-            >
-              <PencilLine className="w-4 h-4" />
-            </button>
-          )}
           <button
             onClick={handleCopyRelat}
             disabled={loadingAiRelat}
@@ -1233,6 +1228,7 @@ export function OccurrenceCard({
           </button>
           <button
             onClick={handleSendWpp}
+            onContextMenu={handleEditPhone}
             disabled={whatsappSendDisabled}
             title={whatsappSendTitle}
             className={`flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md transition-colors disabled:opacity-40 ${
@@ -1252,15 +1248,6 @@ export function OccurrenceCard({
             )}
             {localWhatsappSentCount > 0 && `${localWhatsappSentCount}x`}
           </button>
-          {cardDriver && (
-            <button
-              onClick={handleEditPhone}
-              title={driverPhone ? `Editar telefone (${driverPhone})` : "Cadastrar telefone"}
-              className="flex items-center justify-center px-2.5 py-1.5 text-xs rounded-md text-gray-500 hover:text-blue-700 hover:bg-blue-50 dark:text-gray-400 dark:hover:text-blue-400 dark:hover:bg-blue-950/40 transition-colors"
-            >
-              <PencilLine className="w-3.5 h-3.5" />
-            </button>
-          )}
           <button
             onClick={handleCopyRelat}
             disabled={loadingAiRelat}

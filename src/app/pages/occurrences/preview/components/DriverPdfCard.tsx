@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import { FileDown, Copy, Check, Loader2, MessageCircle, QrCode, Phone, Pencil } from "lucide-react";
+import { FileDown, Copy, Check, Loader2, MessageCircle, QrCode, Phone } from "lucide-react";
 import { toast } from "sonner";
 import { getApiErrorMessage } from "../../../../../api/http";
 import { reportsDriveApi } from "../../../../../api/reportsDrive.api";
@@ -171,8 +171,8 @@ export function DriverPdfCard(props: {
       : driverDetail.isLoading
         ? "Carregando telefone…"
         : driverPhone
-          ? `Notificar ${driver.name.split(/\s+/)[0]} via WhatsApp`
-          : "Motorista sem telefone cadastrado — clique para cadastrar";
+          ? `Notificar ${driver.name.split(/\s+/)[0]} via WhatsApp (clique direito para editar o telefone)`
+          : "Motorista sem telefone cadastrado — clique para cadastrar (clique direito para editar)";
 
   const whatsappDisabled = !whatsappAgent.agentAvailable || whatsappBusy;
 
@@ -300,22 +300,12 @@ export function DriverPdfCard(props: {
           <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
             Base: <span className="font-medium text-gray-800 dark:text-gray-200">{driver.base ?? "—"}</span>
           </p>
-          <div className="mt-1 flex items-center gap-1 group/phone">
-            <p className="text-xs text-gray-600 dark:text-gray-400">
-              Tel:{" "}
-              <span className="font-medium text-gray-800 dark:text-gray-200">
-                {driverDetail.isLoading ? "…" : driverPhone ?? "sem telefone"}
-              </span>
-            </p>
-            <button
-              type="button"
-              onClick={handleEditPhoneClick}
-              className="cursor-pointer p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-              title={driverPhone ? "Editar telefone" : "Cadastrar telefone"}
-            >
-              <Pencil className="w-3 h-3" />
-            </button>
-          </div>
+          <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+            Tel:{" "}
+            <span className="font-medium text-gray-800 dark:text-gray-200">
+              {driverDetail.isLoading ? "…" : driverPhone ?? "sem telefone"}
+            </span>
+          </p>
 
           <div className="mt-2 flex items-center gap-2 group">
             <p className="text-xs text-gray-500 dark:text-gray-400 truncate" title={fileName}>
@@ -342,6 +332,7 @@ export function DriverPdfCard(props: {
           <button
             type="button"
             onClick={handleWhatsAppClick}
+            onContextMenu={(e) => { e.preventDefault(); handleEditPhoneClick(); }}
             disabled={whatsappDisabled}
             title={whatsappTitle}
             className="cursor-pointer w-10 h-10 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-950/60 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
