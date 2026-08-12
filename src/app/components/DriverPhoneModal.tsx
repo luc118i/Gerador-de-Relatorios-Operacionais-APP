@@ -9,18 +9,25 @@ interface Props {
   driverId: string;
   driverName: string;
   onClose: () => void;
+  // Telefone já cadastrado — presente quando o modal é aberto para EDITAR
+  // (ícone de lápis, sempre visível) em vez de cadastrar do zero (botão de
+  // WhatsApp sem número). Pré-preenche o campo e ajusta os textos.
+  currentPhone?: string | null;
   // Chamado depois do telefone salvo com sucesso — quem abriu o modal (botão
   // de WhatsApp sem número cadastrado) pode usar isso pra já disparar o
-  // envio na sequência, sem o usuário precisar clicar de novo.
+  // envio na sequência, sem o usuário precisar clicar de novo. Não é
+  // chamado no fluxo de edição (o usuário só quer corrigir o número).
   onSaved?: (phone: string) => void;
 }
 
-// Cadastro rápido de telefone/WhatsApp do motorista — aberto direto do botão
+// Cadastro/edição de telefone/WhatsApp do motorista — aberto direto do botão
 // de notificação (Home e preview de ocorrência) quando o motorista ainda não
-// tem número cadastrado, pra não obrigar ir até a tela de Motoristas só por
-// isso. Mesmo campo (phone) editável lá em DriversPage/DriverCreateModal.
-export function DriverPhoneModal({ driverId, driverName, onClose, onSaved }: Props) {
-  const [phone, setPhone] = useState("");
+// tem número cadastrado, ou do ícone de editar (sempre visível) quando já
+// tem, pra não obrigar ir até a tela de Motoristas só por isso. Mesmo campo
+// (phone) editável lá em DriversPage/DriverCreateModal.
+export function DriverPhoneModal({ driverId, driverName, onClose, currentPhone, onSaved }: Props) {
+  const isEditing = !!currentPhone;
+  const [phone, setPhone] = useState(() => currentPhone ? formatPhoneInputMask(currentPhone) : "");
   const updateDriver = useUpdateDriver();
 
   async function handleSave() {
@@ -31,11 +38,11 @@ export function DriverPhoneModal({ driverId, driverName, onClose, onSaved }: Pro
     }
     try {
       await updateDriver.mutateAsync({ id: driverId, input: { phone: trimmed } });
-      toast.success("Telefone cadastrado!");
-      onSaved?.(trimmed);
+      toast.success(isEditing ? "Telefone atualizado!" : "Telefone cadastrado!");
+      if (!isEditing) onSaved?.(trimmed);
       onClose();
     } catch (err) {
-      toast.error(getApiErrorMessage(err, "Falha ao cadastrar telefone"));
+      toast.error(getApiErrorMessage(err, "Falha ao salvar telefone"));
     }
   }
 
@@ -46,7 +53,7 @@ export function DriverPhoneModal({ driverId, driverName, onClose, onSaved }: Pro
           <div className="flex items-center gap-2.5">
             <Phone className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
             <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
-              Cadastrar telefone
+              {isEditing ? "Editar telefone" : "Cadastrar telefone"}
             </h2>
           </div>
           <button
@@ -59,8 +66,17 @@ export function DriverPhoneModal({ driverId, driverName, onClose, onSaved }: Pro
 
         <div className="px-5 py-5 space-y-3">
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            <span className="font-medium text-gray-800 dark:text-gray-200">{driverName}</span> ainda
-            não tem telefone cadastrado — sem isso não dá pra notificar via WhatsApp.
+            {isEditing ? (
+              <>
+                Ajuste o telefone/WhatsApp de{" "}
+                <span className="font-medium text-gray-800 dark:text-gray-200">{driverName}</span>.
+              </>
+            ) : (
+              <>
+                <span className="font-medium text-gray-800 dark:text-gray-200">{driverName}</span> ainda
+                não tem telefone cadastrado — sem isso não dá pra notificar via WhatsApp.
+              </>
+            )}
           </p>
           <div className="space-y-1">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">

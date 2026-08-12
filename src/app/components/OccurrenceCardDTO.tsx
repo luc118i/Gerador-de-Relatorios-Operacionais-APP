@@ -20,6 +20,7 @@ import {
   Send,
   QrCode,
   Phone,
+  PencilLine,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -370,6 +371,10 @@ export function OccurrenceCard({
   const whatsappAgent = useWhatsAppAgent();
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
   const [showPhoneModal, setShowPhoneModal] = useState(false);
+  // "send": aberto pelo botão de WhatsApp sem telefone (cadastra e já
+  // dispara o envio). "edit": aberto pelo ícone de lápis, sempre visível
+  // (só ajusta o número, sem side-effect de envio) — ver DriverPdfCard.
+  const [phoneModalMode, setPhoneModalMode] = useState<"send" | "edit">("send");
   const [sendingWpp, setSendingWpp] = useState(false);
 
   // Contador de envios (por motorista — posição 1/2 tem contador próprio,
@@ -451,10 +456,18 @@ export function OccurrenceCard({
     }
     if (!cardDriver) return;
     if (!driverPhone) {
+      setPhoneModalMode("send");
       setShowPhoneModal(true);
       return;
     }
     sendNotification(driverPhone);
+  }
+
+  function handleEditPhone(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!cardDriver) return;
+    setPhoneModalMode("edit");
+    setShowPhoneModal(true);
   }
 
   const whatsappSendBusy = sendingWpp || driverDetail.isLoading;
@@ -596,8 +609,9 @@ export function OccurrenceCard({
         <DriverPhoneModal
           driverId={cardDriver.driverId}
           driverName={cardDriver.name}
+          currentPhone={phoneModalMode === "edit" ? driverPhone : null}
           onClose={() => setShowPhoneModal(false)}
-          onSaved={sendNotification}
+          onSaved={phoneModalMode === "send" ? sendNotification : undefined}
         />
       )}
       {showSuspensaoModal && (
@@ -833,6 +847,15 @@ export function OccurrenceCard({
               </span>
             )}
           </button>
+          {cardDriver && (
+            <button
+              onClick={handleEditPhone}
+              title={driverPhone ? `Editar telefone (${driverPhone})` : "Cadastrar telefone"}
+              className="p-2 rounded text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:text-gray-500 dark:hover:text-blue-400 dark:hover:bg-blue-950/40 transition-colors"
+            >
+              <PencilLine className="w-4 h-4" />
+            </button>
+          )}
           <button
             onClick={handleCopyRelat}
             disabled={loadingAiRelat}
@@ -974,8 +997,9 @@ export function OccurrenceCard({
       <DriverPhoneModal
         driverId={cardDriver.driverId}
         driverName={cardDriver.name}
+        currentPhone={phoneModalMode === "edit" ? driverPhone : null}
         onClose={() => setShowPhoneModal(false)}
-        onSaved={sendNotification}
+        onSaved={phoneModalMode === "send" ? sendNotification : undefined}
       />
     )}
     {showSuspensaoModal && (
@@ -1228,6 +1252,15 @@ export function OccurrenceCard({
             )}
             {localWhatsappSentCount > 0 && `${localWhatsappSentCount}x`}
           </button>
+          {cardDriver && (
+            <button
+              onClick={handleEditPhone}
+              title={driverPhone ? `Editar telefone (${driverPhone})` : "Cadastrar telefone"}
+              className="flex items-center justify-center px-2.5 py-1.5 text-xs rounded-md text-gray-500 hover:text-blue-700 hover:bg-blue-50 dark:text-gray-400 dark:hover:text-blue-400 dark:hover:bg-blue-950/40 transition-colors"
+            >
+              <PencilLine className="w-3.5 h-3.5" />
+            </button>
+          )}
           <button
             onClick={handleCopyRelat}
             disabled={loadingAiRelat}

@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import { FileDown, Copy, Check, Loader2, MessageCircle, QrCode, Phone } from "lucide-react";
+import { FileDown, Copy, Check, Loader2, MessageCircle, QrCode, Phone, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { getApiErrorMessage } from "../../../../../api/http";
 import { reportsDriveApi } from "../../../../../api/reportsDrive.api";
@@ -89,6 +89,10 @@ export function DriverPdfCard(props: {
 
   const [whatsappSending, setWhatsappSending] = useState(false);
   const [showPhoneModal, setShowPhoneModal] = useState(false);
+  // "send": aberto pelo botão de WhatsApp sem telefone (cadastra e já
+  // dispara o envio). "edit": aberto pelo ícone de lápis, sempre visível
+  // (só ajusta o número, sem side-effect de envio).
+  const [phoneModalMode, setPhoneModalMode] = useState<"send" | "edit">("send");
 
   // Dispara o envio de verdade — separado do clique pra poder ser chamado
   // de novo assim que o telefone é cadastrado no DriverPhoneModal, sem o
@@ -145,12 +149,18 @@ export function DriverPdfCard(props: {
     }
 
     if (!driverPhone) {
+      setPhoneModalMode("send");
       setShowPhoneModal(true);
       return;
     }
 
     sendNotification(driverPhone);
   }, [whatsappAgent, driverPhone, onNeedWhatsAppConnect, sendNotification]);
+
+  const handleEditPhoneClick = useCallback(() => {
+    setPhoneModalMode("edit");
+    setShowPhoneModal(true);
+  }, []);
 
   const whatsappBusy = whatsappSending || driverDetail.isLoading;
 
@@ -290,6 +300,22 @@ export function DriverPdfCard(props: {
           <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
             Base: <span className="font-medium text-gray-800 dark:text-gray-200">{driver.base ?? "—"}</span>
           </p>
+          <div className="mt-1 flex items-center gap-1 group/phone">
+            <p className="text-xs text-gray-600 dark:text-gray-400">
+              Tel:{" "}
+              <span className="font-medium text-gray-800 dark:text-gray-200">
+                {driverDetail.isLoading ? "…" : driverPhone ?? "sem telefone"}
+              </span>
+            </p>
+            <button
+              type="button"
+              onClick={handleEditPhoneClick}
+              className="cursor-pointer p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+              title={driverPhone ? "Editar telefone" : "Cadastrar telefone"}
+            >
+              <Pencil className="w-3 h-3" />
+            </button>
+          </div>
 
           <div className="mt-2 flex items-center gap-2 group">
             <p className="text-xs text-gray-500 dark:text-gray-400 truncate" title={fileName}>
@@ -335,8 +361,9 @@ export function DriverPdfCard(props: {
             <DriverPhoneModal
               driverId={driver.id}
               driverName={driver.name}
+              currentPhone={phoneModalMode === "edit" ? driverPhone : null}
               onClose={() => setShowPhoneModal(false)}
-              onSaved={sendNotification}
+              onSaved={phoneModalMode === "send" ? sendNotification : undefined}
             />
           )}
 
