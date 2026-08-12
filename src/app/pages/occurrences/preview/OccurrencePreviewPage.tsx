@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useRef, useCallback } from "react";
-import { Home, PencilLine, Check, Copy, Sparkles, Loader2, X } from "lucide-react";
+import { Home, PencilLine, Check, Copy, Sparkles, Loader2, X, MessageCircle } from "lucide-react";
 import type { Ocorrencia } from "../../../types";
 import {
   gerarTextoRelatorioIndividual,
@@ -346,7 +346,36 @@ export function OccurrencePreviewPage(props: {
         {/* PDF por motorista — só exibe quando há motoristas vinculados */}
         {hasDrivers && (
           <div className="space-y-3">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">PDF por motorista</h2>
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">PDF por motorista</h2>
+
+              {/* WhatsApp conectado — desconectar a conta do RIZER Agent */}
+              {whatsappAgent.connected && (
+                <div className="flex items-center gap-1 h-8 pl-3 pr-1 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-sm">
+                  <MessageCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span className="text-emerald-800 dark:text-emerald-400 font-medium">WhatsApp conectado</span>
+                  <button
+                    onClick={async () => {
+                      try {
+                        await whatsappAgent.disconnect();
+                        toast.success("WhatsApp desconectado.");
+                      } catch (e) {
+                        toast.error(getApiErrorMessage(e, "Falha ao desconectar o WhatsApp"));
+                      }
+                    }}
+                    disabled={whatsappAgent.disconnecting}
+                    className="cursor-pointer p-1 ml-0.5 hover:bg-emerald-100 dark:hover:bg-emerald-950/60 rounded transition-colors disabled:opacity-50"
+                    title="Desconectar WhatsApp"
+                  >
+                    {whatsappAgent.disconnecting ? (
+                      <Loader2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 animate-spin" />
+                    ) : (
+                      <X className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
             <div className="flex flex-col gap-4">
               {drivers.d1 ? (
                 <DriverPdfCard

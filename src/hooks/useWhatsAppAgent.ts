@@ -25,6 +25,11 @@ export function useWhatsAppAgent() {
     onSuccess: () => qc.invalidateQueries({ queryKey: STATUS_KEY }),
   });
 
+  const disconnectMutation = useMutation({
+    mutationFn: () => whatsappAgentApi.disconnect(),
+    onSuccess: () => qc.invalidateQueries({ queryKey: STATUS_KEY }),
+  });
+
   return {
     agentAvailable,
     connected: statusQuery.data?.connected ?? false,
@@ -32,6 +37,8 @@ export function useWhatsAppAgent() {
     connect: connectMutation.mutateAsync,
     connecting: connectMutation.isPending,
     connectError: connectMutation.error as Error | null,
+    disconnect: disconnectMutation.mutateAsync,
+    disconnecting: disconnectMutation.isPending,
   };
 }
 
