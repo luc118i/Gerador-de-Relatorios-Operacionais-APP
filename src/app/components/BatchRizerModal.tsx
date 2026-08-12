@@ -58,11 +58,20 @@ export function BatchRizerModal({ open, subject, occs, onConfirm, onCancel }: Pr
     setRows((prev) => ({ ...prev, [id]: tipo }));
   }
 
+  // "Apenas reg." não vai pro RIZER nessa leva — fica pendente pra ser
+  // tratado depois (individualmente ou em outro lote), em vez de gastar uma
+  // rodada de automação num item sem advertência/suspensão.
+  const skippedCount = occs.filter((o) => (rows[o.id] ?? "advertencia") === "nenhum").length;
+  const sendCount = occs.length - skippedCount;
+
   function handleConfirm() {
-    const items: BatchRizerItem[] = occs.map((o) => ({
-      id: o.id,
-      advertencia: rows[o.id] === "advertencia",
-    }));
+    const items: BatchRizerItem[] = occs
+      .filter((o) => (rows[o.id] ?? "advertencia") !== "nenhum")
+      .map((o) => ({
+        id: o.id,
+        advertencia: rows[o.id] === "advertencia",
+      }));
+    if (items.length === 0) return;
     onConfirm(items);
   }
 
@@ -100,10 +109,11 @@ export function BatchRizerModal({ open, subject, occs, onConfirm, onCancel }: Pr
           {occs.map((occ) => {
             const driver = occ.drivers.find((d) => d.position === 1);
             const current = rows[occ.id] ?? "advertencia";
+            const willSkip = current === "nenhum";
             return (
               <div
                 key={occ.id}
-                className="flex items-center gap-3 py-2.5 border-b border-gray-50 last:border-0"
+                className={`flex items-center gap-3 py-2.5 border-b border-gray-50 last:border-0 transition-opacity ${willSkip ? "opacity-60" : ""}`}
               >
                 {/* Info */}
                 <div className="flex-1 min-w-0">
@@ -112,6 +122,7 @@ export function BatchRizerModal({ open, subject, occs, onConfirm, onCancel }: Pr
                   </p>
                   <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">
                     {occ.vehicleNumber} · {occ.baseCode}
+                    {willSkip ? " · não será enviada" : ""}
                   </p>
                 </div>
 
@@ -137,19 +148,27 @@ export function BatchRizerModal({ open, subject, occs, onConfirm, onCancel }: Pr
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-2 px-5 py-4 border-t border-gray-100 dark:border-gray-800">
-          <button
-            onClick={onCancel}
-            className="px-4 py-2 rounded-lg text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={handleConfirm}
-            className="px-4 py-2 rounded-lg text-sm font-semibold bg-orange-500 text-white hover:bg-orange-600 transition-colors"
-          >
-            Confirmar ({occs.length})
-          </button>
+        <div className="flex items-center justify-between gap-2 px-5 py-4 border-t border-gray-100 dark:border-gray-800">
+          <p className="text-[11px] text-gray-400 dark:text-gray-500">
+            {skippedCount > 0
+              ? `${skippedCount} marcada${skippedCount !== 1 ? "s" : ""} como "Apenas reg." não ${skippedCount !== 1 ? "serão enviadas" : "será enviada"} nessa leva.`
+              : ""}
+          </p>
+          <div className="flex gap-2 shrink-0">
+            <button
+              onClick={onCancel}
+              className="px-4 py-2 rounded-lg text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleConfirm}
+              disabled={sendCount === 0}
+              className="px-4 py-2 rounded-lg text-sm font-semibold bg-orange-500 text-white hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-orange-500"
+            >
+              Confirmar ({sendCount})
+            </button>
+          </div>
         </div>
       </div>
     </div>
