@@ -16,6 +16,18 @@ export function useDriversSearch(term: string) {
   });
 }
 
+// Ficha completa do motorista (inclui telefone) — usada pelo botão de WhatsApp na preview.
+export function useDriver(id: string | null) {
+  return useQuery({
+    queryKey: driversKeys.detail(id ?? ""),
+    queryFn: () => driversApi.getDriver(id as string),
+    enabled: !!id,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+}
+
 export function useDriverStats(id: string | null) {
   return useQuery({
     queryKey: driversKeys.stats(id ?? ""),

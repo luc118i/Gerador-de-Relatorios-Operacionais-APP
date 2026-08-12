@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { Home, PencilLine, Check, Copy, Sparkles, Loader2, X } from "lucide-react";
 import type { Ocorrencia } from "../../../types";
 import {
@@ -16,6 +16,7 @@ import { DriverPdfCard } from "./components/DriverPdfCard";
 import { DrivePickerModal } from "./components/DrivePickerModal";
 import { OccurrencePrintView } from "./OccurrencePrintView";
 import { useDriveFolder } from "../../../../hooks/useDriveFolder";
+import { useWhatsAppAgent } from "../../../../hooks/useWhatsAppAgent";
 
 export function OccurrencePreviewPage(props: {
   occurrenceId: string;
@@ -37,6 +38,9 @@ export function OccurrencePreviewPage(props: {
   // ── IA: resumo WhatsApp ───────────────────────────────────────────────────
   const [wppAiSummary, setWppAiSummary] = useState<string | null>(null);
   const [wppAiLoading, setWppAiLoading] = useState(false);
+
+  // ── WhatsApp (via RIZER Agent) ──────────────────────────────────────────
+  const whatsappAgent = useWhatsAppAgent();
 
   // ── Google Drive ─────────────────────────────────────────────────────────
   const driveFolder = useDriveFolder();
@@ -105,6 +109,7 @@ export function OccurrencePreviewPage(props: {
   }
 
   type DriverSnapshot = {
+    id: string;
     position: 1 | 2;
     registry: string;
     name: string;
@@ -112,6 +117,12 @@ export function OccurrencePreviewPage(props: {
   };
 
   const isGenerico = occurrence.typeCode === "GENERICO";
+
+  // Relato pra notificação de WhatsApp em GENERICO: só entra na mensagem
+  // quando já foi resumido por IA (mesmo texto da seção "Relato em Texto
+  // Plano") — sem resumo gerado ainda, a notificação sai sem essa seção em
+  // vez de mandar o relato bruto.
+  const genericoRelatoIA = isGenerico ? aiSummary : null;
 
   const drivers = useMemo(() => {
     const map = (raw: any, position: 1 | 2): DriverSnapshot | null => {
@@ -125,6 +136,7 @@ export function OccurrencePreviewPage(props: {
       if (!code && !name) return null;
 
       return {
+        id: String(raw.id || "").trim(),
         position,
         registry: String(code).trim(),
         name: String(name).trim(),
@@ -178,6 +190,32 @@ export function OccurrencePreviewPage(props: {
   const wppDisplayText = wppAiSummary
     ? `${whatsappTxt}\n\n${wppAiSummary}`
     : whatsappTxt;
+
+  // Garante o resumo IA do relato (GENERICO) antes de notificar o motorista
+  // via WhatsApp — se o usuário ainda não clicou em "Gerar resumo com IA" na
+  // seção "Relato em Texto Plano", gera aqui sob demanda em vez de mandar a
+  // notificação sem o relato. Se já existe (aiSummary), reaproveita.
+  const ensureGenericoRelatoIA = useCallback(async (): Promise<string | null> => {
+    if (!isGenerico) return null;
+    if (aiSummary) return aiSummary;
+    if (!relatorioTxt.trim()) return null;
+    if (aiCooldown > 0) {
+      throw new Error(`Resumo por IA disponível em ${aiCooldown} segundos`);
+    }
+    setAiLoading(true);
+    try {
+      const { summary } = await aiApi.summarize(relatorioTxt, occurrence.reportTitle ?? undefined);
+      setAiSummary(summary);
+      return summary;
+    } catch (e) {
+      const msg = getApiErrorMessage(e, "Falha ao gerar resumo com IA");
+      const match = msg.match(/em (\d+) segundo/);
+      if (match) startCooldown(parseInt(match[1], 10));
+      throw new Error(msg);
+    } finally {
+      setAiLoading(false);
+    }
+  }, [isGenerico, aiSummary, relatorioTxt, occurrence.reportTitle, aiCooldown]);
 
   async function handleGenerate(force?: boolean) {
     try {
@@ -316,6 +354,10 @@ export function OccurrencePreviewPage(props: {
                   occurrenceTitle={getOccurrenceTitle(occurrence)}
                   eventDate={occurrence.dataEvento}
                   driver={drivers.d1}
+                  occurrence={occurrence}
+                  genericoRelatoIA={genericoRelatoIA}
+                  ensureGenericoRelatoIA={ensureGenericoRelatoIA}
+                  whatsappAgent={whatsappAgent}
                   getOrCreateSignedUrl={getOrCreateSignedUrl}
                   driveContext={{
                     config: driveFolder.config,
@@ -332,6 +374,10 @@ export function OccurrencePreviewPage(props: {
                   occurrenceTitle={getOccurrenceTitle(occurrence)}
                   eventDate={occurrence.dataEvento}
                   driver={drivers.d2}
+                  occurrence={occurrence}
+                  genericoRelatoIA={genericoRelatoIA}
+                  ensureGenericoRelatoIA={ensureGenericoRelatoIA}
+                  whatsappAgent={whatsappAgent}
                   getOrCreateSignedUrl={getOrCreateSignedUrl}
                   driveContext={{
                     config: driveFolder.config,

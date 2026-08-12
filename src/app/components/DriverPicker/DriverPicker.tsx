@@ -39,6 +39,7 @@ export function DriverPicker({
         code: initialDriver.code,
         name: initialDriver.name,
         base: initialDriver.base ?? null,
+        phone: null,
       });
     }
   }, [initialDriver, value]);

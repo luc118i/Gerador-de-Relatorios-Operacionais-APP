@@ -31,6 +31,7 @@ export function DriversPage({ onVoltar }: DriversPageProps) {
       code: string;
       name: string;
       base?: string | null;
+      phone?: string | null;
     }) => driversApi.createDriver(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["drivers"] });
@@ -42,7 +43,7 @@ export function DriversPage({ onVoltar }: DriversPageProps) {
   const updateMutation = useMutation({
     mutationFn: (args: {
       id: string;
-      payload: { code?: string; name?: string; base?: string | null };
+      payload: { code?: string; name?: string; base?: string | null; phone?: string | null };
     }) => driversApi.updateDriver(args.id, args.payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["drivers"] });
@@ -76,19 +77,22 @@ export function DriversPage({ onVoltar }: DriversPageProps) {
     const name = (formData.get("name") as string)?.trim();
     const baseRaw = (formData.get("base") as string)?.trim();
     const base = baseRaw.length ? baseRaw : null;
+    const phoneRaw = (formData.get("phone") as string)?.trim();
+    const phone = phoneRaw.length ? phoneRaw : null;
 
     if (!code || !name) return;
 
     if (editingDriver) {
-      const payload: { code?: string; name?: string; base?: string | null } =
+      const payload: { code?: string; name?: string; base?: string | null; phone?: string | null } =
         {};
       if (code !== editingDriver.code) payload.code = code;
       if (name !== editingDriver.name) payload.name = name;
       if (base !== editingDriver.base) payload.base = base;
+      if (phone !== editingDriver.phone) payload.phone = phone;
 
       updateMutation.mutate({ id: editingDriver.id, payload });
     } else {
-      createMutation.mutate({ code, name, base });
+      createMutation.mutate({ code, name, base, phone });
     }
   }
 
@@ -254,6 +258,21 @@ export function DriversPage({ onVoltar }: DriversPageProps) {
                     defaultValue={editingDriver?.base ?? ""}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Telefone / WhatsApp (opcional)
+                  </label>
+                  <input
+                    name="phone"
+                    defaultValue={editingDriver?.phone ?? ""}
+                    placeholder="Ex: (31) 99999-9999"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                    Usado pelo botão "Notificar via WhatsApp" na preview da ocorrência.
+                  </p>
                 </div>
 
                 <div className="flex justify-end gap-2 pt-2">

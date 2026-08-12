@@ -22,7 +22,7 @@ function getDestino(v: Ocorrencia["viagem"]): string {
 }
 
 /** Remove tags HTML e decodifica entidades básicas para texto plano. */
-function htmlParaTexto(html: string): string {
+export function htmlParaTexto(html: string): string {
   return html
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<\/p>/gi, "\n\n")
@@ -188,13 +188,13 @@ export function gerarTextoWhatsApp(ocorrencia: Ocorrencia): string {
     const local      = ocorrencia.localParada || "—";
     const nomeRelat  = ocorrencia.reportTitle || ocorrencia.typeTitle || "—";
 
-    return `ITINERÁRIO: ${itinerario}
-PREFIXO: ${prefixo || "—"}
-DATA: ${formatarData(ocorrencia.dataEvento)}
+    return `*ITINERÁRIO:* ${itinerario}
+*PREFIXO:* ${prefixo || "—"}
+*DATA:* ${formatarData(ocorrencia.dataEvento)}
 
-📍 Local: ${local}
+📍 *LOCAL:* ${local}
 
-⚠️ Ocorrência: ${nomeRelat}`;
+⚠️ *OCORRÊNCIA:* ${nomeRelat}`;
   }
 
   // ── EXCESSO DE VELOCIDADE ───────────────────────────────────────────────────
@@ -253,7 +253,11 @@ ${motoristas}
   }
 
   // ── PARADA FORA DO PROGRAMADO (padrão) ─────────────────────────────────────
-  return `🚨 *DESCUMPRIMENTO OPERACIONAL*
+  // Usa o nome específico da ocorrência (ex.: "Parada Irregular", vindo dos
+  // presets do RIZER) quando disponível — mais descritivo que o rótulo
+  // genérico do tipo.
+  const tituloDescumprimento = ocorrencia.occurrenceName?.trim().toUpperCase() || "DESCUMPRIMENTO OPERACIONAL";
+  return `🚨 *${tituloDescumprimento}*
 
 📋 *LINHA:* ${getLinha(v)}
 🚌 *PREFIXO:* ${getPrefixo(v)}

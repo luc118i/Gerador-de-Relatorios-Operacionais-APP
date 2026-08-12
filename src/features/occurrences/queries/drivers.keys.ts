@@ -1,5 +1,6 @@
 export const driversKeys = {
   all: ["drivers"] as const,
+  detail: (id: string) => ["drivers", "detail", id] as const,
   search: (term: string) => ["drivers", "search", term] as const,
   stats: (id: string) => ["drivers", "stats", id] as const,
   situation: (id: string) => ["drivers", "situation", id] as const,

@@ -19,6 +19,7 @@ export type UpdateDriverInput = {
   code?: string;
   name?: string;
   base?: string | null;
+  phone?: string | null;
 };
 
 export const driversApi = {
@@ -52,6 +53,14 @@ export const driversApi = {
       path: "/drivers",
       body: input,
     });
+  },
+
+  // Ficha completa do motorista (inclui telefone) — usada pelo botão de WhatsApp na preview.
+  getDriver(id: string) {
+    return request<{ data: Driver }>({
+      method: "GET",
+      path: `/drivers/${id}`,
+    }).then((res) => res.data);
   },
 
   updateDriver(id: string, input: UpdateDriverInput) {

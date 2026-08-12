@@ -127,6 +127,7 @@ export function DriversDashboard({ onSelectDriver }: DriversDashboardProps) {
                             code: r.code,
                             name: r.name,
                             base: r.base,
+                            phone: null,
                           })
                         }
                         className="cursor-pointer w-full flex items-center justify-between gap-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800/60 rounded-md px-1 -mx-1"

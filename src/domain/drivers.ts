@@ -3,12 +3,14 @@ export type Driver = {
   code: string; // matrícula
   name: string;
   base: string | null;
+  phone: string | null; // WhatsApp do motorista (com ou sem DDI/DDD)
 };
 
 export type CreateDriverInput = {
   code: string;
   name: string;
   base?: string | null;
+  phone?: string | null;
 };
 
 // Estatísticas do motorista no período retido pelo banco (mês corrente).

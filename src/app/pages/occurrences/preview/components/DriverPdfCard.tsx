@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import { FileDown, Copy, Check, Loader2 } from "lucide-react";
+import { FileDown, Copy, Check, Loader2, MessageCircle, QrCode } from "lucide-react";
 import { toast } from "sonner";
 import { getApiErrorMessage } from "../../../../../api/http";
 import { reportsDriveApi } from "../../../../../api/reportsDrive.api";
@@ -10,10 +10,16 @@ import {
 } from "../../../../../utils/pdfDownload";
 import { requestDriveToken } from "../../../../../utils/googleAuth";
 import type { DriveFolderConfig } from "../../../../../hooks/useDriveFolder";
+import type { Ocorrencia } from "../../../../types";
+import { useDriver } from "../../../../../features/occurrences/queries/drivers.queries";
+import type { WhatsAppAgentState } from "../../../../../hooks/useWhatsAppAgent";
+import { whatsappAgentApi } from "../../../../../api/whatsappAgent.api";
+import { formatPhoneForWhatsApp, buildDriverNotificationMessage } from "../../../../../utils/whatsapp";
 
 type Status = "idle" | "generating" | "ready" | "error";
 
 type DriverSnapshot = {
+  id: string;
   position: 1 | 2;
   registry: string;
   name: string;
@@ -47,6 +53,18 @@ export function DriverPdfCard(props: {
   occurrenceTitle: string;
   eventDate: string;
   driver: DriverSnapshot;
+  // Ocorrência completa — a mensagem de notificação é montada aqui, no
+  // formato institucional (ver buildDriverNotificationMessage).
+  occurrence: Ocorrencia;
+  // Só pra GENERICO: resumo do relato gerado por IA — vem da preview porque
+  // é estado da tela (IA é gerada sob demanda ali). Sem resumo gerado ainda,
+  // a notificação sai sem a seção de relato (não manda o texto bruto).
+  genericoRelatoIA?: string | null;
+  // Gera o resumo IA do relato sob demanda (GENERICO), caso o usuário ainda
+  // não tenha clicado em "Gerar resumo com IA" na seção "Relato em Texto
+  // Plano" — evita mandar a notificação sem o relato resumido.
+  ensureGenericoRelatoIA?: () => Promise<string | null>;
+  whatsappAgent: WhatsAppAgentState;
   driveContext: DriveContext;
   getOrCreateSignedUrl: (args: {
     force?: boolean;
@@ -57,7 +75,72 @@ export function DriverPdfCard(props: {
     ttlSeconds?: number | null;
   }>;
 }) {
-  const { occurrenceId, occurrenceTitle, eventDate, driver, driveContext, getOrCreateSignedUrl } = props;
+  const { occurrenceId, occurrenceTitle, eventDate, driver, occurrence, genericoRelatoIA, ensureGenericoRelatoIA, whatsappAgent, driveContext, getOrCreateSignedUrl } = props;
+
+  // Ficha completa do motorista (telefone) — busca sob demanda, cacheada por id.
+  const driverDetail = useDriver(driver.id || null);
+  const driverPhone = driverDetail.data?.phone ?? null;
+
+  const [whatsappSending, setWhatsappSending] = useState(false);
+
+  // Envio 100% automatizado pelo RIZER Agent (WhatsApp Web local, sessão já
+  // conectada) — a única ação manual do usuário foi escanear o QR Code uma
+  // vez. Sem sessão conectada, o clique dispara a conexão em vez de enviar.
+  const handleWhatsAppClick = useCallback(async () => {
+    if (!whatsappAgent.agentAvailable) {
+      toast.error("O RIZER Agent não está em execução. Abra o agente e tente novamente.");
+      return;
+    }
+
+    if (!whatsappAgent.connected) {
+      try {
+        await whatsappAgent.connect();
+        toast.success("WhatsApp conectado com sucesso!");
+      } catch (err) {
+        toast.error(getApiErrorMessage(err, "Falha ao conectar o WhatsApp"));
+      }
+      return;
+    }
+
+    if (!driverPhone) return;
+    const phone = formatPhoneForWhatsApp(driverPhone);
+    if (!phone) {
+      toast.error("Telefone do motorista inválido.");
+      return;
+    }
+
+    setWhatsappSending(true);
+    try {
+      let relatoIA = genericoRelatoIA;
+      if (occurrence.typeCode === "GENERICO" && !relatoIA?.trim() && ensureGenericoRelatoIA) {
+        relatoIA = await ensureGenericoRelatoIA();
+      }
+      const message = buildDriverNotificationMessage(driver.name, occurrence, { genericoRelatoIA: relatoIA });
+      await whatsappAgentApi.send({ phone, message });
+      toast.success(`Notificação enviada para ${driver.name.split(/\s+/)[0]} via WhatsApp!`);
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Falha ao enviar notificação via WhatsApp"));
+    } finally {
+      setWhatsappSending(false);
+    }
+  }, [whatsappAgent, driverPhone, driver.name, occurrence, genericoRelatoIA, ensureGenericoRelatoIA]);
+
+  const whatsappBusy = whatsappAgent.connecting || whatsappSending || driverDetail.isLoading;
+
+  const whatsappTitle = !whatsappAgent.agentAvailable
+    ? "RIZER Agent offline — abra o agente para notificar"
+    : !whatsappAgent.connected
+      ? "Conectar WhatsApp (abre o QR Code no agente)"
+      : driverDetail.isLoading
+        ? "Carregando telefone…"
+        : driverPhone
+          ? `Notificar ${driver.name.split(/\s+/)[0]} via WhatsApp`
+          : "Motorista sem telefone cadastrado (cadastre em Motoristas)";
+
+  const whatsappDisabled =
+    !whatsappAgent.agentAvailable ||
+    whatsappBusy ||
+    (whatsappAgent.connected && !driverPhone);
 
   const [status, setStatus] = useState<Status>("idle");
   const [driveLoading, setDriveLoading] = useState(false);
@@ -205,6 +288,23 @@ export function DriverPdfCard(props: {
 
         {/* Ações */}
         <div className="shrink-0 flex items-center gap-2">
+          {/* Notificar via WhatsApp (RIZER Agent) */}
+          <button
+            type="button"
+            onClick={handleWhatsAppClick}
+            disabled={whatsappDisabled}
+            title={whatsappTitle}
+            className="cursor-pointer w-10 h-10 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-950/60 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
+          >
+            {whatsappBusy ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : !whatsappAgent.connected ? (
+              <QrCode className="w-4 h-4" />
+            ) : (
+              <MessageCircle className="w-4 h-4" />
+            )}
+          </button>
+
           {/* Enviar ao Drive */}
           <button
             type="button"

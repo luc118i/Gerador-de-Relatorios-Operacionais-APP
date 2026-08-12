@@ -7,6 +7,7 @@ type FormState = {
   code: string;
   name: string;
   base: string;
+  phone: string;
 };
 
 export function DriverCreateModal({
@@ -16,7 +17,7 @@ export function DriverCreateModal({
 }: DriverCreateModalProps) {
   const createDriver = useCreateDriver();
 
-  const [form, setForm] = useState<FormState>({ code: "", name: "", base: "" });
+  const [form, setForm] = useState<FormState>({ code: "", name: "", base: "", phone: "" });
   const [touched, setTouched] = useState<{ code?: boolean; name?: boolean }>(
     {},
   );
@@ -24,7 +25,7 @@ export function DriverCreateModal({
   // reset ao abrir/fechar
   useEffect(() => {
     if (!open) {
-      setForm({ code: "", name: "", base: "" });
+      setForm({ code: "", name: "", base: "", phone: "" });
       setTouched({});
       createDriver.reset();
     }
@@ -47,6 +48,7 @@ export function DriverCreateModal({
       code: form.code.trim(),
       name: form.name.trim(),
       base: form.base.trim() ? form.base.trim() : null,
+      phone: form.phone.trim() ? form.phone.trim() : null,
     });
 
     onCreated(created);
@@ -147,6 +149,23 @@ export function DriverCreateModal({
           {touched.name && errors.name ? (
             <p className="text-xs text-red-600 dark:text-red-400">{errors.name}</p>
           ) : null}
+        </div>
+
+        {/* Telefone / WhatsApp */}
+        <div className="space-y-1">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-400">
+            Telefone / WhatsApp (opcional)
+          </label>
+          <input
+            value={form.phone}
+            onChange={(e) => setForm((s) => ({ ...s, phone: e.target.value }))}
+            placeholder="Ex: (31) 99999-9999"
+            className={[
+              "w-full h-10 px-3 rounded-lg border bg-white/70 dark:bg-white/5 text-slate-900 dark:text-slate-100",
+              "border-white/40 dark:border-white/10",
+              "focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-white/60 dark:focus:border-white/20",
+            ].join(" ")}
+          />
         </div>
       </div>
     </AppDialog>
