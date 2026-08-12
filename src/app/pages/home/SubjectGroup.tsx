@@ -21,7 +21,7 @@ interface SubjectGroupProps {
 
   anyBatchRunning: boolean;
   onRequestRegistrarTodas: (unregistered: OccurrenceDTO[]) => void;
-  onRequestEnviarTratativas: (ids: string[]) => void;
+  onRequestEnviarTratativas: (occs: OccurrenceDTO[]) => void;
   onRequestRevisarTodas: (ids: string[]) => void;
 
   registroBatch: BatchProgress;
@@ -97,7 +97,7 @@ export function SubjectGroup({
 
         {isAdmin && !anyBatchRunning && pendingTratativa.length > 0 && (
           <button
-            onClick={() => onRequestEnviarTratativas(pendingTratativa.map((o) => o.id))}
+            onClick={() => onRequestEnviarTratativas(pendingTratativa)}
             className="cursor-pointer inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-950/40 transition-colors"
           >
             <AlertTriangle className="w-3 h-3" />

@@ -37,6 +37,7 @@ import { useAutomationFolders } from "../../hooks/useAutomationFolders";
 import { AutomationFoldersModal } from "../components/AutomationFoldersModal";
 import { useAgentStatus } from "../../hooks/useAgentStatus";
 import { BatchRizerModal, type BatchRizerItem } from "../components/BatchRizerModal";
+import { BatchTratativaModal } from "../components/BatchTratativaModal";
 import { tratativaToTipoMedida } from "../../utils/tratativa";
 import { AgentProgressDock, type AgentJob } from "../components/AgentProgressDock";
 import { buildDriverPdfFileName } from "../../utils/pdfDownload";
@@ -145,7 +146,7 @@ export function Home({
 
   const [batchTratativaState, setBatchTratativaState] = useState<BatchState | null>(() => seedBatchState("tratativa"));
   const batchTrataivaCancelRef = useRef(false);
-  const [batchTratativaConfirm, setBatchTratativaConfirm] = useState<{ subject: string; ids: string[] } | null>(null);
+  const [batchTratativaConfirm, setBatchTratativaConfirm] = useState<{ subject: string; occs: OccurrenceDTO[] } | null>(null);
 
   const [batchRevisarState, setBatchRevisarState] = useState<BatchState | null>(() => seedBatchState("revisar"));
   const batchRevisarCancelRef = useRef(false);
@@ -1014,7 +1015,7 @@ export function Home({
                 {/* Enviar todas as tratativas pendentes no RIZER, de qualquer assunto */}
                 {isAdmin && !anyBatchRunning && pendingTratativaAll.length > 0 && (
                   <button
-                    onClick={() => setBatchTratativaConfirm({ subject: "Todos os assuntos pendentes", ids: pendingTratativaAll.map((o) => o.id) })}
+                    onClick={() => setBatchTratativaConfirm({ subject: "Todos os assuntos pendentes", occs: pendingTratativaAll })}
                     className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-950/40 transition-colors"
                   >
                     <AlertTriangle className="w-3.5 h-3.5" />
@@ -1173,7 +1174,7 @@ export function Home({
                 onToggleCollapse={() => toggleSubjectCollapse(subject)}
                 anyBatchRunning={anyBatchRunning}
                 onRequestRegistrarTodas={(unregistered) => requestRegistrarTodas(subject, unregistered)}
-                onRequestEnviarTratativas={(ids) => setBatchTratativaConfirm({ subject, ids })}
+                onRequestEnviarTratativas={(occs) => setBatchTratativaConfirm({ subject, occs })}
                 onRequestRevisarTodas={(ids) => setBatchRevisarConfirm({ subject, ids })}
                 registroBatch={{
                   running: batchState?.subject === subject,
@@ -1367,30 +1368,17 @@ export function Home({
 
       {/* Modal de Confirmação do Batch de Tratativas */}
       {batchTratativaConfirm && (
-        <ConfirmActionModal
-          icon={<AlertTriangle className="w-5 h-5 text-amber-500" />}
-          iconBg="bg-amber-50 dark:bg-amber-950/40"
-          title="Enviar tratativas no RIZER?"
-          confirmLabel="Confirmar"
-          confirmClassName="bg-amber-500 hover:bg-amber-600"
+        <BatchTratativaModal
+          open={true}
+          subject={batchTratativaConfirm.subject}
+          occs={batchTratativaConfirm.occs}
           onCancel={() => setBatchTratativaConfirm(null)}
           onConfirm={() => {
-            const { subject, ids } = batchTratativaConfirm;
+            const { subject, occs } = batchTratativaConfirm;
             setBatchTratativaConfirm(null);
-            startBatchTratativa(subject, ids);
+            startBatchTratativa(subject, occs.map((o) => o.id));
           }}
-        >
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-            Você está prestes a preencher a tratativa de{" "}
-            <span className="font-semibold text-gray-800 dark:text-gray-200">
-              {batchTratativaConfirm.ids.length} ocorrência{batchTratativaConfirm.ids.length !== 1 ? "s" : ""}
-            </span>{" "}
-            do assunto:
-          </p>
-          <p className="text-xs font-medium text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-100 dark:border-amber-900 rounded-lg px-3 py-2 mb-5">
-            {batchTratativaConfirm.subject}
-          </p>
-        </ConfirmActionModal>
+        />
       )}
 
       {/* Modal de Confirmação do Batch de Revisão */}
