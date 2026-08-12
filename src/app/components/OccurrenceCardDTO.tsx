@@ -859,31 +859,33 @@ export function OccurrenceCard({
             disabled={disciplinaryState === "loading"}
             title={
               disciplinaryState === "success"
-                ? "Clique para verificar o status no RIZER"
-                : !isAdmin
-                  ? "Apenas administradores podem registrar no RIZER"
-                  : "Enviar ocorrência ao RIZER"
-            }
-            className={`w-[108px] flex-shrink-0 flex items-center justify-center gap-1 px-1 py-1 rounded-md text-[10px] font-medium border transition-all disabled:opacity-60 overflow-hidden whitespace-nowrap ${
-              disciplinaryState === "success"
-                ? "text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-950/40"
+                ? "Enviado ao RIZER — clique para verificar o status"
                 : disciplinaryState === "loading"
-                  ? "text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/40 border-orange-200 dark:border-orange-800 cursor-wait"
+                  ? (disciplinaryAction === "verifying" ? "Verificando no RIZER..." : "Enviando ao RIZER...")
                   : disciplinaryState === "error"
-                    ? "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-950/40"
+                    ? "Falha ao enviar — clique para tentar novamente"
                     : !isAdmin
-                      ? "text-gray-400 bg-gray-50 border-gray-200 dark:text-gray-500 dark:bg-gray-800 dark:border-gray-700 cursor-not-allowed"
-                      : "text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/40 border-orange-200 dark:border-orange-800 hover:bg-orange-100 dark:hover:bg-orange-950/40"
+                      ? "Apenas administradores podem registrar no RIZER"
+                      : "Enviar ocorrência ao RIZER"
+            }
+            className={`p-2 rounded flex-shrink-0 transition-colors disabled:opacity-60 disabled:cursor-wait ${
+              disciplinaryState === "success"
+                ? "text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/40"
+                : disciplinaryState === "error"
+                  ? "text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40"
+                  : !isAdmin
+                    ? "text-gray-300 dark:text-gray-600 cursor-not-allowed"
+                    : "text-gray-400 hover:text-orange-600 hover:bg-orange-50 dark:text-gray-500 dark:hover:text-orange-400 dark:hover:bg-orange-950/40"
             }`}
           >
             {disciplinaryState === "loading" ? (
-              <><Loader2 className="w-3 h-3 animate-spin flex-shrink-0" />{disciplinaryAction === "verifying" ? "Verificando..." : "Enviando..."}</>
+              <Loader2 className="w-4 h-4 animate-spin text-orange-500" />
             ) : disciplinaryState === "success" ? (
-              <><Check className="w-3 h-3 flex-shrink-0" />No RIZER<RefreshCw className="w-2.5 h-2.5 opacity-50 flex-shrink-0" /></>
+              <Check className="w-4 h-4" />
             ) : disciplinaryState === "error" ? (
-              <><RizerLogo className="w-3.5 h-3.5 flex-shrink-0" />Tentar</>
+              <AlertTriangle className="w-4 h-4" />
             ) : (
-              <><RizerLogo className="w-3.5 h-3.5 flex-shrink-0" />Enviar</>
+              <RizerLogo className="w-4 h-4" />
             )}
           </button>
           <button
