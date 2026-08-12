@@ -24,6 +24,7 @@ import {
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { registerDisciplinaryOccurrence, fillMedidaLink, verifyRizerOccurrence, updateRizerOccurrence } from "../../api/automation.api";
+import { occurrencesApi } from "../../api/occurrences.api";
 import { getApiErrorMessage } from "../../api/http";
 import { useAgentStatus } from "../../hooks/useAgentStatus";
 import { useWhatsAppAgent } from "../../hooks/useWhatsAppAgent";
@@ -371,6 +372,18 @@ export function OccurrenceCard({
   const [showPhoneModal, setShowPhoneModal] = useState(false);
   const [sendingWpp, setSendingWpp] = useState(false);
 
+  // Contador de envios (por motorista — posição 1/2 tem contador próprio,
+  // ver whatsappSentCountD1/D2) — persiste no backend, então sobrevive a
+  // reload. O botão vira um "Nx" em vez de resetar a cada envio.
+  const [localWhatsappSentCount, setLocalWhatsappSentCount] = useState<number>(
+    (isSecondDriverCard ? occurrence.whatsappSentCountD2 : occurrence.whatsappSentCountD1) ?? 0
+  );
+  useEffect(() => {
+    setLocalWhatsappSentCount(
+      (isSecondDriverCard ? occurrence.whatsappSentCountD2 : occurrence.whatsappSentCountD1) ?? 0
+    );
+  }, [occurrence.whatsappSentCountD1, occurrence.whatsappSentCountD2, isSecondDriverCard]);
+
   // Dispara o envio de verdade — separado do clique pra poder ser chamado de
   // novo assim que o telefone é cadastrado no DriverPhoneModal.
   function sendNotification(rawPhone: string) {
@@ -405,6 +418,16 @@ export function OccurrenceCard({
       }
       const message = buildDriverNotificationMessage(cardDriver.name, minimalOcc, { genericoRelatoIA });
       await whatsappAgentApi.send({ phone, message });
+
+      // Só conta envio que realmente saiu (depois do send, não antes) — se
+      // essa chamada falhar, não desfaz o envio nem vira erro no toast, só
+      // não incrementa o contador visual dessa vez.
+      try {
+        const result = await occurrencesApi.markWhatsappSent(occurrence.id, isSecondDriverCard ? 2 : 1);
+        setLocalWhatsappSentCount(result.count);
+      } catch {
+        setLocalWhatsappSentCount((c) => c + 1);
+      }
     })();
 
     toast.promise(sendPromise, {
@@ -442,7 +465,9 @@ export function OccurrenceCard({
       : driverDetail.isLoading
         ? "Carregando telefone…"
         : driverPhone
-          ? `Notificar ${cardDriver?.name?.split(/\s+/)[0] ?? "motorista"} via WhatsApp`
+          ? `Notificar ${cardDriver?.name?.split(/\s+/)[0] ?? "motorista"} via WhatsApp${
+              localWhatsappSentCount > 0 ? ` — já enviado ${localWhatsappSentCount}x, clique para enviar de novo` : ""
+            }`
           : "Motorista sem telefone cadastrado — clique para cadastrar";
   const whatsappSendDisabled = !whatsappAgent.agentAvailable || whatsappSendBusy || !cardDriver;
 
@@ -787,7 +812,11 @@ export function OccurrenceCard({
             onClick={handleSendWpp}
             disabled={whatsappSendDisabled}
             title={whatsappSendTitle}
-            className="p-2 rounded transition-colors disabled:opacity-40 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:text-gray-500 dark:hover:text-emerald-400 dark:hover:bg-emerald-950/40"
+            className={`relative p-2 rounded transition-colors disabled:opacity-40 ${
+              localWhatsappSentCount > 0
+                ? "text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/40"
+                : "text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:text-gray-500 dark:hover:text-emerald-400 dark:hover:bg-emerald-950/40"
+            }`}
           >
             {whatsappSendBusy ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -797,6 +826,11 @@ export function OccurrenceCard({
               <Phone className="w-4 h-4" />
             ) : (
               <Send className="w-4 h-4" />
+            )}
+            {localWhatsappSentCount > 0 && !whatsappSendBusy && (
+              <span className="absolute -top-1 -right-1 min-w-[15px] h-[15px] px-[3px] rounded-full bg-emerald-500 text-white text-[9px] font-bold leading-[15px] text-center">
+                {localWhatsappSentCount}
+              </span>
             )}
           </button>
           <button
@@ -1171,7 +1205,11 @@ export function OccurrenceCard({
             onClick={handleSendWpp}
             disabled={whatsappSendDisabled}
             title={whatsappSendTitle}
-            className="flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md transition-colors disabled:opacity-40 text-gray-500 hover:text-emerald-700 hover:bg-emerald-50 dark:text-gray-400 dark:hover:text-emerald-400 dark:hover:bg-emerald-950/40"
+            className={`flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md transition-colors disabled:opacity-40 ${
+              localWhatsappSentCount > 0
+                ? "text-emerald-700 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-950/60"
+                : "text-gray-500 hover:text-emerald-700 hover:bg-emerald-50 dark:text-gray-400 dark:hover:text-emerald-400 dark:hover:bg-emerald-950/40"
+            }`}
           >
             {whatsappSendBusy ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1182,6 +1220,7 @@ export function OccurrenceCard({
             ) : (
               <Send className="w-3.5 h-3.5" />
             )}
+            {localWhatsappSentCount > 0 && `${localWhatsappSentCount}x`}
           </button>
           <button
             onClick={handleCopyRelat}

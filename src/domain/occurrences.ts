@@ -139,6 +139,12 @@ export type OccurrenceDTO = {
   // o backend já devolve isso, só não estava declarado aqui.
   driveFileNome?: string | null;
   driveWebViewLink?: string | null;
+  // Contador de notificações via WhatsApp por motorista (posição 1/2) — ver
+  // POST /occurrences/:id/whatsapp-sent.
+  whatsappSentCountD1?: number;
+  whatsappLastSentD1At?: string | null;
+  whatsappSentCountD2?: number;
+  whatsappLastSentD2At?: string | null;
 };
 
 export type CreateOccurrenceFormInput = {

@@ -16,6 +16,7 @@ import type { WhatsAppAgentState } from "../../../../../hooks/useWhatsAppAgent";
 import { whatsappAgentApi } from "../../../../../api/whatsappAgent.api";
 import { formatPhoneForWhatsApp, buildDriverNotificationMessage } from "../../../../../utils/whatsapp";
 import { DriverPhoneModal } from "../../../../components/DriverPhoneModal";
+import { occurrencesApi } from "../../../../../api/occurrences.api";
 
 type Status = "idle" | "generating" | "ready" | "error";
 
@@ -113,6 +114,10 @@ export function DriverPdfCard(props: {
       }
       const message = buildDriverNotificationMessage(driver.name, occurrence, { genericoRelatoIA: relatoIA });
       await whatsappAgentApi.send({ phone, message });
+
+      // Mesmo contador da Home (occurrence.whatsappSentCountD1/D2) — só não
+      // falha o envio nem vira erro no toast se isso aqui não gravar.
+      occurrencesApi.markWhatsappSent(occurrence.id, driver.position).catch(() => {});
     })();
 
     toast.promise(sendPromise, {

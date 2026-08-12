@@ -146,6 +146,21 @@ export const occurrencesApi = {
       path: `/trips/${tripId}/schema`,
     });
   },
+
+  // Registra que a notificação via WhatsApp foi enviada (incrementa o
+  // contador do motorista 1 ou 2) — chamar só depois do envio dar certo,
+  // não antes (não conta tentativa falha).
+  async markWhatsappSent(
+    id: string,
+    driverPosition: 1 | 2,
+  ): Promise<{ count: number; lastSentAt: string }> {
+    const json = await request<{ data: { count: number; lastSentAt: string } }>({
+      method: "POST",
+      path: `/occurrences/${id}/whatsapp-sent`,
+      body: { driverPosition },
+    });
+    return json.data;
+  },
 };
 
 export async function getOccurrencesByDay(
