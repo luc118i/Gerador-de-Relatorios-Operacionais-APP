@@ -19,6 +19,7 @@ import {
   MapPin,
   Send,
   QrCode,
+  Phone,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -31,6 +32,7 @@ import { toast } from "sonner";
 import { useAdminAuth } from "../context/AdminAuthContext";
 import { AdminLoginModal } from "./AdminLoginModal";
 import { WhatsAppConnectModal } from "./WhatsAppConnectModal";
+import { DriverPhoneModal } from "./DriverPhoneModal";
 import type { OccurrenceDTO } from "../../domain/occurrences";
 import type { Ocorrencia } from "../types";
 import {
@@ -366,24 +368,14 @@ export function OccurrenceCard({
   const driverPhone = driverDetail.data?.phone ?? null;
   const whatsappAgent = useWhatsAppAgent();
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
   const [sendingWpp, setSendingWpp] = useState(false);
 
-  async function handleSendWpp(e: React.MouseEvent) {
-    e.stopPropagation();
-    if (!whatsappAgent.agentAvailable) {
-      toast.error("O RIZER Agent não está em execução. Abra o agente e tente novamente.");
-      return;
-    }
-    if (!whatsappAgent.connected) {
-      setShowWhatsAppModal(true);
-      return;
-    }
+  // Dispara o envio de verdade — separado do clique pra poder ser chamado de
+  // novo assim que o telefone é cadastrado no DriverPhoneModal.
+  function sendNotification(rawPhone: string) {
     if (!cardDriver) return;
-    if (!driverPhone) {
-      toast.error("Motorista sem telefone cadastrado (cadastre em Motoristas).");
-      return;
-    }
-    const phone = formatPhoneForWhatsApp(driverPhone);
+    const phone = formatPhoneForWhatsApp(rawPhone);
     if (!phone) {
       toast.error("Telefone do motorista inválido.");
       return;
@@ -424,6 +416,24 @@ export function OccurrenceCard({
     sendPromise.catch(() => {}).finally(() => setSendingWpp(false));
   }
 
+  function handleSendWpp(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!whatsappAgent.agentAvailable) {
+      toast.error("O RIZER Agent não está em execução. Abra o agente e tente novamente.");
+      return;
+    }
+    if (!whatsappAgent.connected) {
+      setShowWhatsAppModal(true);
+      return;
+    }
+    if (!cardDriver) return;
+    if (!driverPhone) {
+      setShowPhoneModal(true);
+      return;
+    }
+    sendNotification(driverPhone);
+  }
+
   const whatsappSendBusy = sendingWpp || driverDetail.isLoading;
   const whatsappSendTitle = !whatsappAgent.agentAvailable
     ? "RIZER Agent offline — abra o agente para notificar"
@@ -433,12 +443,8 @@ export function OccurrenceCard({
         ? "Carregando telefone…"
         : driverPhone
           ? `Notificar ${cardDriver?.name?.split(/\s+/)[0] ?? "motorista"} via WhatsApp`
-          : "Motorista sem telefone cadastrado (cadastre em Motoristas)";
-  const whatsappSendDisabled =
-    !whatsappAgent.agentAvailable ||
-    whatsappSendBusy ||
-    !cardDriver ||
-    (whatsappAgent.connected && !driverPhone);
+          : "Motorista sem telefone cadastrado — clique para cadastrar";
+  const whatsappSendDisabled = !whatsappAgent.agentAvailable || whatsappSendBusy || !cardDriver;
 
   // No card: GENERICO → reportTitle, demais → linha (contexto da viagem)
   const subject =
@@ -560,6 +566,14 @@ export function OccurrenceCard({
       {showAdminLogin && <AdminLoginModal onClose={() => setShowAdminLogin(false)} />}
       {showWhatsAppModal && (
         <WhatsAppConnectModal whatsappAgent={whatsappAgent} onClose={() => setShowWhatsAppModal(false)} />
+      )}
+      {showPhoneModal && cardDriver && (
+        <DriverPhoneModal
+          driverId={cardDriver.driverId}
+          driverName={cardDriver.name}
+          onClose={() => setShowPhoneModal(false)}
+          onSaved={sendNotification}
+        />
       )}
       {showSuspensaoModal && (
         <SuspensaoModal
@@ -779,6 +793,8 @@ export function OccurrenceCard({
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : !whatsappAgent.connected ? (
               <QrCode className="w-4 h-4" />
+            ) : !driverPhone ? (
+              <Phone className="w-4 h-4" />
             ) : (
               <Send className="w-4 h-4" />
             )}
@@ -911,6 +927,14 @@ export function OccurrenceCard({
     {showAdminLogin && <AdminLoginModal onClose={() => setShowAdminLogin(false)} />}
     {showWhatsAppModal && (
       <WhatsAppConnectModal whatsappAgent={whatsappAgent} onClose={() => setShowWhatsAppModal(false)} />
+    )}
+    {showPhoneModal && cardDriver && (
+      <DriverPhoneModal
+        driverId={cardDriver.driverId}
+        driverName={cardDriver.name}
+        onClose={() => setShowPhoneModal(false)}
+        onSaved={sendNotification}
+      />
     )}
     {showSuspensaoModal && (
       <SuspensaoModal occurrence={occurrence} onClose={() => setShowSuspensaoModal(false)} />
@@ -1151,6 +1175,8 @@ export function OccurrenceCard({
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
             ) : !whatsappAgent.connected ? (
               <QrCode className="w-3.5 h-3.5" />
+            ) : !driverPhone ? (
+              <Phone className="w-3.5 h-3.5" />
             ) : (
               <Send className="w-3.5 h-3.5" />
             )}

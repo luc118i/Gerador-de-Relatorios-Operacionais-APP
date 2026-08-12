@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import { FileDown, Copy, Check, Loader2, MessageCircle, QrCode } from "lucide-react";
+import { FileDown, Copy, Check, Loader2, MessageCircle, QrCode, Phone } from "lucide-react";
 import { toast } from "sonner";
 import { getApiErrorMessage } from "../../../../../api/http";
 import { reportsDriveApi } from "../../../../../api/reportsDrive.api";
@@ -15,6 +15,7 @@ import { useDriver } from "../../../../../features/occurrences/queries/drivers.q
 import type { WhatsAppAgentState } from "../../../../../hooks/useWhatsAppAgent";
 import { whatsappAgentApi } from "../../../../../api/whatsappAgent.api";
 import { formatPhoneForWhatsApp, buildDriverNotificationMessage } from "../../../../../utils/whatsapp";
+import { DriverPhoneModal } from "../../../../components/DriverPhoneModal";
 
 type Status = "idle" | "generating" | "ready" | "error";
 
@@ -86,24 +87,13 @@ export function DriverPdfCard(props: {
   const driverPhone = driverDetail.data?.phone ?? null;
 
   const [whatsappSending, setWhatsappSending] = useState(false);
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
 
-  // Envio 100% automatizado pelo RIZER Agent (whatsapp-web.js, sessão já
-  // conectada) — a única ação manual do usuário foi escanear o QR Code uma
-  // vez. Sem sessão conectada, o clique abre o modal de conexão em vez de
-  // enviar (a conexão em si roda em segundo plano no agente).
-  const handleWhatsAppClick = useCallback(async () => {
-    if (!whatsappAgent.agentAvailable) {
-      toast.error("O RIZER Agent não está em execução. Abra o agente e tente novamente.");
-      return;
-    }
-
-    if (!whatsappAgent.connected) {
-      onNeedWhatsAppConnect();
-      return;
-    }
-
-    if (!driverPhone) return;
-    const phone = formatPhoneForWhatsApp(driverPhone);
+  // Dispara o envio de verdade — separado do clique pra poder ser chamado
+  // de novo assim que o telefone é cadastrado no DriverPhoneModal, sem o
+  // usuário precisar clicar duas vezes.
+  const sendNotification = useCallback((rawPhone: string) => {
+    const phone = formatPhoneForWhatsApp(rawPhone);
     if (!phone) {
       toast.error("Telefone do motorista inválido.");
       return;
@@ -132,7 +122,30 @@ export function DriverPdfCard(props: {
     });
 
     sendPromise.catch(() => {}).finally(() => setWhatsappSending(false));
-  }, [whatsappAgent, driverPhone, driver.name, occurrence, genericoRelatoIA, ensureGenericoRelatoIA, onNeedWhatsAppConnect]);
+  }, [driver.name, occurrence, genericoRelatoIA, ensureGenericoRelatoIA]);
+
+  // Envio 100% automatizado pelo RIZER Agent (whatsapp-web.js, sessão já
+  // conectada) — a única ação manual do usuário foi escanear o QR Code uma
+  // vez. Sem sessão conectada, o clique abre o modal de conexão; sem
+  // telefone cadastrado, abre o cadastro rápido — em vez de enviar.
+  const handleWhatsAppClick = useCallback(() => {
+    if (!whatsappAgent.agentAvailable) {
+      toast.error("O RIZER Agent não está em execução. Abra o agente e tente novamente.");
+      return;
+    }
+
+    if (!whatsappAgent.connected) {
+      onNeedWhatsAppConnect();
+      return;
+    }
+
+    if (!driverPhone) {
+      setShowPhoneModal(true);
+      return;
+    }
+
+    sendNotification(driverPhone);
+  }, [whatsappAgent, driverPhone, onNeedWhatsAppConnect, sendNotification]);
 
   const whatsappBusy = whatsappSending || driverDetail.isLoading;
 
@@ -144,12 +157,9 @@ export function DriverPdfCard(props: {
         ? "Carregando telefone…"
         : driverPhone
           ? `Notificar ${driver.name.split(/\s+/)[0]} via WhatsApp`
-          : "Motorista sem telefone cadastrado (cadastre em Motoristas)";
+          : "Motorista sem telefone cadastrado — clique para cadastrar";
 
-  const whatsappDisabled =
-    !whatsappAgent.agentAvailable ||
-    whatsappBusy ||
-    (whatsappAgent.connected && !driverPhone);
+  const whatsappDisabled = !whatsappAgent.agentAvailable || whatsappBusy;
 
   const [status, setStatus] = useState<Status>("idle");
   const [driveLoading, setDriveLoading] = useState(false);
@@ -309,10 +319,21 @@ export function DriverPdfCard(props: {
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : !whatsappAgent.connected ? (
               <QrCode className="w-4 h-4" />
+            ) : !driverPhone ? (
+              <Phone className="w-4 h-4" />
             ) : (
               <MessageCircle className="w-4 h-4" />
             )}
           </button>
+
+          {showPhoneModal && (
+            <DriverPhoneModal
+              driverId={driver.id}
+              driverName={driver.name}
+              onClose={() => setShowPhoneModal(false)}
+              onSaved={sendNotification}
+            />
+          )}
 
           {/* Enviar ao Drive */}
           <button

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { driversApi } from "../../../api/drivers.api";
+import { driversApi, type UpdateDriverInput } from "../../../api/drivers.api";
 import type { Driver, CreateDriverInput } from "../../../domain/drivers";
 import { driversKeys } from "./drivers.keys";
 
@@ -86,6 +86,22 @@ export function useDriverOccurrenceHistory(id: string | null) {
     staleTime: 60_000,
     refetchOnWindowFocus: false,
     retry: 1,
+  });
+}
+
+// Usado pelo cadastro rápido de telefone (botão de WhatsApp sem número
+// cadastrado, na Home e na preview de ocorrência) — mas serve pra qualquer
+// edição pontual de motorista.
+export function useUpdateDriver() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: UpdateDriverInput }) =>
+      driversApi.updateDriver(id, input),
+    onSuccess: (_data, { id }) => {
+      qc.invalidateQueries({ queryKey: driversKeys.detail(id) });
+      qc.invalidateQueries({ queryKey: driversKeys.all });
+    },
   });
 }
 
