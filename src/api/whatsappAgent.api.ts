@@ -34,21 +34,27 @@ async function agentRequest<T>(
   return res.json() as Promise<T>;
 }
 
+export type WhatsAppAgentStatus = {
+  connected: boolean;
+  status: "idle" | "connecting" | "qr" | "connected" | "error";
+  qrDataUrl: string | null;
+  error: string | null;
+};
+
 export const whatsappAgentApi = {
   getStatus() {
-    return agentRequest<{ connected: boolean }>("/whatsapp/status");
+    return agentRequest<WhatsAppAgentStatus>("/whatsapp/status");
   },
 
-  // Abre um navegador visível no computador do usuário com o QR Code do
-  // WhatsApp Web — a única ação do usuário é escanear com o celular. Demora
-  // (até ~2min de espera no agente), então quem chama deve tratar como uma
-  // operação longa.
+  // Não bloqueia — só dispara a conexão no agente (whatsapp-web.js). O QR
+  // Code (quando precisar escanear) aparece em getStatus().qrDataUrl; quem
+  // chama deve fazer polling do status até "connected" (ver useWhatsAppAgent).
   connect() {
-    return agentRequest<{ connected: boolean }>("/whatsapp/connect", { method: "POST" });
+    return agentRequest<WhatsAppAgentStatus>("/whatsapp/connect", { method: "POST" });
   },
 
   disconnect() {
-    return agentRequest<{ connected: boolean }>("/whatsapp/disconnect", { method: "POST" });
+    return agentRequest<WhatsAppAgentStatus>("/whatsapp/disconnect", { method: "POST" });
   },
 
   send(input: { phone: string; message: string }) {

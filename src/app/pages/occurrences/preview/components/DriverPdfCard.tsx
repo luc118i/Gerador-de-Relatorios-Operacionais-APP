@@ -65,6 +65,10 @@ export function DriverPdfCard(props: {
   // Plano" — evita mandar a notificação sem o relato resumido.
   ensureGenericoRelatoIA?: () => Promise<string | null>;
   whatsappAgent: WhatsAppAgentState;
+  // Abre o modal de conexão (QR Code) na preview — a conexão em si (POST
+  // /whatsapp/connect) não bloqueia mais, então não dá mais pra só "esperar"
+  // no clique do card; precisa de UI própria pra mostrar o QR.
+  onNeedWhatsAppConnect: () => void;
   driveContext: DriveContext;
   getOrCreateSignedUrl: (args: {
     force?: boolean;
@@ -75,7 +79,7 @@ export function DriverPdfCard(props: {
     ttlSeconds?: number | null;
   }>;
 }) {
-  const { occurrenceId, occurrenceTitle, eventDate, driver, occurrence, genericoRelatoIA, ensureGenericoRelatoIA, whatsappAgent, driveContext, getOrCreateSignedUrl } = props;
+  const { occurrenceId, occurrenceTitle, eventDate, driver, occurrence, genericoRelatoIA, ensureGenericoRelatoIA, whatsappAgent, onNeedWhatsAppConnect, driveContext, getOrCreateSignedUrl } = props;
 
   // Ficha completa do motorista (telefone) — busca sob demanda, cacheada por id.
   const driverDetail = useDriver(driver.id || null);
@@ -83,9 +87,10 @@ export function DriverPdfCard(props: {
 
   const [whatsappSending, setWhatsappSending] = useState(false);
 
-  // Envio 100% automatizado pelo RIZER Agent (WhatsApp Web local, sessão já
+  // Envio 100% automatizado pelo RIZER Agent (whatsapp-web.js, sessão já
   // conectada) — a única ação manual do usuário foi escanear o QR Code uma
-  // vez. Sem sessão conectada, o clique dispara a conexão em vez de enviar.
+  // vez. Sem sessão conectada, o clique abre o modal de conexão em vez de
+  // enviar (a conexão em si roda em segundo plano no agente).
   const handleWhatsAppClick = useCallback(async () => {
     if (!whatsappAgent.agentAvailable) {
       toast.error("O RIZER Agent não está em execução. Abra o agente e tente novamente.");
@@ -93,12 +98,7 @@ export function DriverPdfCard(props: {
     }
 
     if (!whatsappAgent.connected) {
-      try {
-        await whatsappAgent.connect();
-        toast.success("WhatsApp conectado com sucesso!");
-      } catch (err) {
-        toast.error(getApiErrorMessage(err, "Falha ao conectar o WhatsApp"));
-      }
+      onNeedWhatsAppConnect();
       return;
     }
 
@@ -132,14 +132,14 @@ export function DriverPdfCard(props: {
     });
 
     sendPromise.catch(() => {}).finally(() => setWhatsappSending(false));
-  }, [whatsappAgent, driverPhone, driver.name, occurrence, genericoRelatoIA, ensureGenericoRelatoIA]);
+  }, [whatsappAgent, driverPhone, driver.name, occurrence, genericoRelatoIA, ensureGenericoRelatoIA, onNeedWhatsAppConnect]);
 
-  const whatsappBusy = whatsappAgent.connecting || whatsappSending || driverDetail.isLoading;
+  const whatsappBusy = whatsappSending || driverDetail.isLoading;
 
   const whatsappTitle = !whatsappAgent.agentAvailable
     ? "RIZER Agent offline — abra o agente para notificar"
     : !whatsappAgent.connected
-      ? "Conectar WhatsApp (abre o QR Code no agente)"
+      ? "Conectar WhatsApp (mostra o QR Code)"
       : driverDetail.isLoading
         ? "Carregando telefone…"
         : driverPhone

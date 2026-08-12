@@ -14,6 +14,7 @@ import { reportsDriveApi } from "../../../../api/reportsDrive.api";
 
 import { DriverPdfCard } from "./components/DriverPdfCard";
 import { DrivePickerModal } from "./components/DrivePickerModal";
+import { WhatsAppConnectModal } from "./components/WhatsAppConnectModal";
 import { OccurrencePrintView } from "./OccurrencePrintView";
 import { useDriveFolder } from "../../../../hooks/useDriveFolder";
 import { useWhatsAppAgent } from "../../../../hooks/useWhatsAppAgent";
@@ -46,6 +47,7 @@ export function OccurrencePreviewPage(props: {
   const driveFolder = useDriveFolder();
   const [driveToken, setDriveToken] = useState<string | null>(null);
   const [showDriveModal, setShowDriveModal] = useState(false);
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
 
   async function handleDriveConfirm(args: {
     config: { folderId: string; folderName: string };
@@ -387,6 +389,7 @@ export function OccurrencePreviewPage(props: {
                   genericoRelatoIA={genericoRelatoIA}
                   ensureGenericoRelatoIA={ensureGenericoRelatoIA}
                   whatsappAgent={whatsappAgent}
+                  onNeedWhatsAppConnect={() => setShowWhatsAppModal(true)}
                   getOrCreateSignedUrl={getOrCreateSignedUrl}
                   driveContext={{
                     config: driveFolder.config,
@@ -407,6 +410,7 @@ export function OccurrencePreviewPage(props: {
                   genericoRelatoIA={genericoRelatoIA}
                   ensureGenericoRelatoIA={ensureGenericoRelatoIA}
                   whatsappAgent={whatsappAgent}
+                  onNeedWhatsAppConnect={() => setShowWhatsAppModal(true)}
                   getOrCreateSignedUrl={getOrCreateSignedUrl}
                   driveContext={{
                     config: driveFolder.config,
@@ -787,6 +791,14 @@ export function OccurrencePreviewPage(props: {
           currentConfig={driveFolder.config}
           onConfirm={handleDriveConfirm}
           onClose={() => setShowDriveModal(false)}
+        />
+      )}
+
+      {/* Modal de conexão do WhatsApp (QR Code) */}
+      {showWhatsAppModal && (
+        <WhatsAppConnectModal
+          whatsappAgent={whatsappAgent}
+          onClose={() => setShowWhatsAppModal(false)}
         />
       )}
 
