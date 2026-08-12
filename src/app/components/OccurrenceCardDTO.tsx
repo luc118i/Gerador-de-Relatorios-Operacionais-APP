@@ -17,21 +17,28 @@ import {
   AlertTriangle,
   RefreshCw,
   MapPin,
+  Send,
+  QrCode,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { registerDisciplinaryOccurrence, fillMedidaLink, verifyRizerOccurrence, updateRizerOccurrence } from "../../api/automation.api";
 import { getApiErrorMessage } from "../../api/http";
 import { useAgentStatus } from "../../hooks/useAgentStatus";
+import { useWhatsAppAgent } from "../../hooks/useWhatsAppAgent";
+import { useDriver } from "../../features/occurrences/queries/drivers.queries";
 import { toast } from "sonner";
 import { useAdminAuth } from "../context/AdminAuthContext";
 import { AdminLoginModal } from "./AdminLoginModal";
+import { WhatsAppConnectModal } from "./WhatsAppConnectModal";
 import type { OccurrenceDTO } from "../../domain/occurrences";
 import type { Ocorrencia } from "../types";
 import {
   gerarTextoRelatorioIndividual,
   gerarTextoWhatsApp,
 } from "../../utils/relatorio";
+import { formatPhoneForWhatsApp, buildDriverNotificationMessage } from "../../utils/whatsapp";
+import { whatsappAgentApi } from "../../api/whatsappAgent.api";
 import { getBaseCanonicalKey, resolveBaseSigla } from "../../utils/base";
 import { BaseChip } from "./base-chip";
 import { aiApi } from "../../api/ai.api";
@@ -73,6 +80,14 @@ function DriveIcon({ className }: { className?: string }) {
       <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
     </svg>
   );
+}
+
+// Logo do RIZER Agent no botão "Enviar ao RIZER" — substitui o ícone
+// genérico (Gavel): já identifica a marca sozinho, então o texto ao lado
+// pode ficar mais curto (economiza espaço no card, principalmente no modo
+// compacto, que tem largura fixa).
+function RizerLogo({ className }: { className?: string }) {
+  return <img src="/rizer-agent-logo.png" alt="" className={`${className} object-contain flex-shrink-0`} />;
 }
 
 export type DriveStatus = "idle" | "sending" | "sent";
@@ -342,6 +357,89 @@ export function OccurrenceCard({
   const hasSecondDriverCard = !!driver2?.name;
   const isDuplicateVehicle = duplicateVehicleCount > 1;
 
+  // ── Notificação via WhatsApp (RIZER Agent) ────────────────────────────────
+  // Motorista deste card específico (driverSlot 1 ou 2) — busca a ficha
+  // completa (telefone) sob demanda, cacheada por id (ver DriverPdfCard, que
+  // usa o mesmo padrão na preview de ocorrência).
+  const cardDriver = isSecondDriverCard ? driver2 : driver1;
+  const driverDetail = useDriver(cardDriver?.driverId || null);
+  const driverPhone = driverDetail.data?.phone ?? null;
+  const whatsappAgent = useWhatsAppAgent();
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
+  const [sendingWpp, setSendingWpp] = useState(false);
+
+  async function handleSendWpp(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!whatsappAgent.agentAvailable) {
+      toast.error("O RIZER Agent não está em execução. Abra o agente e tente novamente.");
+      return;
+    }
+    if (!whatsappAgent.connected) {
+      setShowWhatsAppModal(true);
+      return;
+    }
+    if (!cardDriver) return;
+    if (!driverPhone) {
+      toast.error("Motorista sem telefone cadastrado (cadastre em Motoristas).");
+      return;
+    }
+    const phone = formatPhoneForWhatsApp(driverPhone);
+    if (!phone) {
+      toast.error("Telefone do motorista inválido.");
+      return;
+    }
+
+    const minimalOcc = dtoToMinimalOcorrencia(occurrence);
+    const firstName = cardDriver.name.split(/\s+/)[0] || cardDriver.name;
+
+    // Envio em segundo plano — não trava o card nem impede continuar
+    // trabalhando (ver mesmo padrão em DriverPdfCard). toast.promise fica no
+    // Toaster global, então o status continua visível mesmo navegando.
+    setSendingWpp(true);
+    const sendPromise = (async () => {
+      let genericoRelatoIA: string | null = null;
+      // Só GENERICO: tenta um resumo por IA do relato pra incluir na
+      // notificação — sem bloquear o envio se a IA falhar/estiver em cooldown.
+      if (occurrence.typeCode === "GENERICO") {
+        try {
+          const relatorioTxt = gerarTextoRelatorioIndividual(minimalOcc);
+          if (relatorioTxt.trim()) {
+            const { summary } = await aiApi.summarize(relatorioTxt, occurrence.reportTitle ?? undefined);
+            genericoRelatoIA = summary;
+          }
+        } catch {
+          /* segue sem o resumo — não impede o envio */
+        }
+      }
+      const message = buildDriverNotificationMessage(cardDriver.name, minimalOcc, { genericoRelatoIA });
+      await whatsappAgentApi.send({ phone, message });
+    })();
+
+    toast.promise(sendPromise, {
+      loading: `Enviando notificação para ${firstName} via WhatsApp...`,
+      success: `Notificação enviada para ${firstName} via WhatsApp!`,
+      error: (err) => getApiErrorMessage(err, "Falha ao enviar notificação via WhatsApp"),
+    });
+
+    sendPromise.catch(() => {}).finally(() => setSendingWpp(false));
+  }
+
+  const whatsappSendBusy = sendingWpp || driverDetail.isLoading;
+  const whatsappSendTitle = !whatsappAgent.agentAvailable
+    ? "RIZER Agent offline — abra o agente para notificar"
+    : !whatsappAgent.connected
+      ? "Conectar WhatsApp (mostra o QR Code)"
+      : driverDetail.isLoading
+        ? "Carregando telefone…"
+        : driverPhone
+          ? `Notificar ${cardDriver?.name?.split(/\s+/)[0] ?? "motorista"} via WhatsApp`
+          : "Motorista sem telefone cadastrado (cadastre em Motoristas)";
+  const whatsappSendDisabled =
+    !whatsappAgent.agentAvailable ||
+    whatsappSendBusy ||
+    !cardDriver ||
+    (whatsappAgent.connected && !driverPhone);
+
   // No card: GENERICO → reportTitle, demais → linha (contexto da viagem)
   const subject =
     occurrence.typeCode === "GENERICO"
@@ -460,6 +558,9 @@ export function OccurrenceCard({
     return (
       <>
       {showAdminLogin && <AdminLoginModal onClose={() => setShowAdminLogin(false)} />}
+      {showWhatsAppModal && (
+        <WhatsAppConnectModal whatsappAgent={whatsappAgent} onClose={() => setShowWhatsAppModal(false)} />
+      )}
       {showSuspensaoModal && (
         <SuspensaoModal
           occurrence={{ ...occurrence, suspensao: localSuspensao }}
@@ -669,6 +770,20 @@ export function OccurrenceCard({
             )}
           </button>
           <button
+            onClick={handleSendWpp}
+            disabled={whatsappSendDisabled}
+            title={whatsappSendTitle}
+            className="p-2 rounded transition-colors disabled:opacity-40 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:text-gray-500 dark:hover:text-emerald-400 dark:hover:bg-emerald-950/40"
+          >
+            {whatsappSendBusy ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : !whatsappAgent.connected ? (
+              <QrCode className="w-4 h-4" />
+            ) : (
+              <Send className="w-4 h-4" />
+            )}
+          </button>
+          <button
             onClick={handleCopyRelat}
             disabled={loadingAiRelat}
             title={isAnaliseOp ? "Gerar resumo e-mail com IA" : "Copiar Relatório Individual"}
@@ -750,9 +865,9 @@ export function OccurrenceCard({
             ) : disciplinaryState === "success" ? (
               <><Check className="w-3 h-3 flex-shrink-0" />No RIZER<RefreshCw className="w-2.5 h-2.5 opacity-50 flex-shrink-0" /></>
             ) : disciplinaryState === "error" ? (
-              <><Gavel className="w-3 h-3 flex-shrink-0" />Tentar novo</>
+              <><RizerLogo className="w-3.5 h-3.5 flex-shrink-0" />Tentar</>
             ) : (
-              <><Gavel className="w-3 h-3 flex-shrink-0" />Enviar RIZER</>
+              <><RizerLogo className="w-3.5 h-3.5 flex-shrink-0" />Enviar</>
             )}
           </button>
           <button
@@ -794,6 +909,9 @@ export function OccurrenceCard({
   return (
     <>
     {showAdminLogin && <AdminLoginModal onClose={() => setShowAdminLogin(false)} />}
+    {showWhatsAppModal && (
+      <WhatsAppConnectModal whatsappAgent={whatsappAgent} onClose={() => setShowWhatsAppModal(false)} />
+    )}
     {showSuspensaoModal && (
       <SuspensaoModal occurrence={occurrence} onClose={() => setShowSuspensaoModal(false)} />
     )}
@@ -1024,6 +1142,20 @@ export function OccurrenceCard({
             {loadingAiWpp ? "Gerando..." : copiedWpp ? "Copiado!" : isAnaliseOp ? "WhatsApp IA" : "WhatsApp"}
           </button>
           <button
+            onClick={handleSendWpp}
+            disabled={whatsappSendDisabled}
+            title={whatsappSendTitle}
+            className="flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md transition-colors disabled:opacity-40 text-gray-500 hover:text-emerald-700 hover:bg-emerald-50 dark:text-gray-400 dark:hover:text-emerald-400 dark:hover:bg-emerald-950/40"
+          >
+            {whatsappSendBusy ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : !whatsappAgent.connected ? (
+              <QrCode className="w-3.5 h-3.5" />
+            ) : (
+              <Send className="w-3.5 h-3.5" />
+            )}
+          </button>
+          <button
             onClick={handleCopyRelat}
             disabled={loadingAiRelat}
             className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs rounded-md transition-colors disabled:opacity-50 ${
@@ -1096,9 +1228,9 @@ export function OccurrenceCard({
             ) : disciplinaryState === "success" ? (
               <><Check className="w-3.5 h-3.5" />Enviado ao RIZER <RefreshCw className="w-3 h-3 opacity-40" /></>
             ) : disciplinaryState === "error" ? (
-              <><Gavel className="w-3.5 h-3.5" />Tentar novamente</>
+              <><RizerLogo className="w-4 h-4" />Tentar novamente</>
             ) : (
-              <><Gavel className="w-3.5 h-3.5" />Enviar ao RIZER</>
+              <><RizerLogo className="w-4 h-4" />Enviar ao RIZER</>
             )}
           </button>
         </div>

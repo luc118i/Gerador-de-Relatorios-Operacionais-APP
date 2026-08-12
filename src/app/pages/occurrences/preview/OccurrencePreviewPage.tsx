@@ -14,7 +14,7 @@ import { reportsDriveApi } from "../../../../api/reportsDrive.api";
 
 import { DriverPdfCard } from "./components/DriverPdfCard";
 import { DrivePickerModal } from "./components/DrivePickerModal";
-import { WhatsAppConnectModal } from "./components/WhatsAppConnectModal";
+import { WhatsAppConnectModal } from "../../../components/WhatsAppConnectModal";
 import { OccurrencePrintView } from "./OccurrencePrintView";
 import { useDriveFolder } from "../../../../hooks/useDriveFolder";
 import { useWhatsAppAgent } from "../../../../hooks/useWhatsAppAgent";

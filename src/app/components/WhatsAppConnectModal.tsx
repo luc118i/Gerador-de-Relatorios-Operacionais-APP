@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Loader2, MessageCircle, X, CheckCircle2, AlertCircle } from "lucide-react";
-import type { WhatsAppAgentState } from "../../../../../hooks/useWhatsAppAgent";
+import type { WhatsAppAgentState } from "../../hooks/useWhatsAppAgent";
 
 interface Props {
   whatsappAgent: WhatsAppAgentState;
