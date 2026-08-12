@@ -109,20 +109,29 @@ export function DriverPdfCard(props: {
       return;
     }
 
+    // O envio roda em segundo plano — não trava o botão "voltar" nem impede o
+    // usuário de ir criar outra ocorrência enquanto o RIZER Agent manda a
+    // mensagem. O toast.promise fica preso ao Toaster global (main.tsx), não
+    // a este componente, então o status (enviando/enviado/falhou) continua
+    // visível mesmo que o usuário já tenha saído desta tela.
+    const firstName = driver.name.split(/\s+/)[0] || driver.name;
     setWhatsappSending(true);
-    try {
+    const sendPromise = (async () => {
       let relatoIA = genericoRelatoIA;
       if (occurrence.typeCode === "GENERICO" && !relatoIA?.trim() && ensureGenericoRelatoIA) {
         relatoIA = await ensureGenericoRelatoIA();
       }
       const message = buildDriverNotificationMessage(driver.name, occurrence, { genericoRelatoIA: relatoIA });
       await whatsappAgentApi.send({ phone, message });
-      toast.success(`Notificação enviada para ${driver.name.split(/\s+/)[0]} via WhatsApp!`);
-    } catch (err) {
-      toast.error(getApiErrorMessage(err, "Falha ao enviar notificação via WhatsApp"));
-    } finally {
-      setWhatsappSending(false);
-    }
+    })();
+
+    toast.promise(sendPromise, {
+      loading: `Enviando notificação para ${firstName} via WhatsApp...`,
+      success: `Notificação enviada para ${firstName} via WhatsApp!`,
+      error: (err) => getApiErrorMessage(err, "Falha ao enviar notificação via WhatsApp"),
+    });
+
+    sendPromise.catch(() => {}).finally(() => setWhatsappSending(false));
   }, [whatsappAgent, driverPhone, driver.name, occurrence, genericoRelatoIA, ensureGenericoRelatoIA]);
 
   const whatsappBusy = whatsappAgent.connecting || whatsappSending || driverDetail.isLoading;
