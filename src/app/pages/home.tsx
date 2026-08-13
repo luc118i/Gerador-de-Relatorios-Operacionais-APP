@@ -268,6 +268,20 @@ export function Home({
 
   const allOcorrencias: OccurrenceDTO[] = data ?? [];
 
+  /** IDs que o backend já sabe que estão no Drive (drive_file_nome/drive_web_view_link
+   * gravados via saveRizerData — por upload nesta tela OU por qualquer outro processo,
+   * como a automação RIZER ou uma correção manual). Fonte de verdade além do
+   * localStorage, que só cobre "enviei pela Home neste navegador". */
+  const backendDriveSentIds = useMemo(
+    () =>
+      new Set(
+        allOcorrencias
+          .filter((o) => !!o.driveFileNome || !!o.driveWebViewLink)
+          .map((o) => o.id),
+      ),
+    [allOcorrencias],
+  );
+
   // ── Busca universal ───────────────────────────────────────
   // Normaliza removendo acentos e caixa, para casar "São Paulo" com "sao paulo".
   const normalizeText = (s: string) =>
@@ -832,7 +846,8 @@ export function Home({
 
   function getDriveStatus(id: string): DriveStatus {
     if (driveSendingId === id) return "sending";
-    if (driveSentIds.has(id) && !driveNeedsUpdateIds.has(id)) return "sent";
+    if (driveNeedsUpdateIds.has(id)) return "idle";
+    if (driveSentIds.has(id) || backendDriveSentIds.has(id)) return "sent";
     return "idle";
   }
 
