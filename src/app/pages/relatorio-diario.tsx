@@ -585,43 +585,10 @@ export function RelatorioDiario({ onVoltar }: RelatorioDiarioProps) {
                 )}
               </div>
 
-              {/* Enviar relatório diário pros gestores (WhatsApp) */}
-              <button
-                onClick={handleAbrirEnvioGestores}
-                disabled={!canActions}
-                title="Enviar lista de ocorrências do dia pros gestores responsáveis, via WhatsApp"
-                className={`cursor-pointer h-8 px-3 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors ${
-                  canActions
-                    ? "bg-emerald-600 text-white hover:bg-emerald-700"
-                    : "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed"
-                }`}
-              >
-                <Send className="w-3.5 h-3.5" />
-                <span className="hidden lg:inline">Enviar pros gestores</span>
-              </button>
-
-              {/* PDF */}
-              <button
-                onClick={handleExportarPDF}
-                disabled={!canActions || exportingPdf || apuracaoSaving}
-                className={`cursor-pointer h-8 px-3 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors ${
-                  canActions && !exportingPdf && !apuracaoSaving
-                    ? "bg-gray-800 text-white hover:bg-gray-900"
-                    : "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed"
-                }`}
-                title={apuracaoSaving ? "Aguarde — salvando apurações..." : "Baixar relatório diário em PDF"}
-              >
-                {exportingPdf || apuracaoSaving ? (
-                  <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeDasharray="32" strokeDashoffset="12" />
-                  </svg>
-                ) : (
-                  <Printer className="w-3.5 h-3.5" />
-                )}
-                {exportingPdf ? "Gerando..." : apuracaoSaving ? "Salvando..." : "PDF"}
-              </button>
-
-              {/* Filtro de tipos no relatório */}
+              {/* Filtro de tipos no relatório — fica antes do botão de envio pros
+                  gestores de propósito: o fluxo natural é escolher os tipos e só
+                  então mandar (o filtro também vale pra Cópia/PDF/Drive, que usam
+                  o mesmo reportOccurrences). */}
               <div ref={filterPanelRef} className="relative">
                 <button
                   onClick={() => canActions && setShowFilterPanel((v) => !v)}
@@ -705,6 +672,42 @@ export function RelatorioDiario({ onVoltar }: RelatorioDiarioProps) {
                   </div>
                 )}
               </div>
+
+              {/* Enviar relatório diário pros gestores (WhatsApp) */}
+              <button
+                onClick={handleAbrirEnvioGestores}
+                disabled={!canActions}
+                title="Enviar lista de ocorrências do dia pros gestores responsáveis, via WhatsApp"
+                className={`cursor-pointer h-8 px-3 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors ${
+                  canActions
+                    ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                    : "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed"
+                }`}
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span className="hidden lg:inline">Enviar pros gestores</span>
+              </button>
+
+              {/* PDF */}
+              <button
+                onClick={handleExportarPDF}
+                disabled={!canActions || exportingPdf || apuracaoSaving}
+                className={`cursor-pointer h-8 px-3 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors ${
+                  canActions && !exportingPdf && !apuracaoSaving
+                    ? "bg-gray-800 text-white hover:bg-gray-900"
+                    : "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed"
+                }`}
+                title={apuracaoSaving ? "Aguarde — salvando apurações..." : "Baixar relatório diário em PDF"}
+              >
+                {exportingPdf || apuracaoSaving ? (
+                  <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeDasharray="32" strokeDashoffset="12" />
+                  </svg>
+                ) : (
+                  <Printer className="w-3.5 h-3.5" />
+                )}
+                {exportingPdf ? "Gerando..." : apuracaoSaving ? "Salvando..." : "PDF"}
+              </button>
 
               {/* Drive */}
               <button
