@@ -48,6 +48,11 @@ export type ManagerGroup = {
  * digitado diferente em duas bases não deveria juntar; o telefone é o dado
  * que realmente identifica "é a mesma pessoa/mesmo WhatsApp").
  *
+ * Só entram ocorrências que já tiveram tratativa aplicada — SUSPEICAO,
+ * ADVERTENCIA ou VALE. Fora do relatório: sem tratativa ainda (null) e
+ * REGISTRO ("Só o Registro") — o gestor não precisa ser acionado pra essas,
+ * são só um registro no sistema, sem ação sobre o motorista.
+ *
  * Ocorrências cujo baseCode não bate com nenhuma `visibilidade` cadastrada
  * ficam em `baseCodesSemCadastro` (base não existe em Base e Responsáveis,
  * ou o texto da cidade diverge — precisa acertar o cadastro). Bases
@@ -62,12 +67,14 @@ export function groupOccurrencesByManager(
   basesSemTelefone: string[];
   baseCodesSemCadastro: string[];
 } {
+  const comTratativa = occurrences.filter((o) => o.tratativa && o.tratativa !== "REGISTRO");
+
   const baseByCity = new Map(baseResponsaveis.map((b) => [normalizeCity(b.visibilidade), b]));
 
   const occByBase = new Map<string, OccurrenceDTO[]>();
   const baseCodesSemCadastro = new Set<string>();
 
-  for (const o of occurrences) {
+  for (const o of comTratativa) {
     const rawCity = o.baseCode || "—";
     const base = baseByCity.get(normalizeCity(rawCity));
     if (!base) {
