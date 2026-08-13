@@ -107,11 +107,35 @@ export function groupOccurrencesByManager(
   return { groups: [...groupsByPhone.values()], occByBase, basesSemTelefone, baseCodesSemCadastro: [...baseCodesSemCadastro] };
 }
 
-/** Texto da notificação — uma seção por base, com uma linha por ocorrência. */
+/**
+ * Todos os links de relatório (Drive) das ocorrências de um grupo de
+ * gestores — usado pra encurtar tudo numa chamada só (ver linksApi.shorten)
+ * antes de montar as mensagens, em vez de uma chamada por ocorrência.
+ */
+export function collectReportLinks(groups: ManagerGroup[], occByBase: Map<string, OccurrenceDTO[]>): string[] {
+  const urls = new Set<string>();
+  for (const group of groups) {
+    for (const base of group.bases) {
+      for (const o of occByBase.get(base.sigla) ?? []) {
+        if (o.driveWebViewLink) urls.add(o.driveWebViewLink);
+      }
+    }
+  }
+  return [...urls];
+}
+
+/**
+ * Texto da notificação — uma seção por base, com uma linha por ocorrência e,
+ * quando existe, o link do relatório logo abaixo (encurtado — ver
+ * `shortLinks`, resultado de linksApi.shorten/collectReportLinks — WhatsApp
+ * não suporta texto-âncora em mensagem simples, então o jeito de não deixar
+ * a mensagem gigante é encurtar a URL de verdade).
+ */
 export function buildManagerDailyMessage(
   group: ManagerGroup,
   occByBase: Map<string, OccurrenceDTO[]>,
   reportDate: string,
+  shortLinks: Map<string, string> = new Map(),
 ): string {
   const dateStr = formatDateBR(reportDate);
   const primeiroNome = group.responsavel.trim().split(/\s+/)[0] || group.responsavel;
@@ -123,7 +147,10 @@ export function buildManagerDailyMessage(
         const nome = o.typeCode === "GENERICO" && o.reportTitle ? o.reportTitle : o.typeTitle;
         const trat = o.tratativa ? TRATATIVA_LABEL[o.tratativa] ?? o.tratativa : "Sem tratativa";
         const motorista = o.drivers.find((d) => d.position === 1)?.name ?? "—";
-        return `• ${o.startTime} — ${o.vehicleNumber} — ${motorista} — ${nome} — ${trat}`;
+        const linkLine = o.driveWebViewLink
+          ? `\n  Relatório: ${shortLinks.get(o.driveWebViewLink) ?? o.driveWebViewLink}`
+          : "";
+        return `• ${o.startTime} — ${o.vehicleNumber} — ${motorista} — ${nome} — ${trat}${linkLine}`;
       })
       .join("\n");
     return `*${base.sigla} — ${base.visibilidade}* (${occs.length})\n${linhas}`;

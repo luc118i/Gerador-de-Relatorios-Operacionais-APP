@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertTriangle, Check, ChevronDown, ChevronUp, Loader2, Send } from "lucide-react";
 import type { OccurrenceDTO } from "../../domain/occurrences";
 import type { ManagerGroup } from "../../utils/managerReport";
-import { buildManagerDailyMessage } from "../../utils/managerReport";
+import { buildManagerDailyMessage, collectReportLinks } from "../../utils/managerReport";
+import { linksApi } from "../../api/links.api";
 
 type SendStatus = "idle" | "sending" | "sent" | "error";
 
@@ -30,10 +31,31 @@ export function SendManagersModal({ open, groups, occByBase, reportDate, basesSe
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [status, setStatus] = useState<Record<string, SendStatus>>({});
   const [sendingAll, setSendingAll] = useState(false);
+  const [shortLinks, setShortLinks] = useState<Map<string, string>>(new Map());
+  const [shorteningLinks, setShorteningLinks] = useState(false);
+
+  // Encurta (TinyURL, via backend) todos os links de relatório das
+  // ocorrências desse envio — uma chamada em lote, antes de montar o texto.
+  // Falha na chamada não trava nada: buildManagerDailyMessage cai pro link
+  // original quando não acha entrada no map.
+  useEffect(() => {
+    if (!open) return;
+    const urls = collectReportLinks(groups, occByBase);
+    if (urls.length === 0) return;
+    let alive = true;
+    setShorteningLinks(true);
+    linksApi
+      .shorten(urls)
+      .then((map) => { if (alive) setShortLinks(new Map(Object.entries(map))); })
+      .catch(() => { /* segue com os links originais */ })
+      .finally(() => { if (alive) setShorteningLinks(false); });
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   if (!open) return null;
 
-  const messages = new Map(groups.map((g) => [g.telefone, buildManagerDailyMessage(g, occByBase, reportDate)]));
+  const messages = new Map(groups.map((g) => [g.telefone, buildManagerDailyMessage(g, occByBase, reportDate, shortLinks)]));
   const allDone = groups.length > 0 && groups.every((g) => status[g.telefone] === "sent");
 
   async function handleSendAll() {
@@ -73,6 +95,12 @@ export function SendManagersModal({ open, groups, occByBase, reportDate, basesSe
               Uma mensagem de WhatsApp por gestor, com as ocorrências de todas as bases dele.
             </p>
           </div>
+          {shorteningLinks && (
+            <span className="flex items-center gap-1 text-[10px] text-gray-400 dark:text-gray-500 shrink-0" title="Encurtando links dos relatórios">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              links
+            </span>
+          )}
         </div>
 
         {basesSemTelefone.length > 0 && (
@@ -152,7 +180,7 @@ export function SendManagersModal({ open, groups, occByBase, reportDate, basesSe
           {!allDone && (
             <button
               onClick={handleSendAll}
-              disabled={sendingAll || groups.length === 0}
+              disabled={sendingAll || shorteningLinks || groups.length === 0}
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors disabled:opacity-50"
             >
               {sendingAll ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
