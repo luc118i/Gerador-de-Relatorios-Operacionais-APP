@@ -24,7 +24,10 @@ interface Props {
 // bases ficaram de fora por falta de telefone cadastrado. Só depois de
 // revisar aqui é que o envio de fato roda (ver relatorio-diario.tsx).
 export function SendManagersModal({ open, groups, occByBase, reportDate, basesSemTelefone, baseCodesSemCadastro, onSendOne, onClose }: Props) {
-  const [expanded, setExpanded] = useState<string | null>(null);
+  // Todas as mensagens abrem expandidas por padrão — é justamente pra
+  // revisar o texto exato antes de confirmar o envio, não pra esconder atrás
+  // de clique. Guarda os RECOLHIDOS (conjunto vazio = tudo expandido).
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [status, setStatus] = useState<Record<string, SendStatus>>({});
   const [sendingAll, setSendingAll] = useState(false);
 
@@ -98,12 +101,19 @@ export function SendManagersModal({ open, groups, occByBase, reportDate, basesSe
             </p>
           ) : (
             groups.map((group) => {
-              const isExpanded = expanded === group.telefone;
+              const isExpanded = !collapsed.has(group.telefone);
               const st = status[group.telefone] ?? "idle";
               return (
                 <div key={group.telefone} className="rounded-lg border border-gray-100 dark:border-gray-800">
                   <button
-                    onClick={() => setExpanded(isExpanded ? null : group.telefone)}
+                    onClick={() =>
+                      setCollapsed((prev) => {
+                        const next = new Set(prev);
+                        if (isExpanded) next.add(group.telefone);
+                        else next.delete(group.telefone);
+                        return next;
+                      })
+                    }
                     className="w-full flex items-center justify-between gap-2 px-3 py-2.5 text-left"
                   >
                     <div className="min-w-0">
