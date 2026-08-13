@@ -20,6 +20,14 @@ function formatDateBR(iso: string): string {
   return `${d}/${m}/${y}`;
 }
 
+// Saudação pelo horário do envio (não da data do relatório — o relatório de
+// "ontem" pode ser mandado de manhã, a saudação segue o momento do envio).
+function getSaudacao(hour = new Date().getHours()): string {
+  if (hour < 12) return "Bom dia";
+  if (hour < 18) return "Boa tarde";
+  return "Boa noite";
+}
+
 // occurrence.baseCode NÃO é a sigla de base_responsaveis — é a cidade em
 // texto livre (ex.: "PALMAS", "Brasilia", "BRASILIA", "SÃO PAULO"), digitada
 // em pontos diferentes do sistema (cadastro do motorista, importação etc.),
@@ -161,9 +169,9 @@ export function buildManagerDailyMessage(
   });
 
   return [
-    `*RELATÓRIO DIÁRIO DE OCORRÊNCIAS — ${dateStr}*`,
+    `📋 *RELATÓRIO DIÁRIO DE OCORRÊNCIAS — ${dateStr}*`,
     "",
-    `Prezado(a) ${primeiroNome},`,
+    `${getSaudacao()}, ${primeiroNome}! 👋`,
     "",
     `Segue o resumo das ocorrências de hoje na(s) sua(s) base(s):`,
     "",
