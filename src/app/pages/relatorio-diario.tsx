@@ -30,7 +30,10 @@ import {
   Eye,
   EyeOff,
   ShieldCheck,
+  Send,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { DrivePickerModal } from "./occurrences/preview/components/DrivePickerModal";
 import { useDriveFolder, type DriveFolderConfig } from "../../hooks/useDriveFolder";
 import { reportsDriveApi } from "../../api/reportsDrive.api";
@@ -54,6 +57,12 @@ import type { OccurrenceDTO } from "../../domain/occurrences";
 import { buildDailyReport } from "../../utils/relatorio-diario";
 import { TratativaSelect, type TratativaKey } from "../components/TratativaSelect";
 import { resolveAnalisadoPorUserId } from "../../utils/analisadoPor";
+import { baseResponsaveisApi } from "../../api/baseResponsaveis.api";
+import { groupOccurrencesByManager } from "../../utils/managerReport";
+import { whatsappAgentApi } from "../../api/whatsappAgent.api";
+import { useWhatsAppAgent } from "../../hooks/useWhatsAppAgent";
+import { WhatsAppConnectModal } from "../components/WhatsAppConnectModal";
+import { SendManagersModal } from "../components/SendManagersModal";
 
 // ── Score / status ────────────────────────────────────────────────────────────
 
@@ -195,6 +204,9 @@ export function RelatorioDiario({ onVoltar }: RelatorioDiarioProps) {
   const [sendingToDrive, setSendingToDrive] = useState(false);
   const [driveSent, setDriveSent] = useState(false);
   const { config: driveConfig, save: saveDriveConfig } = useDriveFolder();
+  const [showSendManagersModal, setShowSendManagersModal] = useState(false);
+  const [showWhatsAppConnectModal, setShowWhatsAppConnectModal] = useState(false);
+  const whatsappAgent = useWhatsAppAgent();
   const filterPanelRef = useRef<HTMLDivElement>(null);
   const copyMenuRef    = useRef<HTMLDivElement>(null);
 
@@ -259,6 +271,18 @@ export function RelatorioDiario({ onVoltar }: RelatorioDiarioProps) {
   );
 
   const report = useMemo(() => buildDailyReport(reportOccurrences, dataSelecionada), [reportOccurrences, dataSelecionada]);
+
+  // Bases e responsáveis — pro agrupamento do envio "relatório diário pros
+  // gestores" (ver managerReport.ts / SendManagersModal).
+  const { data: baseResponsaveis = [] } = useQuery({
+    queryKey: ["base-responsaveis"],
+    queryFn: baseResponsaveisApi.list,
+  });
+
+  const managerReport = useMemo(
+    () => groupOccurrencesByManager(reportOccurrences, baseResponsaveis),
+    [reportOccurrences, baseResponsaveis],
+  );
 
   const filtered = useMemo(
     () =>
@@ -421,6 +445,19 @@ export function RelatorioDiario({ onVoltar }: RelatorioDiarioProps) {
     }
   }
 
+  function handleAbrirEnvioGestores() {
+    if (!canActions) return;
+    if (!whatsappAgent.connected) {
+      setShowWhatsAppConnectModal(true);
+      return;
+    }
+    setShowSendManagersModal(true);
+  }
+
+  async function handleEnviarParaGestor(group: (typeof managerReport.groups)[number], message: string) {
+    await whatsappAgentApi.send({ phone: group.telefone, message });
+  }
+
   if (!isAdmin) return <AdminGate onVoltar={onVoltar} />;
 
   return (
@@ -547,6 +584,21 @@ export function RelatorioDiario({ onVoltar }: RelatorioDiarioProps) {
                   </div>
                 )}
               </div>
+
+              {/* Enviar relatório diário pros gestores (WhatsApp) */}
+              <button
+                onClick={handleAbrirEnvioGestores}
+                disabled={!canActions}
+                title="Enviar lista de ocorrências do dia pros gestores responsáveis, via WhatsApp"
+                className={`cursor-pointer h-8 px-3 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors ${
+                  canActions
+                    ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                    : "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed"
+                }`}
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span className="hidden lg:inline">Enviar pros gestores</span>
+              </button>
 
               {/* PDF */}
               <button
@@ -1020,6 +1072,28 @@ export function RelatorioDiario({ onVoltar }: RelatorioDiarioProps) {
           currentConfig={driveConfig}
           onConfirm={handleSendToDrive}
           onClose={() => setShowDrivePicker(false)}
+        />
+      )}
+
+      {/* Modal de conexão do WhatsApp (QR Code) — abre se o usuário clicar em
+          "Enviar pros gestores" sem o agente conectado ainda. */}
+      {showWhatsAppConnectModal && (
+        <WhatsAppConnectModal
+          whatsappAgent={whatsappAgent}
+          onClose={() => setShowWhatsAppConnectModal(false)}
+        />
+      )}
+
+      {/* Confirmação + envio do relatório diário pros gestores */}
+      {showSendManagersModal && (
+        <SendManagersModal
+          open
+          groups={managerReport.groups}
+          occByBase={managerReport.occByBase}
+          reportDate={dataSelecionada}
+          basesSemTelefone={managerReport.basesSemTelefone}
+          onSendOne={handleEnviarParaGestor}
+          onClose={() => setShowSendManagersModal(false)}
         />
       )}
     </div>

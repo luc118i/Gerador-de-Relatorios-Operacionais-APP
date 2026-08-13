@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Plus, Trash2, Pencil, Check, X, Loader2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { baseResponsaveisApi, type BaseResponsavel } from "../../api/baseResponsaveis.api";
+import { formatPhoneInputMask, formatPhoneForWhatsApp } from "../../utils/whatsapp";
 
 interface BaseResponsaveisPageProps {
   onVoltar: () => void;
@@ -16,10 +17,12 @@ export function BaseResponsaveisPage({ onVoltar }: BaseResponsaveisPageProps) {
   const [novaSigla, setNovaSigla] = useState("");
   const [novoResponsavel, setNovoResponsavel] = useState("");
   const [novaVisibilidade, setNovaVisibilidade] = useState("");
+  const [novoTelefone, setNovoTelefone] = useState("");
 
   const [editingSigla, setEditingSigla] = useState<string | null>(null);
   const [editResponsavel, setEditResponsavel] = useState("");
   const [editVisibilidade, setEditVisibilidade] = useState("");
+  const [editTelefone, setEditTelefone] = useState("");
 
   const { data: bases = [], isLoading } = useQuery({
     queryKey: QUERY_KEY,
@@ -35,6 +38,7 @@ export function BaseResponsaveisPage({ onVoltar }: BaseResponsaveisPageProps) {
       setNovaSigla("");
       setNovoResponsavel("");
       setNovaVisibilidade("");
+      setNovoTelefone("");
       toast.success("Base adicionada.");
     },
     onError: (err: any) => {
@@ -44,8 +48,12 @@ export function BaseResponsaveisPage({ onVoltar }: BaseResponsaveisPageProps) {
   });
 
   const updateMutation = useMutation({
-    mutationFn: (args: { sigla: string; responsavel: string; visibilidade: string }) =>
-      baseResponsaveisApi.update(args.sigla, { responsavel: args.responsavel, visibilidade: args.visibilidade }),
+    mutationFn: (args: { sigla: string; responsavel: string; visibilidade: string; telefone: string | null }) =>
+      baseResponsaveisApi.update(args.sigla, {
+        responsavel: args.responsavel,
+        visibilidade: args.visibilidade,
+        telefone: args.telefone,
+      }),
     onSuccess: (updated) => {
       queryClient.setQueryData<BaseResponsavel[]>(QUERY_KEY, (old = []) =>
         old.map((b) => (b.sigla === updated.sigla ? updated : b))
@@ -72,20 +80,31 @@ export function BaseResponsaveisPage({ onVoltar }: BaseResponsaveisPageProps) {
     const responsavel = novoResponsavel.trim();
     const visibilidade = novaVisibilidade.trim();
     if (!sigla || !responsavel || !visibilidade) return;
-    addMutation.mutate({ sigla, responsavel, visibilidade });
+    // Telefone é opcional no cadastro — mas sem ele, esse gestor não entra
+    // no envio automático do relatório diário (ver managerReport.ts).
+    if (novoTelefone.trim() && !formatPhoneForWhatsApp(novoTelefone)) {
+      toast.error("Telefone inválido.");
+      return;
+    }
+    addMutation.mutate({ sigla, responsavel, visibilidade, telefone: novoTelefone.trim() || null });
   }
 
   function startEdit(base: BaseResponsavel) {
     setEditingSigla(base.sigla);
     setEditResponsavel(base.responsavel);
     setEditVisibilidade(base.visibilidade);
+    setEditTelefone(base.telefone ?? "");
   }
 
   function saveEdit(sigla: string) {
     const responsavel = editResponsavel.trim();
     const visibilidade = editVisibilidade.trim();
     if (!responsavel || !visibilidade) return;
-    updateMutation.mutate({ sigla, responsavel, visibilidade });
+    if (editTelefone.trim() && !formatPhoneForWhatsApp(editTelefone)) {
+      toast.error("Telefone inválido.");
+      return;
+    }
+    updateMutation.mutate({ sigla, responsavel, visibilidade, telefone: editTelefone.trim() || null });
   }
 
   const inputBase =
@@ -114,7 +133,7 @@ export function BaseResponsaveisPage({ onVoltar }: BaseResponsaveisPageProps) {
         {/* Adicionar nova base */}
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
           <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Adicionar nova base</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-[120px_1fr_1fr_auto] gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-[120px_1fr_1fr_150px_auto] gap-2">
             <input
               type="text"
               value={novaSigla}
@@ -133,8 +152,15 @@ export function BaseResponsaveisPage({ onVoltar }: BaseResponsaveisPageProps) {
               type="text"
               value={novaVisibilidade}
               onChange={(e) => setNovaVisibilidade(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleAdd()}
               placeholder="Visibilidade (cidade)"
+              className={inputBase}
+            />
+            <input
+              type="tel"
+              value={novoTelefone}
+              onChange={(e) => setNovoTelefone(formatPhoneInputMask(e.target.value))}
+              onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+              placeholder="Telefone (opcional)"
               className={inputBase}
             />
             <button
@@ -178,6 +204,7 @@ export function BaseResponsaveisPage({ onVoltar }: BaseResponsaveisPageProps) {
                   <th className="px-5 py-2 font-medium">Sigla</th>
                   <th className="px-5 py-2 font-medium">Responsável</th>
                   <th className="px-5 py-2 font-medium">Visibilidade</th>
+                  <th className="px-5 py-2 font-medium">Telefone</th>
                   <th className="px-5 py-2 font-medium w-24" />
                 </tr>
               </thead>
@@ -211,6 +238,22 @@ export function BaseResponsaveisPage({ onVoltar }: BaseResponsaveisPageProps) {
                           />
                         ) : (
                           <span className="text-gray-500 dark:text-gray-400">{base.visibilidade}</span>
+                        )}
+                      </td>
+                      <td className="px-5 py-2.5">
+                        {isEditing ? (
+                          <input
+                            type="tel"
+                            value={editTelefone}
+                            onChange={(e) => setEditTelefone(formatPhoneInputMask(e.target.value))}
+                            onKeyDown={(e) => e.key === "Enter" && saveEdit(base.sigla)}
+                            placeholder="Opcional"
+                            className={`${inputBase} w-full`}
+                          />
+                        ) : (
+                          <span className={base.telefone ? "text-gray-500 dark:text-gray-400" : "text-gray-300 dark:text-gray-700"}>
+                            {base.telefone || "—"}
+                          </span>
                         )}
                       </td>
                       <td className="px-5 py-2.5">

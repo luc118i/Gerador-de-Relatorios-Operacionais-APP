@@ -1,6 +1,13 @@
 import { request } from "./http";
 
-export type BaseResponsavel = { sigla: string; responsavel: string; visibilidade: string };
+export type BaseResponsavel = {
+  sigla: string;
+  responsavel: string;
+  visibilidade: string;
+  // WhatsApp do responsável — usado no envio do relatório diário por base
+  // (ver managerReport.ts). Null pra bases cadastradas antes desse campo.
+  telefone: string | null;
+};
 
 export const baseResponsaveisApi = {
   async list(): Promise<BaseResponsavel[]> {
@@ -22,7 +29,7 @@ export const baseResponsaveisApi = {
 
   async update(
     sigla: string,
-    input: { responsavel?: string; visibilidade?: string },
+    input: { responsavel?: string; visibilidade?: string; telefone?: string | null },
   ): Promise<BaseResponsavel> {
     const json = await request<{ data: BaseResponsavel }>({
       method: "PATCH",
