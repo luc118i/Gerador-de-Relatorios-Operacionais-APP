@@ -57,10 +57,13 @@ export const whatsappAgentApi = {
     return agentRequest<WhatsAppAgentStatus>("/whatsapp/disconnect", { method: "POST" });
   },
 
-  // attachBanner: false manda só texto puro, sem o banner institucional —
-  // usado na 2ª mensagem de uma notificação em duas partes (ex.: link do
-  // esquema, ver buildEsquemaLinkMessage). Default (omitido) mantém o banner.
-  send(input: { phone: string; message: string; attachBanner?: boolean }) {
+  // attachBanner: false manda só texto puro, sem nenhum banner — usado na 2ª
+  // mensagem de uma notificação em duas partes (ex.: link do esquema, ver
+  // buildEsquemaLinkMessage). Default (omitido) manda com banner.
+  // banner: qual arte anexar quando attachBanner !== false — "motorista"
+  // (default, omitido) é o aviso em tela cheia; "gestor" é a versão usada no
+  // relatório diário consolidado (ver handleEnviarParaGestor).
+  send(input: { phone: string; message: string; attachBanner?: boolean; banner?: "motorista" | "gestor" }) {
     return agentRequest<{ success: true }>("/whatsapp/send", {
       method: "POST",
       body: JSON.stringify(input),

@@ -455,9 +455,9 @@ export function RelatorioDiario({ onVoltar }: RelatorioDiarioProps) {
   }
 
   async function handleEnviarParaGestor(group: (typeof managerReport.groups)[number], message: string) {
-    // attachBanner: false — o banner "Atenção, Motorista!" é institucional
-    // pro motorista, não faz sentido na notificação consolidada pro gestor.
-    await whatsappAgentApi.send({ phone: group.telefone, message, attachBanner: false });
+    // banner: "gestor" — o banner "Atenção, Motorista!" é institucional pro
+    // motorista; o relatório consolidado pro gestor usa a arte própria dele.
+    await whatsappAgentApi.send({ phone: group.telefone, message, banner: "gestor" });
   }
 
   if (!isAdmin) return <AdminGate onVoltar={onVoltar} />;
