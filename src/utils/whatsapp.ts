@@ -70,6 +70,12 @@ function getIntro(occurrence: Ocorrencia): string {
   return TYPE_INTRO[occurrence.typeCode ?? ""] ?? DEFAULT_INTRO;
 }
 
+// Parada Irregular (DESCUMP_OP_PARADA_FORA, sem typeCode mapeado em
+// TYPE_INTRO — cai no DEFAULT_INTRO) e Excesso de Parada (EXCESSO_PERMANENCIA)
+// têm causa ligada ao itinerário programado — vale reforçar que o esquema da
+// linha está anexado/enviado logo em seguida.
+export const TYPE_CODES_COM_ESQUEMA = new Set(["DESCUMP_OP_PARADA_FORA", "EXCESSO_PERMANENCIA"]);
+
 // Mensagem institucional de notificação ao motorista: saudação formal +
 // introdução contextual ao tipo + dados da ocorrência (reaproveita
 // gerarTextoWhatsApp, só sem emoji) + encerramento. Nos GENÉRICOS, inclui
@@ -93,6 +99,21 @@ export function buildDriverNotificationMessage(
     }
   }
 
+  if (TYPE_CODES_COM_ESQUEMA.has(occurrence.typeCode ?? "")) {
+    // O link em si (se achado — ver findEsquemaUrl) vai numa SEGUNDA mensagem
+    // separada, mandada logo depois desta (mesmo padrão de banner+texto do
+    // RIZER Agent) — link solto costuma gerar preview de card no WhatsApp,
+    // que fica estranho grudado no meio do texto institucional.
+    parts.push("", "Confira o esquema da linha abaixo.");
+  }
+
   parts.push("", "Procure seu gestor.");
   return parts.join("\n");
+}
+
+// Texto da 2ª mensagem (separada), com o link do esquema resolvido por
+// findEsquemaUrl — banner+texto (1ª mensagem) já sai automático via
+// RIZER Agent (ver sendWhatsAppMessage), então aqui é só texto+link.
+export function buildEsquemaLinkMessage(esquemaUrl: string): string {
+  return `Segue link do esquema:\n${esquemaUrl}`;
 }

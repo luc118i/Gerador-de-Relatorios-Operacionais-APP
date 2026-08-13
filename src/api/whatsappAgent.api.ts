@@ -57,7 +57,10 @@ export const whatsappAgentApi = {
     return agentRequest<WhatsAppAgentStatus>("/whatsapp/disconnect", { method: "POST" });
   },
 
-  send(input: { phone: string; message: string }) {
+  // attachBanner: false manda só texto puro, sem o banner institucional —
+  // usado na 2ª mensagem de uma notificação em duas partes (ex.: link do
+  // esquema, ver buildEsquemaLinkMessage). Default (omitido) mantém o banner.
+  send(input: { phone: string; message: string; attachBanner?: boolean }) {
     return agentRequest<{ success: true }>("/whatsapp/send", {
       method: "POST",
       body: JSON.stringify(input),

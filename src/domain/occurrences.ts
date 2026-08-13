@@ -94,6 +94,11 @@ export type OccurrenceDTO = {
   place: string;
   speedKmh?: number | null;
   tripTime?: string | null; // horário de partida da viagem (HH:mm)
+  // Viagem canônica (join por trip_id) — usada pra resolver o link do
+  // esquema da linha (ver findEsquemaUrl em utils/esquemaLookup.ts).
+  tripLineCode?: string | null;
+  tripLineName?: string | null;
+  tripDirection?: string | null;
   occurrenceName?: string | null;
   createdAt: string; // ISO
   drivers: OccurrenceDriverDTO[];

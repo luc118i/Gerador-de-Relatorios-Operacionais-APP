@@ -14,7 +14,8 @@ import type { Ocorrencia } from "../../../../types";
 import { useDriver } from "../../../../../features/occurrences/queries/drivers.queries";
 import type { WhatsAppAgentState } from "../../../../../hooks/useWhatsAppAgent";
 import { whatsappAgentApi } from "../../../../../api/whatsappAgent.api";
-import { formatPhoneForWhatsApp, buildDriverNotificationMessage } from "../../../../../utils/whatsapp";
+import { formatPhoneForWhatsApp, buildDriverNotificationMessage, buildEsquemaLinkMessage, TYPE_CODES_COM_ESQUEMA } from "../../../../../utils/whatsapp";
+import { findEsquemaUrl } from "../../../../../utils/esquemaLookup";
 import { DriverPhoneModal } from "../../../../components/DriverPhoneModal";
 import { occurrencesApi } from "../../../../../api/occurrences.api";
 
@@ -116,8 +117,26 @@ export function DriverPdfCard(props: {
       if (occurrence.typeCode === "GENERICO" && !relatoIA?.trim() && ensureGenericoRelatoIA) {
         relatoIA = await ensureGenericoRelatoIA();
       }
+      // Só busca o link quando o tipo realmente usa esquema (Parada Irregular /
+      // Excesso de Permanência) — evita uma chamada à planilha à toa nos outros tipos.
+      const esquemaUrl = TYPE_CODES_COM_ESQUEMA.has(occurrence.typeCode ?? "")
+        ? await findEsquemaUrl({
+            codigoLinha: occurrence.viagem.codigoLinha,
+            nomeLinha: occurrence.viagem.nomeLinha,
+            horario: occurrence.viagem.horario,
+            sentido: occurrence.viagem.sentido,
+            linhaLabel: occurrence.viagem.linha,
+          })
+        : null;
       const message = buildDriverNotificationMessage(driver.name, occurrence, { genericoRelatoIA: relatoIA });
       await whatsappAgentApi.send({ phone, message });
+
+      // Link do esquema numa mensagem separada, logo depois — mesmo padrão
+      // banner+texto do RIZER Agent. Sem link achado, a notificação já saiu
+      // completa (com o aviso genérico), então não bloqueia nem falha nada.
+      if (esquemaUrl) {
+        await whatsappAgentApi.send({ phone, message: buildEsquemaLinkMessage(esquemaUrl), attachBanner: false });
+      }
 
       // Mesmo contador da Home (occurrence.whatsappSentCountD1/D2) — só não
       // falha o envio nem vira erro no toast se isso aqui não gravar.

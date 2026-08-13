@@ -39,7 +39,8 @@ import {
   gerarTextoRelatorioIndividual,
   gerarTextoWhatsApp,
 } from "../../utils/relatorio";
-import { formatPhoneForWhatsApp, buildDriverNotificationMessage } from "../../utils/whatsapp";
+import { formatPhoneForWhatsApp, buildDriverNotificationMessage, buildEsquemaLinkMessage, TYPE_CODES_COM_ESQUEMA } from "../../utils/whatsapp";
+import { findEsquemaUrl } from "../../utils/esquemaLookup";
 import { whatsappAgentApi } from "../../api/whatsappAgent.api";
 import { getBaseCanonicalKey, resolveBaseSigla } from "../../utils/base";
 import { BaseChip } from "./base-chip";
@@ -373,8 +374,23 @@ export function OccurrenceCard({
           /* segue sem o resumo — não impede o envio */
         }
       }
+      const esquemaUrl = TYPE_CODES_COM_ESQUEMA.has(occurrence.typeCode ?? "")
+        ? await findEsquemaUrl({
+            codigoLinha: minimalOcc.viagem.codigoLinha,
+            nomeLinha: minimalOcc.viagem.nomeLinha,
+            horario: minimalOcc.viagem.horario,
+            sentido: minimalOcc.viagem.sentido,
+            linhaLabel: minimalOcc.viagem.linha,
+          })
+        : null;
       const message = buildDriverNotificationMessage(cardDriver.name, minimalOcc, { genericoRelatoIA });
       await whatsappAgentApi.send({ phone, message });
+
+      // Link do esquema numa mensagem separada, logo depois — mesmo padrão
+      // banner+texto do RIZER Agent.
+      if (esquemaUrl) {
+        await whatsappAgentApi.send({ phone, message: buildEsquemaLinkMessage(esquemaUrl), attachBanner: false });
+      }
 
       // Só conta envio que realmente saiu (depois do send, não antes) — se
       // essa chamada falhar, não desfaz o envio nem vira erro no toast, só

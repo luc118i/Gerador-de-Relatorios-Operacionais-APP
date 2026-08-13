@@ -18,6 +18,9 @@ export function dtoToMinimalOcorrencia(occ: OccurrenceDTO): Ocorrencia {
       linha: occ.lineLabel ?? "",
       prefixo: occ.vehicleNumber ?? "",
       horario: occ.tripTime ?? "",
+      codigoLinha: occ.tripLineCode ?? "",
+      nomeLinha: occ.tripLineName ?? "",
+      sentido: occ.tripDirection ?? "",
     },
     motorista1: {
       id: d1?.driverId ?? "",
