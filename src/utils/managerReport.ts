@@ -20,6 +20,21 @@ function formatDateBR(iso: string): string {
   return `${d}/${m}/${y}`;
 }
 
+// occurrence.baseCode NÃO é a sigla de base_responsaveis — é a cidade em
+// texto livre (ex.: "PALMAS", "Brasilia", "BRASILIA", "SÃO PAULO"), digitada
+// em pontos diferentes do sistema (cadastro do motorista, importação etc.),
+// com maiúscula/acento inconsistentes. O casamento com base_responsaveis só
+// funciona comparando contra `visibilidade`, normalizado (maiúsculo, sem
+// acento) — nunca contra `sigla`.
+function normalizeCity(s: string): string {
+  return s
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toUpperCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export type ManagerGroup = {
   telefone: string; // já normalizado (formatPhoneForWhatsApp)
   responsavel: string;
@@ -33,18 +48,34 @@ export type ManagerGroup = {
  * digitado diferente em duas bases não deveria juntar; o telefone é o dado
  * que realmente identifica "é a mesma pessoa/mesmo WhatsApp").
  *
- * Bases sem telefone cadastrado ficam de fora dos grupos — quem chama deve
- * avisar o usuário quais bases foram puladas (ver `basesSemTelefone`).
+ * Ocorrências cujo baseCode não bate com nenhuma `visibilidade` cadastrada
+ * ficam em `baseCodesSemCadastro` (base não existe em Base e Responsáveis,
+ * ou o texto da cidade diverge — precisa acertar o cadastro). Bases
+ * encontradas mas sem telefone ficam em `basesSemTelefone`.
  */
 export function groupOccurrencesByManager(
   occurrences: OccurrenceDTO[],
   baseResponsaveis: BaseResponsavel[],
-): { groups: ManagerGroup[]; occByBase: Map<string, OccurrenceDTO[]>; basesSemTelefone: string[] } {
+): {
+  groups: ManagerGroup[];
+  occByBase: Map<string, OccurrenceDTO[]>; // chave = sigla (canônica)
+  basesSemTelefone: string[];
+  baseCodesSemCadastro: string[];
+} {
+  const baseByCity = new Map(baseResponsaveis.map((b) => [normalizeCity(b.visibilidade), b]));
+
   const occByBase = new Map<string, OccurrenceDTO[]>();
+  const baseCodesSemCadastro = new Set<string>();
+
   for (const o of occurrences) {
-    const sigla = o.baseCode || "—";
-    if (!occByBase.has(sigla)) occByBase.set(sigla, []);
-    occByBase.get(sigla)!.push(o);
+    const rawCity = o.baseCode || "—";
+    const base = baseByCity.get(normalizeCity(rawCity));
+    if (!base) {
+      baseCodesSemCadastro.add(rawCity);
+      continue;
+    }
+    if (!occByBase.has(base.sigla)) occByBase.set(base.sigla, []);
+    occByBase.get(base.sigla)!.push(o);
   }
 
   const baseBySigla = new Map(baseResponsaveis.map((b) => [b.sigla, b]));
@@ -52,9 +83,9 @@ export function groupOccurrencesByManager(
   const basesSemTelefone: string[] = [];
 
   for (const sigla of occByBase.keys()) {
-    const base = baseBySigla.get(sigla);
-    const phone = base?.telefone ? formatPhoneForWhatsApp(base.telefone) : null;
-    if (!base || !phone) {
+    const base = baseBySigla.get(sigla)!;
+    const phone = base.telefone ? formatPhoneForWhatsApp(base.telefone) : null;
+    if (!phone) {
       basesSemTelefone.push(sigla);
       continue;
     }
@@ -66,7 +97,7 @@ export function groupOccurrencesByManager(
     group.occurrenceCount += occByBase.get(sigla)!.length;
   }
 
-  return { groups: [...groupsByPhone.values()], occByBase, basesSemTelefone };
+  return { groups: [...groupsByPhone.values()], occByBase, basesSemTelefone, baseCodesSemCadastro: [...baseCodesSemCadastro] };
 }
 
 /** Texto da notificação — uma seção por base, com uma linha por ocorrência. */

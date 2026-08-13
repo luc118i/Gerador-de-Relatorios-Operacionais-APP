@@ -1092,6 +1092,7 @@ export function RelatorioDiario({ onVoltar }: RelatorioDiarioProps) {
           occByBase={managerReport.occByBase}
           reportDate={dataSelecionada}
           basesSemTelefone={managerReport.basesSemTelefone}
+          baseCodesSemCadastro={managerReport.baseCodesSemCadastro}
           onSendOne={handleEnviarParaGestor}
           onClose={() => setShowSendManagersModal(false)}
         />
