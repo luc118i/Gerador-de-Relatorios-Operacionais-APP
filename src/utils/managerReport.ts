@@ -147,10 +147,14 @@ export function buildManagerDailyMessage(
         const nome = o.typeCode === "GENERICO" && o.reportTitle ? o.reportTitle : o.typeTitle;
         const trat = o.tratativa ? TRATATIVA_LABEL[o.tratativa] ?? o.tratativa : "Sem tratativa";
         const motorista = o.drivers.find((d) => d.position === 1)?.name ?? "—";
+        // Só marca quando já foi enviada ao RIZER — sem isso no texto, fica
+        // implícito que ainda não foi (não polui a linha com "Não" pra toda
+        // ocorrência pendente).
+        const rizerTag = o.rizerRegistered ? " (RIZER)" : "";
         const linkLine = o.driveWebViewLink
           ? `\n  Relatório: ${shortLinks.get(o.driveWebViewLink) ?? o.driveWebViewLink}`
           : "";
-        return `• ${o.startTime} — ${o.vehicleNumber} — ${motorista} — ${nome} — ${trat}${linkLine}`;
+        return `• ${o.startTime} — ${o.vehicleNumber} — ${motorista} — ${nome} — ${trat}${rizerTag}${linkLine}`;
       })
       .join("\n");
     return `*${base.sigla} — ${base.visibilidade}* (${occs.length})\n${linhas}`;
