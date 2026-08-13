@@ -123,9 +123,14 @@ function loadEsquemas(): Promise<EsquemaRemoto[]> {
 
 /**
  * Acha o esquema correspondente à viagem (código da linha + horário +
- * sentido) e devolve a URL completa pronta pra colar na mensagem, ou null
- * se a env não estiver configurada, a planilha não tiver esse esquema, ou
- * a busca falhar por qualquer motivo (nunca lança).
+ * sentido) e devolve a URL completa pronta pra colar na mensagem.
+ *
+ * Sem match exato (dado insuficiente, código divergente entre as bases,
+ * planilha instável etc.), cai pro link BASE do site (sem o `/esquema/slug`)
+ * — o motorista/gestor ainda recebe algo clicável pra buscar manualmente, em
+ * vez de ficar sem link nenhum. Só devolve null quando a env
+ * VITE_ESQUEMAS_SITE_URL nem está configurada (aí não há link nenhum, nem
+ * base, pra montar).
  */
 export async function findEsquemaUrl(viagem: ViagemParaEsquema): Promise<string | null> {
   const siteUrl = import.meta.env.VITE_ESQUEMAS_SITE_URL as string | undefined;
@@ -133,6 +138,7 @@ export async function findEsquemaUrl(viagem: ViagemParaEsquema): Promise<string 
     console.warn("[esquemaLookup] VITE_ESQUEMAS_SITE_URL não configurada — sem link possível.");
     return null;
   }
+  const baseUrl = siteUrl.replace(/\/+$/, "") + "/";
 
   // codigoLinha/nomeLinha vêm de tripLineCode/tripLineName (join com a trip
   // real) — ficam vazios quando a ocorrência não está linkada a uma trip.
@@ -145,10 +151,10 @@ export async function findEsquemaUrl(viagem: ViagemParaEsquema): Promise<string 
   const sentido = viagem.sentido?.trim() || undefined;
 
   if (!horario || (!codigoLinha && !nomeLinha)) {
-    console.warn("[esquemaLookup] dados insuficientes na ocorrência pra buscar o esquema:", {
+    console.warn("[esquemaLookup] dados insuficientes na ocorrência pra buscar o esquema — mandando link base:", {
       codigoLinha, nomeLinha, horario, sentido, linhaLabel: viagem.linhaLabel,
     });
-    return null;
+    return baseUrl;
   }
 
   try {
@@ -171,13 +177,13 @@ export async function findEsquemaUrl(viagem: ViagemParaEsquema): Promise<string 
     });
 
     if (!match) {
-      console.warn("[esquemaLookup] nenhum esquema bateu com", { codigoLinha, nomeLinha, horario, sentido });
-      return null;
+      console.warn("[esquemaLookup] nenhum esquema bateu com — mandando link base:", { codigoLinha, nomeLinha, horario, sentido });
+      return baseUrl;
     }
 
-    return `${siteUrl.replace(/\/+$/, "")}/esquema/${esquemaSlug(match)}`;
+    return `${baseUrl}esquema/${esquemaSlug(match)}`;
   } catch (err) {
-    console.warn("[esquemaLookup] busca falhou, notificação segue sem o link:", err);
-    return null;
+    console.warn("[esquemaLookup] busca falhou, mandando link base:", err);
+    return baseUrl;
   }
 }
