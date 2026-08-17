@@ -1,11 +1,27 @@
 import { useEffect, useState } from "react";
-import { AlertTriangle, Check, ChevronDown, ChevronUp, Loader2, Send } from "lucide-react";
+import { AlertTriangle, Check, ChevronDown, ChevronUp, Clock, Loader2, Send } from "lucide-react";
 import type { OccurrenceDTO } from "../../domain/occurrences";
 import type { ManagerGroup } from "../../utils/managerReport";
 import { buildManagerDailyMessage, collectReportLinks } from "../../utils/managerReport";
 import { linksApi } from "../../api/links.api";
 
-type SendStatus = "idle" | "sending" | "sent" | "error";
+type SendStatus = "idle" | "sending" | "waiting" | "sent" | "error";
+
+// Intervalo entre o envio de cada gestor — mandar tudo de uma vez, um atrás
+// do outro sem pausa, é justamente o padrão que a Meta associa a spam/bot e
+// pode banir o número do WhatsApp Web usado pelo RIZER Agent. Um intervalo
+// com uma folga aleatória (menos robótico que um valor fixo) entre cada
+// mensagem reduz esse risco.
+const MIN_DELAY_MS = 4000;
+const MAX_DELAY_MS = 9000;
+
+function randomDelay(): number {
+  return MIN_DELAY_MS + Math.random() * (MAX_DELAY_MS - MIN_DELAY_MS);
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 interface Props {
   open: boolean;
@@ -60,14 +76,25 @@ export function SendManagersModal({ open, groups, occByBase, reportDate, basesSe
 
   async function handleSendAll() {
     setSendingAll(true);
-    for (const group of groups) {
-      if (status[group.telefone] === "sent") continue;
+    const pending = groups.filter((g) => status[g.telefone] !== "sent");
+    for (let i = 0; i < pending.length; i++) {
+      const group = pending[i]!;
       setStatus((s) => ({ ...s, [group.telefone]: "sending" }));
+      let ok = true;
       try {
         await onSendOne(group, messages.get(group.telefone)!);
         setStatus((s) => ({ ...s, [group.telefone]: "sent" }));
       } catch {
+        ok = false;
         setStatus((s) => ({ ...s, [group.telefone]: "error" }));
+      }
+      // Pausa entre um gestor e o próximo — não depois do último (nada mais
+      // pra esperar) e só quando esse envio deu certo (erro já não chegou a
+      // sair pro WhatsApp, não precisa do mesmo respiro).
+      if (ok && i < pending.length - 1) {
+        setStatus((s) => ({ ...s, [group.telefone]: "waiting" }));
+        await sleep(randomDelay());
+        setStatus((s) => ({ ...s, [group.telefone]: "sent" }));
       }
     }
     setSendingAll(false);
@@ -92,7 +119,8 @@ export function SendManagersModal({ open, groups, occByBase, reportDate, basesSe
               </span>
             </h3>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-              Uma mensagem de WhatsApp por gestor, com as ocorrências de todas as bases dele.
+              Uma mensagem de WhatsApp por gestor, com as ocorrências de todas as bases dele. Envio com pausa entre
+              cada gestor, pra não mandar tudo de uma vez.
             </p>
           </div>
           {shorteningLinks && (
@@ -152,7 +180,12 @@ export function SendManagersModal({ open, groups, occByBase, reportDate, basesSe
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       {st === "sending" && <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-500" />}
-                      {st === "sent" && <Check className="w-3.5 h-3.5 text-emerald-500" />}
+                      {st === "waiting" && (
+                        <span title="Aguardando pra não mandar tudo de uma vez">
+                          <Clock className="w-3.5 h-3.5 text-amber-500" />
+                        </span>
+                      )}
+                      {(st === "sent" || st === "waiting") && <Check className="w-3.5 h-3.5 text-emerald-500" />}
                       {st === "error" && <AlertTriangle className="w-3.5 h-3.5 text-red-500" />}
                       {isExpanded ? <ChevronUp className="w-3.5 h-3.5 text-gray-400" /> : <ChevronDown className="w-3.5 h-3.5 text-gray-400" />}
                     </div>
