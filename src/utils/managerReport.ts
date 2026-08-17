@@ -155,10 +155,11 @@ export function buildManagerDailyMessage(
         const nome = o.typeCode === "GENERICO" && o.reportTitle ? o.reportTitle : o.typeTitle;
         const trat = o.tratativa ? TRATATIVA_LABEL[o.tratativa] ?? o.tratativa : "Sem tratativa";
         const motorista = o.drivers.find((d) => d.position === 1)?.name ?? "—";
-        // Só marca quando já foi enviada ao RIZER — sem isso no texto, fica
-        // implícito que ainda não foi (não polui a linha com "Não" pra toda
-        // ocorrência pendente).
-        const rizerTag = o.rizerRegistered ? " (RIZER)" : "";
+        // Já registrada no RIZER: só confirma. Ainda não registrada: avisa
+        // explicitamente — o gestor precisa saber que aquela ocorrência
+        // ainda não está lá, em vez de simplesmente não ver nada e assumir
+        // que já foi tratada.
+        const rizerTag = o.rizerRegistered ? " (RIZER)" : " (verifica o RIZER)";
         const linkLine = o.driveWebViewLink
           ? `\n  Relatório: ${shortLinks.get(o.driveWebViewLink) ?? o.driveWebViewLink}`
           : "";
