@@ -162,9 +162,12 @@ export function buildManagerDailyMessage(
         const linkLine = o.driveWebViewLink
           ? `\n  Relatório: ${shortLinks.get(o.driveWebViewLink) ?? o.driveWebViewLink}`
           : "";
-        return `• ${o.startTime} — ${o.vehicleNumber} — ${motorista} — ${nome} — ${trat}${rizerTag}${linkLine}`;
+        return `• *${o.vehicleNumber}* — ${motorista} — ${nome} — ${trat}${rizerTag}${linkLine}`;
       })
-      .join("\n");
+      // Linha em branco entre ocorrências — "• PREFIXO — ..." grudado um no
+      // outro (join simples com \n) ficava difícil de escanear quando a base
+      // tem várias no mesmo dia.
+      .join("\n\n");
     return `*${base.sigla} — ${base.visibilidade}* (${occs.length})\n${linhas}`;
   });
 

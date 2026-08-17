@@ -135,6 +135,15 @@ function gerarCorpoRelatorioIndividual(ocorrencia: Ocorrencia): string {
     default: {
       const tipo = "PARADA FORA DO PROGRAMADO";
       const caracterizacao = "DESCUMPRIMENTO DE PROCEDIMENTO OPERACIONAL";
+
+      const pontosParada = ocorrencia.points;
+      if (pontosParada && pontosParada.length > 1) {
+        const listaPontos = pontosParada
+          .map((p) => `- ${p.place} (${p.startTime} às ${p.endTime})`)
+          .join("\n");
+        return `Em ${data}, durante a execução da viagem do veículo prefixo ${prefixo}${linhaInfo}, foi constatado que o motorista realizou ${tipo} em mais de um local (${pontosParada.length} paradas), caracterizando ${caracterizacao}:\n\n${listaPontos}`;
+      }
+
       const local = ocorrencia.localParada
         ? `, no local ${ocorrencia.localParada}`
         : "";
@@ -257,6 +266,30 @@ ${motoristas}
   // presets do RIZER) quando disponível — mais descritivo que o rótulo
   // genérico do tipo.
   const tituloDescumprimento = ocorrencia.occurrenceName?.trim().toUpperCase() || "DESCUMPRIMENTO OPERACIONAL";
+
+  // "Gerar Múltiplo" (index.html, PC não autorizado) agrupa N paradas numa
+  // só ocorrência — sem isso, ocorrencia.localParada vem resumido como "N
+  // paradas" (ver summarizePoints no backend) e a mensagem não diz ONDE.
+  const pontosParada = ocorrencia.points;
+  if (pontosParada && pontosParada.length > 1) {
+    const listaLocais = pontosParada
+      .map((p) => `📍 ${p.place} — ${p.startTime} às ${p.endTime}`)
+      .join("\n");
+    return `🚨 *${tituloDescumprimento} (${pontosParada.length} PARADAS)*
+
+📋 *LINHA:* ${getLinha(v)}
+🚌 *PREFIXO:* ${getPrefixo(v)}
+⏰ *HORÁRIO DA VIAGEM:* ${getHorario(v)}
+📍 *ORIGEM x DESTINO:* ${getOrigem(v)} x ${getDestino(v)}
+
+👤 *MOTORISTA(S):*
+${motoristas}
+
+📅 *DATA:* ${formatarData(ocorrencia.dataEvento)}
+
+${listaLocais}`;
+  }
+
   return `🚨 *${tituloDescumprimento}*
 
 📋 *LINHA:* ${getLinha(v)}
