@@ -220,9 +220,13 @@ export function LoginScreen() {
 
       {/* ── Fundo decorativo ─────────────────────────────────────────── */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        {/* Shader animado bem discreto por trás de tudo. `screen` deixa só
-            os fios de luz coloridos aparecerem, sem escurecer o fundo. */}
-        <div className="ls-anim absolute inset-0 opacity-[0.22] dark:opacity-40 mix-blend-screen">
+        {/* Shader animado por trás de tudo. No claro, a paleta `light` deixa
+            o fundo do shader quase igual ao da tela — só os fios de luz
+            aparecem. No escuro, usa o shader original. */}
+        <div className="ls-anim absolute inset-0 opacity-60 dark:hidden">
+          <ShaderBackdrop light speed={0.4} />
+        </div>
+        <div className="ls-anim absolute inset-0 hidden opacity-40 dark:block">
           <ShaderBackdrop speed={0.4} />
         </div>
 
