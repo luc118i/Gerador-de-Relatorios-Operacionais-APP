@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Home } from "./pages/home";
 import { NovaOcorrencia } from "./pages/nova-ocorrencia";
 import { RelatorioDiario } from "./pages/relatorio-diario";
@@ -206,6 +206,60 @@ function WelcomeSplash({ name }: { name: string }) {
   );
 }
 
+/**
+ * Cobertura do carregamento que, ao terminar, "abre" como duas folhas
+ * deslizando para os lados e revela a tela por trás — a sensação de a
+ * página se abrindo para o usuário, sem o corte seco.
+ */
+function IntroReveal({ opening }: { opening: boolean }) {
+  const slide =
+    "transform 900ms cubic-bezier(.7,0,.25,1), opacity 320ms ease 600ms";
+  const half = "absolute inset-y-0 w-1/2 overflow-hidden will-change-transform";
+  // O shader interno ocupa 200% da metade (= largura total da tela) e fica
+  // ancorado na borda externa, de modo que as duas metades formam uma
+  // imagem contínua enquanto estão fechadas.
+  const inner = { width: "200%", position: "absolute" as const, top: 0, bottom: 0 };
+
+  return (
+    <div
+      className="fixed inset-0 z-[120] overflow-hidden pointer-events-none"
+      aria-hidden="true"
+    >
+      <div
+        className={`${half} left-0`}
+        style={{
+          transform: opening ? "translateX(-101%)" : "translateX(0)",
+          opacity: opening ? 0 : 1,
+          transition: slide,
+        }}
+      >
+        <div style={{ ...inner, left: 0 }}>
+          <ShaderBackdrop />
+        </div>
+      </div>
+
+      <div
+        className={`${half} right-0`}
+        style={{
+          transform: opening ? "translateX(101%)" : "translateX(0)",
+          opacity: opening ? 0 : 1,
+          transition: slide,
+        }}
+      >
+        <div style={{ ...inner, right: 0 }}>
+          <ShaderBackdrop />
+        </div>
+      </div>
+
+      {/* fresta de luz no encontro das folhas */}
+      <div
+        className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-white/25"
+        style={{ opacity: opening ? 0 : 1, transition: "opacity 200ms ease" }}
+      />
+    </div>
+  );
+}
+
 function AuthGate() {
   const { loading, session, profileName, passwordRecovery } = useAuth();
   // Marca se a tela de login chegou a ser exibida (para não animar em refresh
@@ -213,6 +267,19 @@ function AuthGate() {
   const sawLogin = useRef(false);
   const welcomedFor = useRef<string | null>(null);
   const [welcome, setWelcome] = useState(false);
+
+  // Fases da cobertura de abertura: cobre → abre → some.
+  const [intro, setIntro] = useState<"loading" | "opening" | "done">(
+    loading ? "loading" : "done",
+  );
+
+  useEffect(() => {
+    if (!loading && intro === "loading") {
+      setIntro("opening");
+      const t = setTimeout(() => setIntro("done"), 950);
+      return () => clearTimeout(t);
+    }
+  }, [loading, intro]);
 
   useEffect(() => {
     if (
@@ -227,29 +294,27 @@ function AuthGate() {
     }
   }, [session]);
 
-  if (loading) {
-    return (
-      <div className="relative min-h-screen overflow-hidden bg-[#eef2f8]">
-        <div className="absolute inset-0">
-          <ShaderBackdrop />
-        </div>
-      </div>
-    );
-  }
-
-  if (passwordRecovery) {
-    return <ResetPasswordScreen />;
-  }
-
-  if (!session) {
-    sawLogin.current = true;
-    return <LoginScreen />;
+  let body: ReactNode = null;
+  if (!loading) {
+    if (passwordRecovery) {
+      body = <ResetPasswordScreen />;
+    } else if (!session) {
+      sawLogin.current = true;
+      body = <LoginScreen />;
+    } else {
+      body = (
+        <>
+          <AppShell />
+          {welcome && <WelcomeSplash name={profileName} />}
+        </>
+      );
+    }
   }
 
   return (
     <>
-      <AppShell />
-      {welcome && <WelcomeSplash name={profileName} />}
+      {body}
+      {intro !== "done" && <IntroReveal opening={intro === "opening"} />}
     </>
   );
 }
