@@ -207,52 +207,24 @@ function WelcomeSplash({ name }: { name: string }) {
 }
 
 /**
- * Cobertura do carregamento que, ao terminar, "abre" em duas folhas.
- * O corte segue a diagonal principal (x = y), do canto superior-esquerdo
- * ao inferior-direito; as folhas deslizam perpendicular a ele, em sentidos
- * opostos, revelando a tela por trás sem o corte seco.
+ * Cobertura do carregamento: uma lâmina de "vidro fosco" em tela cheia
+ * (base clara translúcida + desfoque, a luz do shader borrada por trás e
+ * um brilho de reflexo por cima). Quando o carregamento termina, ela
+ * apenas esmaece — o shader continua animando durante o fade e o conteúdo
+ * aparece junto, sem corte.
  */
-function IntroReveal({ opening }: { opening: boolean }) {
-  // A opacidade só cai no fim, quando as folhas já saíram quase de tela —
-  // assim o conteúdo de trás não "vaza" no meio do movimento.
-  const trans =
-    "transform 950ms cubic-bezier(.7,0,.25,1), opacity 200ms ease 720ms";
-
-  // Triângulos separados pela reta x = y. Vértices bem fora da viewport
-  // para a folha nunca mostrar borda ao deslizar.
-  const clipTopRight = "polygon(-60% -60%, 160% -60%, 160% 160%)";
-  const clipBottomLeft = "polygon(-60% -60%, 160% 160%, -60% 160%)";
-
-  // Cada folha é uma lâmina de "vidro fosco": base clara translúcida +
-  // desfoque, a luz do shader borrada passando por trás, e um brilho de
-  // reflexo por cima.
-  const renderSheet = (clip: string, to: string) => (
+function LoadingGlass({ out }: { out: boolean }) {
+  return (
     <div
-      className="absolute inset-0 will-change-transform"
-      style={{
-        clipPath: clip,
-        transform: opening ? to : "translate(0, 0)",
-        opacity: opening ? 0 : 1,
-        transition: trans,
-      }}
+      className="fixed inset-0 z-[120] overflow-hidden pointer-events-none transition-opacity duration-[900ms] ease-out"
+      style={{ opacity: out ? 0 : 1 }}
+      aria-hidden="true"
     >
       <div className="absolute inset-0 bg-[#eef2f8]/60 backdrop-blur-2xl" />
       <div className="absolute inset-0 opacity-30 blur-[3px]">
         <ShaderBackdrop light speed={0.5} />
       </div>
       <div className="absolute inset-0 bg-gradient-to-br from-white/55 via-white/5 to-white/25" />
-    </div>
-  );
-
-  return (
-    <div
-      className="fixed inset-0 z-[120] overflow-hidden pointer-events-none"
-      aria-hidden="true"
-    >
-      {/* folha de cima-direita → desliza para cima-direita */}
-      {renderSheet(clipTopRight, "translate(80%, -80%)")}
-      {/* folha de baixo-esquerda → desliza para baixo-esquerda */}
-      {renderSheet(clipBottomLeft, "translate(-80%, 80%)")}
     </div>
   );
 }
@@ -265,23 +237,22 @@ function AuthGate() {
   const welcomedFor = useRef<string | null>(null);
   const [welcome, setWelcome] = useState(false);
 
-  // Controle da cobertura de abertura. `openingDone` só liga depois que o
-  // carregamento terminou E a animação de abertura rodou. Enquanto
-  // `loading` for true, a cobertura volta a ser exibida (nunca deixa a
-  // tela sem nada por baixo).
-  const [openingDone, setOpeningDone] = useState(!loading);
+  // Controle do vidro do carregamento. Enquanto `loading` for true ele
+  // cobre a tela; quando termina, esmaece por ~900ms (o conteúdo já está
+  // montado atrás e aparece junto) e só então desmonta.
+  const [glassGone, setGlassGone] = useState(!loading);
 
   useEffect(() => {
     if (loading) {
-      setOpeningDone(false);
+      setGlassGone(false);
       return;
     }
-    const t = setTimeout(() => setOpeningDone(true), 1000);
+    const t = setTimeout(() => setGlassGone(true), 950);
     return () => clearTimeout(t);
   }, [loading]);
 
-  const showOverlay = !openingDone;
-  const overlayOpening = !loading && !openingDone;
+  const showGlass = !glassGone;
+  const glassOut = !loading && !glassGone;
 
   useEffect(() => {
     if (
@@ -316,7 +287,7 @@ function AuthGate() {
   return (
     <>
       {body}
-      {showOverlay && <IntroReveal opening={overlayOpening} />}
+      {showGlass && <LoadingGlass out={glassOut} />}
     </>
   );
 }
