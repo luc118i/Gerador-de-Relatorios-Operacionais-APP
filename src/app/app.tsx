@@ -269,18 +269,23 @@ function AuthGate() {
   const welcomedFor = useRef<string | null>(null);
   const [welcome, setWelcome] = useState(false);
 
-  // Fases da cobertura de abertura: cobre → abre → some.
-  const [intro, setIntro] = useState<"loading" | "opening" | "done">(
-    loading ? "loading" : "done",
-  );
+  // Controle da cobertura de abertura. `openingDone` só liga depois que o
+  // carregamento terminou E a animação de abertura rodou. Enquanto
+  // `loading` for true, a cobertura volta a ser exibida (nunca deixa a
+  // tela sem nada por baixo).
+  const [openingDone, setOpeningDone] = useState(!loading);
 
   useEffect(() => {
-    if (!loading && intro === "loading") {
-      setIntro("opening");
-      const t = setTimeout(() => setIntro("done"), 950);
-      return () => clearTimeout(t);
+    if (loading) {
+      setOpeningDone(false);
+      return;
     }
-  }, [loading, intro]);
+    const t = setTimeout(() => setOpeningDone(true), 1000);
+    return () => clearTimeout(t);
+  }, [loading]);
+
+  const showOverlay = !openingDone;
+  const overlayOpening = !loading && !openingDone;
 
   useEffect(() => {
     if (
@@ -315,7 +320,7 @@ function AuthGate() {
   return (
     <>
       {body}
-      {intro !== "done" && <IntroReveal opening={intro === "opening"} />}
+      {showOverlay && <IntroReveal opening={overlayOpening} />}
     </>
   );
 }
