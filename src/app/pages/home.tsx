@@ -1269,7 +1269,7 @@ export function Home({
               <button
                 type="button"
                 onClick={() => setPodiumHiddenPersist(false)}
-                className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-800 px-3 py-1.5 text-xs font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-500/10 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-800 px-3 py-1.5 text-xs font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-500/10 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
               >
                 <Eye className="h-3.5 w-3.5" />
                 Mostrar pódio de apuração

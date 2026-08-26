@@ -291,7 +291,7 @@ export function ApuracaoPodium({
               type="button"
               onClick={onHide}
               title="Ocultar pódio de apuração"
-              className="ml-1 -mr-1 rounded p-1 text-slate-400 transition-colors hover:bg-slate-500/10 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
+              className="ml-1 -mr-1 cursor-pointer rounded p-1 text-slate-400 transition-colors hover:bg-slate-500/10 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
             >
               <EyeOff className="h-3.5 w-3.5" />
             </button>
