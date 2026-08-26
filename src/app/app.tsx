@@ -214,12 +214,19 @@ function WelcomeSplash({ name }: { name: string }) {
  * revelando o conteúdo de dentro pra fora; um fade-out acompanha no fim.
  * O shader segue animando durante toda a transição — sem corte.
  */
-function LoadingGlass({ out }: { out: boolean }) {
+function LoadingGlass({ out, onDone }: { out: boolean; onDone: () => void }) {
   return (
     <div
       className="lg-root fixed inset-0 z-[120] overflow-hidden pointer-events-none"
       data-out={out ? "1" : "0"}
       aria-hidden="true"
+      onTransitionEnd={(e) => {
+        // Só o fim da transição da própria lâmina (a `opacity`, que é a
+        // última a terminar) — ignora eventos que sobem do canvas do shader.
+        if (e.target === e.currentTarget && e.propertyName === "opacity") {
+          onDone();
+        }
+      }}
     >
       <style>{`
         @property --lg-hole {
@@ -260,23 +267,39 @@ function AuthGate() {
   const welcomedFor = useRef<string | null>(null);
   const [welcome, setWelcome] = useState(false);
 
-  // Controle do vidro do carregamento. Enquanto `loading` for true ele
-  // cobre a tela; quando termina, o furo circular cresce do centro (~1s)
-  // e o vidro esmaece — o conteúdo já está montado atrás e aparece junto.
-  // Só desmonta depois da transição inteira.
-  const [glassGone, setGlassGone] = useState(!loading);
+  // Controle do vidro do carregamento.
+  //  cover  → cobre a tela enquanto `loading`
+  //  out    → carregamento terminou; a máscara abre do centro + fade-out
+  //  gone   → transição concluída (evento transitionend) → desmonta
+  // A abertura só dispara depois de 2 frames com o conteúdo já montado
+  // atrás, pra garantir um "antes" limpo (senão a transição pula/corta).
+  const [glassPhase, setGlassPhase] = useState<"cover" | "out" | "gone">(
+    loading ? "cover" : "gone",
+  );
 
   useEffect(() => {
     if (loading) {
-      setGlassGone(false);
+      setGlassPhase("cover");
       return;
     }
-    const t = setTimeout(() => setGlassGone(true), 1150);
-    return () => clearTimeout(t);
+    let raf1 = 0;
+    let raf2 = 0;
+    raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => {
+        setGlassPhase((p) => (p === "cover" ? "out" : p));
+      });
+    });
+    // Rede de segurança caso o transitionend não chegue.
+    const t = window.setTimeout(() => setGlassPhase("gone"), 2600);
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      window.clearTimeout(t);
+    };
   }, [loading]);
 
-  const showGlass = !glassGone;
-  const glassOut = !loading && !glassGone;
+  const showGlass = glassPhase !== "gone";
+  const glassOut = glassPhase === "out";
 
   useEffect(() => {
     if (
@@ -311,7 +334,9 @@ function AuthGate() {
   return (
     <>
       {body}
-      {showGlass && <LoadingGlass out={glassOut} />}
+      {showGlass && (
+        <LoadingGlass out={glassOut} onDone={() => setGlassPhase("gone")} />
+      )}
     </>
   );
 }
