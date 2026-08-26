@@ -12,12 +12,12 @@ import { useEffect, useRef } from "react";
 export function ShaderBackdrop({
   className = "",
   scale = 1,
-  speed = 1,
+  speed = 0.45,
 }: {
   className?: string;
   /** >1 afasta a câmera e mostra mais arcos (útil em faixas estreitas). */
   scale?: number;
-  /** Multiplica a velocidade da animação. */
+  /** Multiplica a velocidade da animação (1 ≈ ritmo do shader original). */
   speed?: number;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -120,12 +120,28 @@ export function ShaderBackdrop({
 
     let raf = 0;
     let time = 1.0;
+    let last = performance.now();
+    let faded = false;
 
-    const render = () => {
-      time += 0.05 * speedRef.current;
+    // Entrada suave: o canvas nasce transparente e aparece após o 1º quadro.
+    const revealSoon = () => {
+      if (faded) return;
+      faded = true;
+      requestAnimationFrame(() => {
+        canvas.style.opacity = "1";
+      });
+    };
+
+    const render = (now: number) => {
+      // Passo por segundo (independente do FPS): 3.0 ≈ ritmo do shader
+      // original a 60fps. `speed` calibra por cima disso.
+      const dt = Math.min((now - last) / 1000, 0.05);
+      last = now;
+      time += dt * 3.0 * speedRef.current;
       gl.uniform1f(timeLoc, time);
       gl.uniform1f(scaleLoc, scaleRef.current);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
+      revealSoon();
       raf = requestAnimationFrame(render);
     };
 
@@ -134,8 +150,9 @@ export function ShaderBackdrop({
       gl.uniform1f(timeLoc, time);
       gl.uniform1f(scaleLoc, scaleRef.current);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
+      revealSoon();
     } else {
-      render();
+      raf = requestAnimationFrame(render);
     }
 
     return () => {
@@ -153,7 +170,13 @@ export function ShaderBackdrop({
       ref={canvasRef}
       aria-hidden="true"
       className={className}
-      style={{ display: "block", width: "100%", height: "100%" }}
+      style={{
+        display: "block",
+        width: "100%",
+        height: "100%",
+        opacity: 0,
+        transition: "opacity 700ms ease",
+      }}
     />
   );
 }

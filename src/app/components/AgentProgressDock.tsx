@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Cpu, Gavel, AlertTriangle, RefreshCw, X, ChevronDown, ChevronUp, Loader2, CheckCircle2 } from "lucide-react";
 import { ShaderBackdrop } from "./ShaderBackdrop";
 
@@ -58,6 +58,18 @@ export function AgentProgressDock({ jobs }: { jobs: AgentJob[] }) {
     (j) => !j.cancelRequested && j.doneCount < j.total,
   );
 
+  // Mantém o fundo shader montado por um instante após a última tarefa
+  // terminar, para que ele possa esmaecer suavemente em vez de sumir de vez.
+  const [keepBackdrop, setKeepBackdrop] = useState(anyRunning);
+  useEffect(() => {
+    if (anyRunning) {
+      setKeepBackdrop(true);
+      return;
+    }
+    const t = setTimeout(() => setKeepBackdrop(false), 900);
+    return () => clearTimeout(t);
+  }, [anyRunning]);
+
   return (
     <div className="fixed bottom-4 right-4 z-[70] w-[330px] max-w-[calc(100vw-2rem)] select-none">
       <div className="rounded-xl bg-white dark:bg-gray-900 shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
@@ -67,18 +79,23 @@ export function AgentProgressDock({ jobs }: { jobs: AgentJob[] }) {
           onClick={() => setMinimized((v) => !v)}
           className="relative w-full flex items-center gap-2.5 px-3.5 py-2.5 bg-gray-900 text-white overflow-hidden group"
         >
-          {/* Fundo shader animado enquanto há tarefa em andamento */}
-          {anyRunning && (
-            <>
-              <span className="pointer-events-none absolute inset-0 opacity-60">
-                <ShaderBackdrop scale={2.6} speed={0.8} />
-              </span>
-              <span className="pointer-events-none absolute inset-0 bg-gray-900/45 group-hover:bg-gray-900/30 transition-colors" />
-            </>
+          {/* Fundo shader animado enquanto há tarefa em andamento.
+              Fica montado um pouco além do fim para esmaecer suavemente. */}
+          <span className="pointer-events-none absolute inset-0 bg-gray-900 group-hover:bg-gray-800 transition-colors" />
+          {keepBackdrop && (
+            <span
+              className={`pointer-events-none absolute inset-0 transition-opacity duration-[900ms] ease-out ${
+                anyRunning ? "opacity-60" : "opacity-0"
+              }`}
+            >
+              <ShaderBackdrop scale={2.6} speed={0.45} />
+            </span>
           )}
-          {!anyRunning && (
-            <span className="pointer-events-none absolute inset-0 bg-gray-900 group-hover:bg-gray-800 transition-colors" />
-          )}
+          <span
+            className={`pointer-events-none absolute inset-0 bg-gray-900/45 group-hover:bg-gray-900/30 transition-opacity duration-[900ms] ${
+              keepBackdrop && anyRunning ? "opacity-100" : "opacity-0"
+            }`}
+          />
 
           <span className="relative z-10 flex h-2.5 w-2.5 shrink-0">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />

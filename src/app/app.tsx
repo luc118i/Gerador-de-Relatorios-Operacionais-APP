@@ -13,7 +13,7 @@ import { AdminAuthProvider } from "./context/AdminAuthContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { LoginScreen } from "./components/LoginScreen";
 import { ResetPasswordScreen } from "./components/ResetPasswordScreen";
-import { Loader2, Check } from "lucide-react";
+import { Check } from "lucide-react";
 import { AppDrawer, type DrawerPage } from "./components/AppDrawer";
 import { AnaliseTelemetriaPage } from "./pages/AnaliseTelemetriaPage";
 import { EsquemasRotaPage } from "./pages/EsquemasRotaPage";
@@ -149,7 +149,7 @@ function WelcomeSplash({ name }: { name: string }) {
         <ShaderBackdrop />
       </div>
       <style>{`
-        @keyframes lw-fade { 0%{opacity:0} 12%{opacity:1} 82%{opacity:1} 100%{opacity:0} }
+        @keyframes lw-fade { 0%{opacity:0} 9%{opacity:1} 66%{opacity:1} 100%{opacity:0} }
         @keyframes lw-pop {
           0%{transform:scale(.4);opacity:0}
           55%{transform:scale(1.12);opacity:1}
@@ -162,7 +162,7 @@ function WelcomeSplash({ name }: { name: string }) {
         }
         @keyframes lw-check { from{stroke-dashoffset:48} to{stroke-dashoffset:0} }
         @keyframes lw-up { 0%{opacity:0;transform:translateY(8px)} 100%{opacity:1;transform:translateY(0)} }
-        .ls-welcome { animation: lw-fade 1.6s ease forwards; }
+        .ls-welcome { animation: lw-fade 2.2s ease-in-out forwards; }
       `}</style>
 
       <div className="relative z-10 flex h-24 w-24 items-center justify-center">
@@ -222,7 +222,7 @@ function AuthGate() {
     ) {
       welcomedFor.current = session.user.id;
       setWelcome(true);
-      const t = setTimeout(() => setWelcome(false), 1600);
+      const t = setTimeout(() => setWelcome(false), 2200);
       return () => clearTimeout(t);
     }
   }, [session]);
@@ -232,9 +232,6 @@ function AuthGate() {
       <div className="relative min-h-screen overflow-hidden bg-[#0b1220]">
         <div className="absolute inset-0">
           <ShaderBackdrop />
-        </div>
-        <div className="relative z-10 flex min-h-screen items-center justify-center">
-          <Loader2 className="h-7 w-7 animate-spin text-white/80" />
         </div>
       </div>
     );
