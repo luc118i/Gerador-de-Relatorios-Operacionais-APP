@@ -207,54 +207,63 @@ function WelcomeSplash({ name }: { name: string }) {
 }
 
 /**
- * Cobertura do carregamento que, ao terminar, "abre" como duas folhas
- * deslizando para os lados e revela a tela por trás — a sensação de a
- * página se abrindo para o usuário, sem o corte seco.
+ * Cobertura do carregamento que, ao terminar, "abre" em duas folhas —
+ * mas o corte segue a mesma diagonal das linhas do shader (anti-diagonal,
+ * x + y = const). As folhas deslizam em sentidos opostos, perpendicular
+ * ao corte, revelando a tela por trás sem o corte seco.
  */
 function IntroReveal({ opening }: { opening: boolean }) {
-  const slide =
-    "transform 900ms cubic-bezier(.7,0,.25,1), opacity 320ms ease 600ms";
-  const half = "absolute inset-y-0 w-1/2 overflow-hidden will-change-transform";
-  // O shader interno ocupa 200% da metade (= largura total da tela) e fica
-  // ancorado na borda externa, de modo que as duas metades formam uma
-  // imagem contínua enquanto estão fechadas.
-  const inner = { width: "200%", position: "absolute" as const, top: 0, bottom: 0 };
+  const trans =
+    "transform 950ms cubic-bezier(.7,0,.25,1), opacity 340ms ease 640ms";
+
+  // Triângulos separados pela reta que passa pelo centro na direção (1,-1)
+  // — o mesmo ângulo das faixas do shader. Vértices bem fora da viewport
+  // para a folha nunca mostrar borda ao deslizar.
+  const clipTopLeft = "polygon(-60% -60%, 160% -60%, -60% 160%)";
+  const clipBottomRight = "polygon(160% -60%, 160% 160%, -60% 160%)";
+
+  const sheet = "absolute inset-0 will-change-transform";
 
   return (
     <div
       className="fixed inset-0 z-[120] overflow-hidden pointer-events-none"
       aria-hidden="true"
     >
+      {/* folha de cima-esquerda → desliza para cima-esquerda */}
       <div
-        className={`${half} left-0`}
+        className={sheet}
         style={{
-          transform: opening ? "translateX(-101%)" : "translateX(0)",
+          clipPath: clipTopLeft,
+          transform: opening ? "translate(-80%, -80%)" : "translate(0, 0)",
           opacity: opening ? 0 : 1,
-          transition: slide,
+          transition: trans,
         }}
       >
-        <div style={{ ...inner, left: 0 }}>
-          <ShaderBackdrop />
-        </div>
+        <ShaderBackdrop />
       </div>
 
+      {/* folha de baixo-direita → desliza para baixo-direita */}
       <div
-        className={`${half} right-0`}
+        className={sheet}
         style={{
-          transform: opening ? "translateX(101%)" : "translateX(0)",
+          clipPath: clipBottomRight,
+          transform: opening ? "translate(80%, 80%)" : "translate(0, 0)",
           opacity: opening ? 0 : 1,
-          transition: slide,
+          transition: trans,
         }}
       >
-        <div style={{ ...inner, right: 0 }}>
-          <ShaderBackdrop />
-        </div>
+        <ShaderBackdrop />
       </div>
 
-      {/* fresta de luz no encontro das folhas */}
+      {/* fresta de luz ao longo do corte, no mesmo ângulo das linhas */}
       <div
-        className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-white/25"
-        style={{ opacity: opening ? 0 : 1, transition: "opacity 200ms ease" }}
+        className="absolute left-1/2 top-1/2 h-px bg-white/25"
+        style={{
+          width: "220%",
+          transform: "translate(-50%, -50%) rotate(-45deg)",
+          opacity: opening ? 0 : 1,
+          transition: "opacity 220ms ease",
+        }}
       />
     </div>
   );
