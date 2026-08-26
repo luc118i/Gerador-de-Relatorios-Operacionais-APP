@@ -68,6 +68,13 @@ export function ApuracaoPodium({
   // ID, nem precisa disso. Guarda, por bucket, a contagem de cada grafia
   // original pra exibir a mais comum (ou o nome atual, se o bucket for do
   // próprio usuário logado — reflete rename na hora, sem esperar frequência).
+  //
+  // Exceção: se a ocorrência não tem ID mas o nome bate com um alias do
+  // usuário logado, usa a chave `id:` dele mesmo assim — senão as ocorrências
+  // sem ID dele (GAS / race de login) caíam num bucket `name:` separado e ele
+  // aparecia duas vezes no pódio, com a contagem repartida. Só resolve pro
+  // usuário logado; pros colegas, o merge depende da atualização retroativa
+  // do `analisadoPorUserId` no backend.
   const map = new Map<string, { count: number; spellings: Map<string, number> }>();
   let apurado = 0;
   for (const o of occurrences) {
@@ -75,7 +82,13 @@ export function ApuracaoPodium({
     if (!rawName) continue;
     apurado++;
     const analyst = canonicalName(rawName);
-    const key = o.analisadoPorUserId ? `id:${o.analisadoPorUserId}` : `name:${normalizeName(analyst)}`;
+    const matchesLoggedInUser =
+      !!currentUserId && !!currentProfileAliases?.has(normalizeName(rawName));
+    const key = o.analisadoPorUserId
+      ? `id:${o.analisadoPorUserId}`
+      : matchesLoggedInUser
+        ? `id:${currentUserId}`
+        : `name:${normalizeName(analyst)}`;
     const entry = map.get(key) ?? { count: 0, spellings: new Map<string, number>() };
     entry.count++;
     const displayAs =
