@@ -144,7 +144,7 @@ function AppShell() {
  */
 function WelcomeSplash({ name }: { name: string }) {
   return (
-    <div className="ls-welcome fixed inset-0 z-[100] flex flex-col items-center justify-center gap-4 overflow-hidden bg-[#eef2f8]">
+    <div className="ls-welcome fixed inset-0 z-[100] flex flex-col items-center justify-center gap-4 overflow-hidden bg-black">
       <div className="pointer-events-none absolute inset-0">
         <ShaderBackdrop />
       </div>
@@ -195,10 +195,10 @@ function WelcomeSplash({ name }: { name: string }) {
         className="relative z-10 text-center"
         style={{ animation: "lw-up .5s ease forwards .4s", opacity: 0 }}
       >
-        <p className="text-lg font-semibold text-[#1a2a4a] [text-shadow:0_1px_10px_rgba(238,242,248,0.9)]">
+        <p className="text-lg font-semibold text-white [text-shadow:0_2px_16px_rgba(0,0,0,0.85)]">
           Bem-vindo{name ? `, ${name.split(" ")[0]}` : ""}!
         </p>
-        <p className="mt-0.5 text-sm text-[#5b6b8c] [text-shadow:0_1px_8px_rgba(238,242,248,0.9)]">
+        <p className="mt-0.5 text-sm text-white/70 [text-shadow:0_2px_14px_rgba(0,0,0,0.85)]">
           Preparando seu painel…
         </p>
       </div>
@@ -222,7 +222,9 @@ function IntroReveal({ opening }: { opening: boolean }) {
   const clipTopLeft = "polygon(-60% -60%, 160% -60%, -60% 160%)";
   const clipBottomRight = "polygon(160% -60%, 160% 160%, -60% 160%)";
 
-  const sheet = "absolute inset-0 will-change-transform";
+  // bg-black atrás do canvas: enquanto o shader faz o fade-in de entrada,
+  // a folha já cobre com preto (não deixa vazar o fundo da página).
+  const sheet = "absolute inset-0 will-change-transform bg-black";
 
   return (
     <div
