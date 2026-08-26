@@ -223,9 +223,26 @@ function IntroReveal({ opening }: { opening: boolean }) {
   const clipTopRight = "polygon(-60% -60%, 160% -60%, 160% 160%)";
   const clipBottomLeft = "polygon(-60% -60%, 160% 160%, -60% 160%)";
 
-  // Fundo claro atrás do canvas: enquanto o shader faz o fade-in de
-  // entrada, a folha já cobre (não deixa vazar o fundo da página).
-  const sheet = "absolute inset-0 will-change-transform bg-[#eef2f8]";
+  // Cada folha é uma lâmina de "vidro fosco": base clara translúcida +
+  // desfoque, a luz do shader borrada passando por trás, e um brilho de
+  // reflexo por cima.
+  const renderSheet = (clip: string, to: string) => (
+    <div
+      className="absolute inset-0 will-change-transform"
+      style={{
+        clipPath: clip,
+        transform: opening ? to : "translate(0, 0)",
+        opacity: opening ? 0 : 1,
+        transition: trans,
+      }}
+    >
+      <div className="absolute inset-0 bg-[#eef2f8]/60 backdrop-blur-2xl" />
+      <div className="absolute inset-0 opacity-30 blur-[3px]">
+        <ShaderBackdrop light speed={0.5} />
+      </div>
+      <div className="absolute inset-0 bg-gradient-to-br from-white/55 via-white/5 to-white/25" />
+    </div>
+  );
 
   return (
     <div
@@ -233,34 +250,9 @@ function IntroReveal({ opening }: { opening: boolean }) {
       aria-hidden="true"
     >
       {/* folha de cima-direita → desliza para cima-direita */}
-      <div
-        className={sheet}
-        style={{
-          clipPath: clipTopRight,
-          transform: opening ? "translate(80%, -80%)" : "translate(0, 0)",
-          opacity: opening ? 0 : 1,
-          transition: trans,
-        }}
-      >
-        <div className="absolute inset-0 opacity-45">
-          <ShaderBackdrop light speed={0.5} />
-        </div>
-      </div>
-
+      {renderSheet(clipTopRight, "translate(80%, -80%)")}
       {/* folha de baixo-esquerda → desliza para baixo-esquerda */}
-      <div
-        className={sheet}
-        style={{
-          clipPath: clipBottomLeft,
-          transform: opening ? "translate(-80%, 80%)" : "translate(0, 0)",
-          opacity: opening ? 0 : 1,
-          transition: trans,
-        }}
-      >
-        <div className="absolute inset-0 opacity-45">
-          <ShaderBackdrop light speed={0.5} />
-        </div>
-      </div>
+      {renderSheet(clipBottomLeft, "translate(-80%, 80%)")}
     </div>
   );
 }
