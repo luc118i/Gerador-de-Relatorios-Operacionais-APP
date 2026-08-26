@@ -49,14 +49,14 @@ const KIND_META: Record<AgentJobKind, { label: string; verb: string; icon: typeo
  * o sistema, para que possa deixar o agente registrando e seguir trabalhando.
  */
 export function AgentProgressDock({ jobs }: { jobs: AgentJob[] }) {
-  const [minimized, setMinimized] = useState(false);
-
-  if (jobs.length === 0) return null;
-
   const activeCount = jobs.length;
   const anyRunning = jobs.some(
     (j) => !j.cancelRequested && j.doneCount < j.total,
   );
+
+  // Todos os hooks precisam rodar em TODA renderização (inclusive quando
+  // não há tarefa), senão o React quebra com "rendered more hooks".
+  const [minimized, setMinimized] = useState(false);
 
   // Mantém o fundo shader montado por um instante após a última tarefa
   // terminar, para que ele possa esmaecer suavemente em vez de sumir de vez.
@@ -69,6 +69,8 @@ export function AgentProgressDock({ jobs }: { jobs: AgentJob[] }) {
     const t = setTimeout(() => setKeepBackdrop(false), 900);
     return () => clearTimeout(t);
   }, [anyRunning]);
+
+  if (jobs.length === 0) return null;
 
   return (
     <div className="fixed bottom-4 right-4 z-[70] w-[330px] max-w-[calc(100vw-2rem)] select-none">
