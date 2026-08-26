@@ -571,6 +571,19 @@ export function OccurrenceCard({
     const baseSigla = resolveBaseSigla(rawBase) ?? abbreviate(canonicalBase);
     const baseColor = BASE_PALETTE[hashString(canonicalBase) % BASE_PALETTE.length];
 
+    // Local(is) da ocorrência — mostrado direto na linha pra não precisar
+    // abrir o card. Em EXCESSO_PERMANENCIA com vários pontos, `place` vira um
+    // resumo ("N paradas"), então junta os pontos individuais; senão usa o
+    // `place` único. GENERICO não tem local de parada (usa reportTitle).
+    const excessoPlaces =
+      (occurrence.points?.length ?? 0) > 0
+        ? Array.from(new Set(occurrence.points!.map((p) => p.place).filter(Boolean)))
+        : occurrence.place
+          ? [occurrence.place]
+          : [];
+    const placeText =
+      occurrence.typeCode === "GENERICO" ? "" : excessoPlaces.join(" · ");
+
     return (
       <>
       {showAdminLogin && <AdminLoginModal onClose={() => setShowAdminLogin(false)} />}
@@ -747,6 +760,15 @@ export function OccurrenceCard({
               {subjectDetail && (
                 <span className="text-[11px] text-gray-400 dark:text-gray-500 truncate block leading-tight">
                   {subjectDetail}
+                </span>
+              )}
+              {placeText && (
+                <span
+                  className="flex items-center gap-1 text-[11px] text-gray-500 dark:text-gray-400 leading-tight"
+                  title={placeText}
+                >
+                  <MapPin className="w-2.5 h-2.5 flex-shrink-0 text-gray-400 dark:text-gray-500" />
+                  <span className="truncate">{placeText}</span>
                 </span>
               )}
             </>
