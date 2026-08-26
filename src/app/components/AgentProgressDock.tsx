@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Cpu, Gavel, AlertTriangle, RefreshCw, X, ChevronDown, ChevronUp, Loader2, CheckCircle2 } from "lucide-react";
+import { ShaderBackdrop } from "./ShaderBackdrop";
 
 export type AgentJobKind = "registro" | "tratativa" | "revisar";
 
@@ -53,6 +54,9 @@ export function AgentProgressDock({ jobs }: { jobs: AgentJob[] }) {
   if (jobs.length === 0) return null;
 
   const activeCount = jobs.length;
+  const anyRunning = jobs.some(
+    (j) => !j.cancelRequested && j.doneCount < j.total,
+  );
 
   return (
     <div className="fixed bottom-4 right-4 z-[70] w-[330px] max-w-[calc(100vw-2rem)] select-none">
@@ -61,20 +65,33 @@ export function AgentProgressDock({ jobs }: { jobs: AgentJob[] }) {
         <button
           type="button"
           onClick={() => setMinimized((v) => !v)}
-          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 bg-gray-900 text-white hover:bg-gray-800 transition-colors"
+          className="relative w-full flex items-center gap-2.5 px-3.5 py-2.5 bg-gray-900 text-white overflow-hidden group"
         >
-          <span className="relative flex h-2.5 w-2.5 shrink-0">
+          {/* Fundo shader animado enquanto há tarefa em andamento */}
+          {anyRunning && (
+            <>
+              <span className="pointer-events-none absolute inset-0 opacity-60">
+                <ShaderBackdrop scale={2.6} speed={0.8} />
+              </span>
+              <span className="pointer-events-none absolute inset-0 bg-gray-900/45 group-hover:bg-gray-900/30 transition-colors" />
+            </>
+          )}
+          {!anyRunning && (
+            <span className="pointer-events-none absolute inset-0 bg-gray-900 group-hover:bg-gray-800 transition-colors" />
+          )}
+
+          <span className="relative z-10 flex h-2.5 w-2.5 shrink-0">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400" />
           </span>
-          <Cpu className="w-4 h-4 shrink-0" />
-          <span className="text-sm font-semibold flex-1 text-left">
+          <Cpu className="relative z-10 w-4 h-4 shrink-0" />
+          <span className="relative z-10 text-sm font-semibold flex-1 text-left [text-shadow:0_1px_6px_rgba(0,0,0,0.6)]">
             Agente em execução
             {activeCount > 1 && (
-              <span className="ml-1 text-xs font-normal text-gray-300 dark:text-gray-600">({activeCount} tarefas)</span>
+              <span className="ml-1 text-xs font-normal text-gray-300 dark:text-gray-400">({activeCount} tarefas)</span>
             )}
           </span>
-          {minimized ? <ChevronUp className="w-4 h-4 shrink-0" /> : <ChevronDown className="w-4 h-4 shrink-0" />}
+          {minimized ? <ChevronUp className="relative z-10 w-4 h-4 shrink-0" /> : <ChevronDown className="relative z-10 w-4 h-4 shrink-0" />}
         </button>
 
         {/* Corpo */}

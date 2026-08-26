@@ -19,6 +19,7 @@ import { AnaliseTelemetriaPage } from "./pages/AnaliseTelemetriaPage";
 import { EsquemasRotaPage } from "./pages/EsquemasRotaPage";
 import { LocaisPage } from "./pages/LocaisPage";
 import { useAppUpdateNotifier } from "../hooks/useAppUpdateNotifier";
+import { ShaderBackdrop } from "./components/ShaderBackdrop";
 
 type Page =
   | "home"
@@ -143,7 +144,10 @@ function AppShell() {
  */
 function WelcomeSplash({ name }: { name: string }) {
   return (
-    <div className="ls-welcome fixed inset-0 z-[100] flex flex-col items-center justify-center gap-4 bg-[#edf1f7] dark:bg-[#0b1220]">
+    <div className="ls-welcome fixed inset-0 z-[100] flex flex-col items-center justify-center gap-4 overflow-hidden bg-[#0b1220]">
+      <div className="pointer-events-none absolute inset-0">
+        <ShaderBackdrop />
+      </div>
       <style>{`
         @keyframes lw-fade { 0%{opacity:0} 12%{opacity:1} 82%{opacity:1} 100%{opacity:0} }
         @keyframes lw-pop {
@@ -161,7 +165,7 @@ function WelcomeSplash({ name }: { name: string }) {
         .ls-welcome { animation: lw-fade 1.6s ease forwards; }
       `}</style>
 
-      <div className="relative flex h-24 w-24 items-center justify-center">
+      <div className="relative z-10 flex h-24 w-24 items-center justify-center">
         {[0, 1].map((i) => (
           <span
             key={i}
@@ -188,13 +192,15 @@ function WelcomeSplash({ name }: { name: string }) {
       </div>
 
       <div
-        className="text-center"
+        className="relative z-10 text-center"
         style={{ animation: "lw-up .5s ease forwards .4s", opacity: 0 }}
       >
-        <p className="text-lg font-semibold text-[#1a2a4a] dark:text-[#e8ecf8]">
+        <p className="text-lg font-semibold text-[#e8ecf8] [text-shadow:0_1px_12px_rgba(11,18,32,0.8)]">
           Bem-vindo{name ? `, ${name.split(" ")[0]}` : ""}!
         </p>
-        <p className="mt-0.5 text-sm text-[#8899bb] dark:text-[#7f93c4]">Preparando seu painel…</p>
+        <p className="mt-0.5 text-sm text-[#9fb2dc] [text-shadow:0_1px_10px_rgba(11,18,32,0.8)]">
+          Preparando seu painel…
+        </p>
       </div>
     </div>
   );
@@ -223,8 +229,13 @@ function AuthGate() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-        <Loader2 className="w-6 h-6 text-gray-400 dark:text-gray-500 animate-spin" />
+      <div className="relative min-h-screen overflow-hidden bg-[#0b1220]">
+        <div className="absolute inset-0">
+          <ShaderBackdrop />
+        </div>
+        <div className="relative z-10 flex min-h-screen items-center justify-center">
+          <Loader2 className="h-7 w-7 animate-spin text-white/80" />
+        </div>
       </div>
     );
   }
