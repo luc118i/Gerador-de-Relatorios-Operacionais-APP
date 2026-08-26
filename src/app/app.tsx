@@ -220,34 +220,39 @@ function LoadingGlass({ out, onDone }: { out: boolean; onDone: () => void }) {
       className="lg-root fixed inset-0 z-[120] overflow-hidden pointer-events-none"
       data-out={out ? "1" : "0"}
       aria-hidden="true"
-      onTransitionEnd={(e) => {
-        // Só o fim da transição da própria lâmina (a `opacity`, que é a
-        // última a terminar) — ignora eventos que sobem do canvas do shader.
-        if (e.target === e.currentTarget && e.propertyName === "opacity") {
-          onDone();
-        }
+      onAnimationEnd={(e) => {
+        // Fim da animação da própria lâmina — ignora qualquer coisa que
+        // suba de dentro (o canvas do shader não anima, mas por garantia).
+        if (e.target === e.currentTarget) onDone();
       }}
     >
       <style>{`
         @property --lg-hole {
           syntax: '<length-percentage>';
-          initial-value: 0%;
+          initial-value: -40%;
           inherits: false;
         }
         .lg-root {
-          --lg-hole: 0%;
+          --lg-hole: -40%;
           opacity: 1;
-          -webkit-mask-image: radial-gradient(circle at 50% 50%, transparent var(--lg-hole), #000 calc(var(--lg-hole) + 26%));
-                  mask-image: radial-gradient(circle at 50% 50%, transparent var(--lg-hole), #000 calc(var(--lg-hole) + 26%));
-          transition: --lg-hole 1000ms cubic-bezier(.4, 0, .2, 1),
-                      opacity 700ms ease-out 320ms;
+          -webkit-mask-image: radial-gradient(circle at 50% 50%, transparent var(--lg-hole), #000 calc(var(--lg-hole) + 34%));
+                  mask-image: radial-gradient(circle at 50% 50%, transparent var(--lg-hole), #000 calc(var(--lg-hole) + 34%));
         }
+        /* Animação (não transição): dispara do 0% de forma determinística
+           quando data-out vira "1", sem depender de um "quadro anterior". */
         .lg-root[data-out="1"] {
-          --lg-hole: 150%;
-          opacity: 0;
+          animation: lg-reveal 1150ms cubic-bezier(.35, 0, .2, 1) forwards;
+        }
+        @keyframes lg-reveal {
+          0%   { --lg-hole: -40%;  opacity: 1; }
+          60%  { opacity: 1; }
+          100% { --lg-hole: 175%;  opacity: 0; }
         }
         @media (prefers-reduced-motion: reduce) {
-          .lg-root { transition: opacity 300ms ease; }
+          .lg-root[data-out="1"] {
+            animation: lg-fade 320ms ease forwards;
+          }
+          @keyframes lg-fade { to { opacity: 0; } }
         }
       `}</style>
       <div className="absolute inset-0 bg-[#eef2f8]/60 backdrop-blur-2xl" />
@@ -268,11 +273,9 @@ function AuthGate() {
   const [welcome, setWelcome] = useState(false);
 
   // Controle do vidro do carregamento.
-  //  cover  → cobre a tela enquanto `loading`
-  //  out    → carregamento terminou; a máscara abre do centro + fade-out
-  //  gone   → transição concluída (evento transitionend) → desmonta
-  // A abertura só dispara depois de 2 frames com o conteúdo já montado
-  // atrás, pra garantir um "antes" limpo (senão a transição pula/corta).
+  //  cover → cobre a tela enquanto `loading`
+  //  out   → carregamento terminou; a máscara abre do centro + fade-out
+  //  gone  → animação concluída (animationend) → desmonta
   const [glassPhase, setGlassPhase] = useState<"cover" | "out" | "gone">(
     loading ? "cover" : "gone",
   );
@@ -282,18 +285,14 @@ function AuthGate() {
       setGlassPhase("cover");
       return;
     }
-    let raf1 = 0;
-    let raf2 = 0;
-    raf1 = requestAnimationFrame(() => {
-      raf2 = requestAnimationFrame(() => {
-        setGlassPhase((p) => (p === "cover" ? "out" : p));
-      });
+    // Um frame com o conteúdo já montado atrás e então dispara a abertura.
+    const raf = requestAnimationFrame(() => {
+      setGlassPhase((p) => (p === "cover" ? "out" : p));
     });
-    // Rede de segurança caso o transitionend não chegue.
+    // Rede de segurança caso o animationend não chegue (anim = 1150ms).
     const t = window.setTimeout(() => setGlassPhase("gone"), 2600);
     return () => {
-      cancelAnimationFrame(raf1);
-      cancelAnimationFrame(raf2);
+      cancelAnimationFrame(raf);
       window.clearTimeout(t);
     };
   }, [loading]);
