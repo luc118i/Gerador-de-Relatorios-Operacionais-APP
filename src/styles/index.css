@@ -214,3 +214,51 @@
     animation: none;
   }
 }
+
+/* ── Botão de olho: recolher/expandir as ocorrências do assunto ─────────────── */
+
+/* Anima a altura sem precisar medir: grade de 1 linha que vai de 1fr→0fr.
+   A camada interna corta o overflow enquanto encolhe. */
+.subject-collapse {
+  display: grid;
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transition:
+    grid-template-rows 260ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 180ms ease,
+    transform 260ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.subject-collapse.is-collapsed {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transform: translateY(-4px);
+  pointer-events: none;
+}
+
+.subject-collapse-inner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* Troca do ícone Eye ⇄ EyeOff (remonta via `key`) */
+@keyframes eye-swap {
+  from { opacity: 0; transform: scale(0.55) rotate(-12deg); }
+  to   { opacity: 1; transform: scale(1) rotate(0); }
+}
+
+.eye-swap {
+  animation: eye-swap 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .subject-collapse {
+    transition: none;
+  }
+  .subject-collapse.is-collapsed {
+    transform: none;
+  }
+  .eye-swap {
+    animation: none;
+  }
+}

@@ -118,9 +118,12 @@ export function SubjectGroup({
         <button
           onClick={onToggleCollapse}
           title={collapsed ? "Mostrar ocorrências" : "Ocultar ocorrências"}
-          className="cursor-pointer ml-auto p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-500 dark:hover:text-gray-300 dark:hover:bg-gray-800 transition-colors"
+          aria-expanded={!collapsed}
+          className="cursor-pointer ml-auto p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-500 dark:hover:text-gray-300 dark:hover:bg-gray-800 transition-colors active:scale-90"
         >
-          {collapsed ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+          <span key={collapsed ? "off" : "on"} className="eye-swap inline-flex">
+            {collapsed ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+          </span>
         </button>
       </div>
 
@@ -181,25 +184,30 @@ export function SubjectGroup({
         </div>
       )}
 
-      {!collapsed && (
-        <OccurrenceCardsView
-          occurrences={occs}
-          viewMode={viewMode}
-          vehicleOccurrenceCount={vehicleOccurrenceCount}
-          onOpen={onOpen}
-          onEditar={onEditar}
-          onExcluir={onExcluir}
-          getDriveStatus={getDriveStatus}
-          onSendToDrive={onSendToDrive}
-          getBatchOverlay={getBatchOverlay}
-          getTratativaOverlay={getTratativaOverlay}
-          getRevisarOverlay={getRevisarOverlay}
-          relatoriosFolderId={relatoriosFolderId}
-          medidasFolderId={medidasFolderId}
-          onNeedFolderConfig={onNeedFolderConfig}
-          editDisabled={anyBatchRunning}
-        />
-      )}
+      {/* Recolhe/expande suave: a grade anima de 1fr→0fr (altura) enquanto a
+          camada interna faz overflow-hidden. Mantém montado durante a
+          transição pra não "piscar" o conteúdo. */}
+      <div className={`subject-collapse${collapsed ? " is-collapsed" : ""}`} aria-hidden={collapsed}>
+        <div className="subject-collapse-inner">
+          <OccurrenceCardsView
+            occurrences={occs}
+            viewMode={viewMode}
+            vehicleOccurrenceCount={vehicleOccurrenceCount}
+            onOpen={onOpen}
+            onEditar={onEditar}
+            onExcluir={onExcluir}
+            getDriveStatus={getDriveStatus}
+            onSendToDrive={onSendToDrive}
+            getBatchOverlay={getBatchOverlay}
+            getTratativaOverlay={getTratativaOverlay}
+            getRevisarOverlay={getRevisarOverlay}
+            relatoriosFolderId={relatoriosFolderId}
+            medidasFolderId={medidasFolderId}
+            onNeedFolderConfig={onNeedFolderConfig}
+            editDisabled={anyBatchRunning}
+          />
+        </div>
+      </div>
     </div>
   );
 }
