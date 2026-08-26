@@ -18,6 +18,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { ShaderBackdrop } from "./ShaderBackdrop";
 
 /** Nome do desenvolvedor exibido no rodapé (crédito). */
 const DEVELOPER_NAME = "Lucas Inácio";
@@ -219,6 +220,12 @@ export function LoginScreen() {
 
       {/* ── Fundo decorativo ─────────────────────────────────────────── */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        {/* Shader animado bem discreto por trás de tudo. `screen` deixa só
+            os fios de luz coloridos aparecerem, sem escurecer o fundo. */}
+        <div className="ls-anim absolute inset-0 opacity-[0.22] dark:opacity-40 mix-blend-screen">
+          <ShaderBackdrop speed={0.4} />
+        </div>
+
         {/* Grade */}
         {[20, 40, 60, 80].map((t) => (
           <div
