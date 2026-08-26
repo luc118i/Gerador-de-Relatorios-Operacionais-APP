@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { OccurrenceDTO } from "../../domain/occurrences";
-import { ClipboardCheck } from "lucide-react";
+import { ClipboardCheck, EyeOff } from "lucide-react";
 
 type Ranked = { name: string; count: number; rank: number };
 
@@ -36,9 +36,12 @@ export function ApuracaoPodium({
   currentProfileName,
   currentProfileAliases,
   currentUserId,
+  onHide,
 }: {
   occurrences: OccurrenceDTO[];
   className?: string;
+  /** Se passado, mostra um botão para ocultar o pódio. */
+  onHide?: () => void;
   /**
    * Nome atual e aliases (nomes anteriores) do usuário logado — ver
    * `profileNameAliases` no AuthContext. Usado pra mesclar, na exibição,
@@ -283,6 +286,16 @@ export function ApuracaoPodium({
           <span className="ml-auto text-[11px] font-semibold text-sky-600 dark:text-sky-400 tabular-nums">
             {pct}% apurado
           </span>
+          {onHide && (
+            <button
+              type="button"
+              onClick={onHide}
+              title="Ocultar pódio de apuração"
+              className="ml-1 -mr-1 rounded p-1 text-slate-400 transition-colors hover:bg-slate-500/10 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
+            >
+              <EyeOff className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
 
         <div className="flex items-end justify-center gap-3 sm:gap-5 pt-4">

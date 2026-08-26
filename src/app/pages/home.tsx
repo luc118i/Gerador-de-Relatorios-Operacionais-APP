@@ -1,5 +1,6 @@
 import {
   AlertTriangle,
+  Eye,
   Gavel,
   Home as HomeIcon,
   LayoutGrid,
@@ -183,6 +184,17 @@ export function Home({
   const [groupBySubject, setGroupBySubject] = useState<boolean>(
     () => localStorage.getItem("home_groupBySubject") === "true",
   );
+  const [podiumHidden, setPodiumHidden] = useState<boolean>(
+    () => localStorage.getItem("home_hidePodium") === "true",
+  );
+  const setPodiumHiddenPersist = useCallback((hidden: boolean) => {
+    setPodiumHidden(hidden);
+    try {
+      localStorage.setItem("home_hidePodium", String(hidden));
+    } catch {
+      /* localStorage indisponível */
+    }
+  }, []);
   const [search, setSearch] = useState("");
   const [collapsedSubjects, setCollapsedSubjects] = useState<Set<string>>(() => {
     try {
@@ -1252,13 +1264,27 @@ export function Home({
         {/* O ranking conta as apurações de TODOS os analistas, mesmo que a
             lista acima esteja filtrada para mostrar só as do usuário logado. */}
         {!isLoading && !isError && allOcorrencias.length > 0 && (
-          <ApuracaoPodium
-            occurrences={allOcorrencias}
-            className="mt-16 w-full"
-            currentProfileName={profileName}
-            currentProfileAliases={profileNameAliases}
-            currentUserId={user?.id}
-          />
+          podiumHidden ? (
+            <div className="mt-16 w-full flex justify-center">
+              <button
+                type="button"
+                onClick={() => setPodiumHiddenPersist(false)}
+                className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-800 px-3 py-1.5 text-xs font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-500/10 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+              >
+                <Eye className="h-3.5 w-3.5" />
+                Mostrar pódio de apuração
+              </button>
+            </div>
+          ) : (
+            <ApuracaoPodium
+              occurrences={allOcorrencias}
+              className="mt-16 w-full"
+              currentProfileName={profileName}
+              currentProfileAliases={profileNameAliases}
+              currentUserId={user?.id}
+              onHide={() => setPodiumHiddenPersist(true)}
+            />
+          )
         )}
 
       </main>
