@@ -209,17 +209,40 @@ function WelcomeSplash({ name }: { name: string }) {
 /**
  * Cobertura do carregamento: uma lâmina de "vidro fosco" em tela cheia
  * (base clara translúcida + desfoque, a luz do shader borrada por trás e
- * um brilho de reflexo por cima). Quando o carregamento termina, ela
- * apenas esmaece — o shader continua animando durante o fade e o conteúdo
- * aparece junto, sem corte.
+ * um brilho de reflexo por cima). Quando o carregamento termina, um furo
+ * circular cresce do centro para os cantos (mesma direção do shader),
+ * revelando o conteúdo de dentro pra fora; um fade-out acompanha no fim.
+ * O shader segue animando durante toda a transição — sem corte.
  */
 function LoadingGlass({ out }: { out: boolean }) {
   return (
     <div
-      className="fixed inset-0 z-[120] overflow-hidden pointer-events-none transition-opacity duration-[900ms] ease-out"
-      style={{ opacity: out ? 0 : 1 }}
+      className="lg-root fixed inset-0 z-[120] overflow-hidden pointer-events-none"
+      data-out={out ? "1" : "0"}
       aria-hidden="true"
     >
+      <style>{`
+        @property --lg-hole {
+          syntax: '<length-percentage>';
+          initial-value: 0%;
+          inherits: false;
+        }
+        .lg-root {
+          --lg-hole: 0%;
+          opacity: 1;
+          -webkit-mask-image: radial-gradient(circle at 50% 50%, transparent var(--lg-hole), #000 calc(var(--lg-hole) + 26%));
+                  mask-image: radial-gradient(circle at 50% 50%, transparent var(--lg-hole), #000 calc(var(--lg-hole) + 26%));
+          transition: --lg-hole 1000ms cubic-bezier(.4, 0, .2, 1),
+                      opacity 700ms ease-out 320ms;
+        }
+        .lg-root[data-out="1"] {
+          --lg-hole: 150%;
+          opacity: 0;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .lg-root { transition: opacity 300ms ease; }
+        }
+      `}</style>
       <div className="absolute inset-0 bg-[#eef2f8]/60 backdrop-blur-2xl" />
       <div className="absolute inset-0 opacity-30 blur-[3px]">
         <ShaderBackdrop light speed={0.5} />
@@ -238,8 +261,9 @@ function AuthGate() {
   const [welcome, setWelcome] = useState(false);
 
   // Controle do vidro do carregamento. Enquanto `loading` for true ele
-  // cobre a tela; quando termina, esmaece por ~900ms (o conteúdo já está
-  // montado atrás e aparece junto) e só então desmonta.
+  // cobre a tela; quando termina, o furo circular cresce do centro (~1s)
+  // e o vidro esmaece — o conteúdo já está montado atrás e aparece junto.
+  // Só desmonta depois da transição inteira.
   const [glassGone, setGlassGone] = useState(!loading);
 
   useEffect(() => {
@@ -247,7 +271,7 @@ function AuthGate() {
       setGlassGone(false);
       return;
     }
-    const t = setTimeout(() => setGlassGone(true), 950);
+    const t = setTimeout(() => setGlassGone(true), 1150);
     return () => clearTimeout(t);
   }, [loading]);
 
