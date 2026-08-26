@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useTheme } from "next-themes";
 import { Home } from "./pages/home";
 import { NovaOcorrencia } from "./pages/nova-ocorrencia";
 import { RelatorioDiario } from "./pages/relatorio-diario";
@@ -139,14 +140,28 @@ function AppShell() {
 }
 
 /**
+ * Tema atual como boolean. Cai pra classe no <html> enquanto o next-themes
+ * ainda não resolveu (evita 1 quadro de tela clara no modo escuro).
+ */
+function useIsDark() {
+  const { resolvedTheme } = useTheme();
+  if (resolvedTheme) return resolvedTheme === "dark";
+  return (
+    typeof document !== "undefined" &&
+    document.documentElement.classList.contains("dark")
+  );
+}
+
+/**
  * Splash de boas-vindas exibido logo após o login bem-sucedido.
  * Mostra um check animado e o nome do analista, depois some sozinho.
  */
 function WelcomeSplash({ name }: { name: string }) {
+  const dark = useIsDark();
   return (
-    <div className="ls-welcome fixed inset-0 z-[100] flex flex-col items-center justify-center gap-4 overflow-hidden bg-[#eef2f8]">
+    <div className="ls-welcome fixed inset-0 z-[100] flex flex-col items-center justify-center gap-4 overflow-hidden bg-[#eef2f8] dark:bg-[#0b1220]">
       <div className="pointer-events-none absolute inset-0 opacity-45">
-        <ShaderBackdrop light speed={0.5} />
+        <ShaderBackdrop light={!dark} speed={0.5} />
       </div>
       <style>{`
         @keyframes lw-fade { 0%{opacity:0} 9%{opacity:1} 66%{opacity:1} 100%{opacity:0} }
@@ -195,10 +210,10 @@ function WelcomeSplash({ name }: { name: string }) {
         className="relative z-10 text-center"
         style={{ animation: "lw-up .5s ease forwards .4s", opacity: 0 }}
       >
-        <p className="text-lg font-semibold text-[#1a2a4a] [text-shadow:0_1px_10px_rgba(238,242,248,0.9)]">
+        <p className="text-lg font-semibold text-[#1a2a4a] dark:text-[#e8ecf8] [text-shadow:0_1px_10px_rgba(238,242,248,0.9)] dark:[text-shadow:0_1px_12px_rgba(11,18,32,0.9)]">
           Bem-vindo{name ? `, ${name.split(" ")[0]}` : ""}!
         </p>
-        <p className="mt-0.5 text-sm text-[#5b6b8c] [text-shadow:0_1px_8px_rgba(238,242,248,0.9)]">
+        <p className="mt-0.5 text-sm text-[#5b6b8c] dark:text-[#8ea0c8] [text-shadow:0_1px_8px_rgba(238,242,248,0.9)] dark:[text-shadow:0_1px_10px_rgba(11,18,32,0.9)]">
           Preparando seu painel…
         </p>
       </div>
@@ -215,6 +230,7 @@ function WelcomeSplash({ name }: { name: string }) {
  * O shader segue animando durante toda a transição — sem corte.
  */
 function LoadingGlass({ out, onDone }: { out: boolean; onDone: () => void }) {
+  const dark = useIsDark();
   return (
     <div
       className="lg-root fixed inset-0 z-[120] overflow-hidden pointer-events-none"
@@ -255,11 +271,21 @@ function LoadingGlass({ out, onDone }: { out: boolean; onDone: () => void }) {
           @keyframes lg-fade { to { opacity: 0; } }
         }
       `}</style>
-      <div className="absolute inset-0 bg-[#eef2f8]/60 backdrop-blur-2xl" />
+      <div
+        className={`absolute inset-0 backdrop-blur-2xl ${
+          dark ? "bg-[#0b1220]" : "bg-[#eef2f8]/60"
+        }`}
+      />
       <div className="absolute inset-0 opacity-30 blur-[3px]">
-        <ShaderBackdrop light speed={0.5} />
+        <ShaderBackdrop light={!dark} speed={0.5} />
       </div>
-      <div className="absolute inset-0 bg-gradient-to-br from-white/55 via-white/5 to-white/25" />
+      <div
+        className={`absolute inset-0 bg-gradient-to-br ${
+          dark
+            ? "from-white/10 via-transparent to-white/[0.03]"
+            : "from-white/55 via-white/5 to-white/25"
+        }`}
+      />
     </div>
   );
 }
