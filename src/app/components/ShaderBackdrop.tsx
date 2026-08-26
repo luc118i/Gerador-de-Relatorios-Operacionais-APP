@@ -13,18 +13,27 @@ export function ShaderBackdrop({
   className = "",
   scale = 1,
   speed = 0.45,
+  wave = 1.4,
 }: {
   className?: string;
   /** >1 afasta a câmera e mostra mais arcos (útil em faixas estreitas). */
   scale?: number;
   /** Multiplica a velocidade da animação (1 ≈ ritmo do shader original). */
   speed?: number;
+  /**
+   * Atraso propagado ao longo da diagonal: cada faixa começa o movimento
+   * um pouco depois da anterior, criando o efeito de onda percorrendo os
+   * elementos (1 → 2 → 3 → …). 0 = todas as faixas juntas.
+   */
+  wave?: number;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const scaleRef = useRef(scale);
   const speedRef = useRef(speed);
+  const waveRef = useRef(wave);
   scaleRef.current = scale;
   speedRef.current = speed;
+  waveRef.current = wave;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -42,27 +51,43 @@ export function ShaderBackdrop({
       }
     `;
 
-    // Mesmo núcleo do shader original: 1/abs(...) gera linhas finas e
-    // brilhantes, length(uv) as torna concêntricas, o laço j cria a
-    // aberração cromática (R/G/B com offset de tempo). No fim, multiplicamos
-    // por um tint azul e somamos uma base escura azulada.
+    // Núcleo do shader original: 1/abs(...) gera linhas finas e brilhantes,
+    // length(uv) as torna concêntricas, o laço j cria a aberração cromática
+    // (R/G/B com offset de tempo). Duas mudanças para suavizar:
+    //  1. `phase` é uma onda triangular (sobe e desce) no lugar de fract(),
+    //     eliminando o "corte seco" quando o ciclo reinicia;
+    //  2. `delay` propaga a animação ao longo da diagonal (uv0.x + uv0.y),
+    //     então cada faixa entra em movimento um pouco depois da anterior —
+    //     o efeito de onda percorrendo os elementos.
     const fragmentSrc = `
       precision highp float;
       uniform vec2 resolution;
       uniform float time;
       uniform float uScale;
+      uniform float uWave;
+
+      // Onda triangular 0→1→0, contínua (sem salto no fim do ciclo).
+      float tri(float x) {
+        return abs(fract(x) - 0.5) * 2.0;
+      }
 
       void main(void) {
-        vec2 uv = (gl_FragCoord.xy * 2.0 - resolution.xy) / min(resolution.x, resolution.y);
-        uv *= uScale;
+        vec2 uv0 = (gl_FragCoord.xy * 2.0 - resolution.xy) / min(resolution.x, resolution.y);
+        vec2 uv = uv0 * uScale;
         float t = time * 0.05;
         float lineWidth = 0.002;
+
+        // Coordenada ao longo da diagonal, independente do zoom (uScale),
+        // para o atraso da onda ser consistente em qualquer tamanho.
+        float diag = uv0.x + uv0.y;
+        float delay = diag * uWave;
 
         vec3 color = vec3(0.0);
         for (int j = 0; j < 3; j++) {
           for (int i = 0; i < 5; i++) {
+            float phase = tri(t - delay - 0.01 * float(j) + float(i) * 0.01);
             color[j] += lineWidth * float(i * i) /
-              abs(fract(t - 0.01 * float(j) + float(i) * 0.01) * 5.0 - length(uv) + mod(uv.x + uv.y, 0.2));
+              abs(phase * 5.0 - length(uv) + mod(uv.x + uv.y, 0.2));
           }
         }
 
@@ -99,6 +124,7 @@ export function ShaderBackdrop({
     const resolutionLoc = gl.getUniformLocation(program, "resolution");
     const timeLoc = gl.getUniformLocation(program, "time");
     const scaleLoc = gl.getUniformLocation(program, "uScale");
+    const waveLoc = gl.getUniformLocation(program, "uWave");
 
     const resize = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -140,6 +166,7 @@ export function ShaderBackdrop({
       time += dt * 3.0 * speedRef.current;
       gl.uniform1f(timeLoc, time);
       gl.uniform1f(scaleLoc, scaleRef.current);
+      gl.uniform1f(waveLoc, waveRef.current);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
       revealSoon();
       raf = requestAnimationFrame(render);
@@ -149,6 +176,7 @@ export function ShaderBackdrop({
       time = 30.0;
       gl.uniform1f(timeLoc, time);
       gl.uniform1f(scaleLoc, scaleRef.current);
+      gl.uniform1f(waveLoc, waveRef.current);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
       revealSoon();
     } else {
