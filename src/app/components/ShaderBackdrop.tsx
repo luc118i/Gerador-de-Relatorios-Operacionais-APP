@@ -14,6 +14,7 @@ export function ShaderBackdrop({
   scale = 1,
   speed = 0.45,
   wave = 1.4,
+  chroma = 0,
 }: {
   className?: string;
   /** >1 afasta a câmera e mostra mais arcos (útil em faixas estreitas). */
@@ -26,14 +27,21 @@ export function ShaderBackdrop({
    * elementos (1 → 2 → 3 → …). 0 = todas as faixas juntas.
    */
   wave?: number;
+  /**
+   * Intensidade da aberração cromática (franja R/G/B). 0 = linhas de uma
+   * cor só, sem "choque" de cores; ~0.5 = leve; 1 = como o shader original.
+   */
+  chroma?: number;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const scaleRef = useRef(scale);
   const speedRef = useRef(speed);
   const waveRef = useRef(wave);
+  const chromaRef = useRef(chroma);
   scaleRef.current = scale;
   speedRef.current = speed;
   waveRef.current = wave;
+  chromaRef.current = chroma;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -51,49 +59,60 @@ export function ShaderBackdrop({
       }
     `;
 
-    // Núcleo do shader original: 1/abs(...) gera linhas finas e brilhantes,
-    // length(uv) as torna concêntricas, o laço j cria a aberração cromática
-    // (R/G/B com offset de tempo). Duas mudanças para suavizar:
-    //  1. `phase` é uma onda triangular (sobe e desce) no lugar de fract(),
-    //     eliminando o "corte seco" quando o ciclo reinicia;
-    //  2. `delay` propaga a animação ao longo da diagonal (uv0.x + uv0.y),
-    //     então cada faixa entra em movimento um pouco depois da anterior —
-    //     o efeito de onda percorrendo os elementos.
+    // Núcleo do shader original: 1/abs(...) gera linhas finas e brilhantes;
+    // length(uv) as curva. Ajustes para tirar a sensação "brusca":
+    //  1. `phase` é onda triangular (sobe e desce) no lugar de fract() —
+    //     sem o salto seco no fim do ciclo;
+    //  2. `delay` propaga a animação pela diagonal (uv0.x + uv0.y): cada
+    //     faixa entra em movimento depois da anterior (onda 1 → 2 → 3 → …);
+    //  3. o brilho de cada faixa é calculado uma vez (cinza) e só então
+    //     tingido de azul. A franja R/G/B ("choque de cores") vira opcional
+    //     via uChroma e fica desligada por padrão;
+    //  4. tone-map `x/(1+x)`: os picos saturam suave em vez de estourar.
     const fragmentSrc = `
       precision highp float;
       uniform vec2 resolution;
       uniform float time;
       uniform float uScale;
       uniform float uWave;
+      uniform float uChroma;
 
       // Onda triangular 0→1→0, contínua (sem salto no fim do ciclo).
       float tri(float x) {
         return abs(fract(x) - 0.5) * 2.0;
       }
 
+      // Brilho acumulado das linhas para um deslocamento de tempo dado.
+      float lines(vec2 uv, float t) {
+        float lineWidth = 0.0022;
+        float acc = 0.0;
+        for (int i = 0; i < 5; i++) {
+          float phase = tri(t + float(i) * 0.01);
+          acc += lineWidth * float(i * i) /
+            abs(phase * 4.0 - length(uv) + mod(uv.x + uv.y, 0.2));
+        }
+        return acc;
+      }
+
       void main(void) {
         vec2 uv0 = (gl_FragCoord.xy * 2.0 - resolution.xy) / min(resolution.x, resolution.y);
         vec2 uv = uv0 * uScale;
-        float t = time * 0.05;
-        float lineWidth = 0.002;
 
-        // Coordenada ao longo da diagonal, independente do zoom (uScale),
-        // para o atraso da onda ser consistente em qualquer tamanho.
-        float diag = uv0.x + uv0.y;
-        float delay = diag * uWave;
+        // Tempo base + atraso propagado pela diagonal (independente do zoom).
+        float t = time * 0.05 - (uv0.x + uv0.y) * uWave;
 
-        vec3 color = vec3(0.0);
-        for (int j = 0; j < 3; j++) {
-          for (int i = 0; i < 5; i++) {
-            float phase = tri(t - delay - 0.01 * float(j) + float(i) * 0.01);
-            color[j] += lineWidth * float(i * i) /
-              abs(phase * 5.0 - length(uv) + mod(uv.x + uv.y, 0.2));
-          }
+        float g = lines(uv, t);
+        vec3 lum = vec3(g);
+        if (uChroma > 0.001) {
+          // Franja cromática suave: separa R e B no tempo.
+          lum.r = mix(g, lines(uv, t - 0.008 * uChroma), uChroma);
+          lum.b = mix(g, lines(uv, t + 0.008 * uChroma), uChroma);
         }
 
-        vec3 tint = vec3(0.35, 0.55, 1.15);       // empurra o brilho pro azul da marca
-        vec3 base = vec3(0.02, 0.03, 0.07);        // fundo escuro azulado (~#0b1220)
-        gl_FragColor = vec4(base + color * tint, 1.0);
+        vec3 col = lum * vec3(0.30, 0.55, 1.25);   // tom azul da marca
+        col = col / (1.0 + col);                    // roll-off suave dos picos
+        col += vec3(0.02, 0.03, 0.07);              // base escura azulada
+        gl_FragColor = vec4(col, 1.0);
       }
     `;
 
@@ -125,6 +144,7 @@ export function ShaderBackdrop({
     const timeLoc = gl.getUniformLocation(program, "time");
     const scaleLoc = gl.getUniformLocation(program, "uScale");
     const waveLoc = gl.getUniformLocation(program, "uWave");
+    const chromaLoc = gl.getUniformLocation(program, "uChroma");
 
     const resize = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -167,6 +187,7 @@ export function ShaderBackdrop({
       gl.uniform1f(timeLoc, time);
       gl.uniform1f(scaleLoc, scaleRef.current);
       gl.uniform1f(waveLoc, waveRef.current);
+      gl.uniform1f(chromaLoc, chromaRef.current);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
       revealSoon();
       raf = requestAnimationFrame(render);
@@ -177,6 +198,7 @@ export function ShaderBackdrop({
       gl.uniform1f(timeLoc, time);
       gl.uniform1f(scaleLoc, scaleRef.current);
       gl.uniform1f(waveLoc, waveRef.current);
+      gl.uniform1f(chromaLoc, chromaRef.current);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
       revealSoon();
     } else {
