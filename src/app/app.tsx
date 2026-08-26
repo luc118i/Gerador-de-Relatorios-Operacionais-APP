@@ -145,7 +145,7 @@ function AppShell() {
 function WelcomeSplash({ name }: { name: string }) {
   return (
     <div className="ls-welcome fixed inset-0 z-[100] flex flex-col items-center justify-center gap-4 overflow-hidden bg-[#eef2f8]">
-      <div className="pointer-events-none absolute inset-0">
+      <div className="pointer-events-none absolute inset-0 opacity-45">
         <ShaderBackdrop light speed={0.5} />
       </div>
       <style>{`
@@ -242,7 +242,9 @@ function IntroReveal({ opening }: { opening: boolean }) {
           transition: trans,
         }}
       >
-        <ShaderBackdrop light speed={0.5} />
+        <div className="absolute inset-0 opacity-45">
+          <ShaderBackdrop light speed={0.5} />
+        </div>
       </div>
 
       {/* folha de baixo-esquerda → desliza para baixo-esquerda */}
@@ -255,7 +257,9 @@ function IntroReveal({ opening }: { opening: boolean }) {
           transition: trans,
         }}
       >
-        <ShaderBackdrop light speed={0.5} />
+        <div className="absolute inset-0 opacity-45">
+          <ShaderBackdrop light speed={0.5} />
+        </div>
       </div>
     </div>
   );
