@@ -15,6 +15,7 @@ export function ShaderBackdrop({
   speed = 0.45,
   wave = 1.4,
   chroma = 0,
+  dark = false,
 }: {
   className?: string;
   /** >1 afasta a câmera e mostra mais arcos (útil em faixas estreitas). */
@@ -32,16 +33,20 @@ export function ShaderBackdrop({
    * cor só, sem "choque" de cores; ~0.5 = leve; 1 = como o shader original.
    */
   chroma?: number;
+  /** true = fundo escuro com linhas claras; false (padrão) = fundo claro. */
+  dark?: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const scaleRef = useRef(scale);
   const speedRef = useRef(speed);
   const waveRef = useRef(wave);
   const chromaRef = useRef(chroma);
+  const darkRef = useRef(dark);
   scaleRef.current = scale;
   speedRef.current = speed;
   waveRef.current = wave;
   chromaRef.current = chroma;
+  darkRef.current = dark;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -76,6 +81,7 @@ export function ShaderBackdrop({
       uniform float uScale;
       uniform float uWave;
       uniform float uChroma;
+      uniform float uDark;
 
       // Onda triangular 0→1→0, contínua (sem salto no fim do ciclo).
       float tri(float x) {
@@ -109,10 +115,20 @@ export function ShaderBackdrop({
           lum.b = mix(g, lines(uv, t + 0.008 * uChroma), uChroma);
         }
 
-        vec3 col = lum * vec3(0.30, 0.55, 1.25);   // tom azul da marca
-        col = col / (1.0 + col);                    // roll-off suave dos picos
-        col += vec3(0.02, 0.03, 0.07);              // base escura azulada
-        gl_FragColor = vec4(col, 1.0);
+        // Intensidade da linha comprimida em 0..1 (picos saturam suave).
+        vec3 ink = lum / (1.0 + lum);
+
+        // Fundo escuro: base azul-noite + brilho aditivo.
+        vec3 darkCol = vec3(0.02, 0.03, 0.07) + lum * vec3(0.30, 0.55, 1.25);
+        darkCol = darkCol / (1.0 + darkCol);
+
+        // Fundo claro: quase branco, escurecido para o azul da marca onde
+        // a onda passa.
+        vec3 lightBg = vec3(0.925, 0.942, 0.965);
+        vec3 lightLine = vec3(0.16, 0.40, 0.92);
+        vec3 lightCol = mix(lightBg, lightLine, ink);
+
+        gl_FragColor = vec4(mix(lightCol, darkCol, uDark), 1.0);
       }
     `;
 
@@ -145,6 +161,7 @@ export function ShaderBackdrop({
     const scaleLoc = gl.getUniformLocation(program, "uScale");
     const waveLoc = gl.getUniformLocation(program, "uWave");
     const chromaLoc = gl.getUniformLocation(program, "uChroma");
+    const darkLoc = gl.getUniformLocation(program, "uDark");
 
     const resize = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -188,6 +205,7 @@ export function ShaderBackdrop({
       gl.uniform1f(scaleLoc, scaleRef.current);
       gl.uniform1f(waveLoc, waveRef.current);
       gl.uniform1f(chromaLoc, chromaRef.current);
+      gl.uniform1f(darkLoc, darkRef.current ? 1 : 0);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
       revealSoon();
       raf = requestAnimationFrame(render);
@@ -199,6 +217,7 @@ export function ShaderBackdrop({
       gl.uniform1f(scaleLoc, scaleRef.current);
       gl.uniform1f(waveLoc, waveRef.current);
       gl.uniform1f(chromaLoc, chromaRef.current);
+      gl.uniform1f(darkLoc, darkRef.current ? 1 : 0);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
       revealSoon();
     } else {

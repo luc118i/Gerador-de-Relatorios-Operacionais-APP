@@ -144,7 +144,7 @@ function AppShell() {
  */
 function WelcomeSplash({ name }: { name: string }) {
   return (
-    <div className="ls-welcome fixed inset-0 z-[100] flex flex-col items-center justify-center gap-4 overflow-hidden bg-[#0b1220]">
+    <div className="ls-welcome fixed inset-0 z-[100] flex flex-col items-center justify-center gap-4 overflow-hidden bg-[#eef2f8]">
       <div className="pointer-events-none absolute inset-0">
         <ShaderBackdrop />
       </div>
@@ -195,10 +195,10 @@ function WelcomeSplash({ name }: { name: string }) {
         className="relative z-10 text-center"
         style={{ animation: "lw-up .5s ease forwards .4s", opacity: 0 }}
       >
-        <p className="text-lg font-semibold text-[#e8ecf8] [text-shadow:0_1px_12px_rgba(11,18,32,0.8)]">
+        <p className="text-lg font-semibold text-[#1a2a4a] [text-shadow:0_1px_10px_rgba(238,242,248,0.9)]">
           Bem-vindo{name ? `, ${name.split(" ")[0]}` : ""}!
         </p>
-        <p className="mt-0.5 text-sm text-[#9fb2dc] [text-shadow:0_1px_10px_rgba(11,18,32,0.8)]">
+        <p className="mt-0.5 text-sm text-[#5b6b8c] [text-shadow:0_1px_8px_rgba(238,242,248,0.9)]">
           Preparando seu painel…
         </p>
       </div>
@@ -229,7 +229,7 @@ function AuthGate() {
 
   if (loading) {
     return (
-      <div className="relative min-h-screen overflow-hidden bg-[#0b1220]">
+      <div className="relative min-h-screen overflow-hidden bg-[#eef2f8]">
         <div className="absolute inset-0">
           <ShaderBackdrop />
         </div>

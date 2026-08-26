@@ -88,7 +88,7 @@ export function AgentProgressDock({ jobs }: { jobs: AgentJob[] }) {
                 anyRunning ? "opacity-60" : "opacity-0"
               }`}
             >
-              <ShaderBackdrop scale={2.6} speed={0.45} wave={1.8} />
+              <ShaderBackdrop scale={2.6} speed={0.45} wave={1.8} dark />
             </span>
           )}
           <span
