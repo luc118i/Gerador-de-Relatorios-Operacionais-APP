@@ -79,7 +79,7 @@ export function SubjectGroup({
 
   return (
     <div>
-      <div className="flex items-center gap-2 mb-2">
+      <div className={`subject-head flex items-center gap-2 mb-2${collapsed ? "" : " is-open"}`}>
         <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
           {subject}
         </h3>
@@ -192,6 +192,7 @@ export function SubjectGroup({
           <OccurrenceCardsView
             occurrences={occs}
             viewMode={viewMode}
+            containerClassName="stagger-cards"
             vehicleOccurrenceCount={vehicleOccurrenceCount}
             onOpen={onOpen}
             onEditar={onEditar}

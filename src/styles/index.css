@@ -236,9 +236,63 @@
   pointer-events: none;
 }
 
+/* Curva "mola" no conteúdo interno: a altura já é resolvida pelo grid
+   (1fr→0fr) acima; aqui damos só um leve scaleY com overshoot pra que o
+   bloco "assente" ao abrir, em vez de parar seco. Espelha a ideia do
+   scaleIn spring do playground de referência, sem animar height. */
 .subject-collapse-inner {
   overflow: hidden;
   min-height: 0;
+  transform-origin: top center;
+  transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.subject-collapse.is-collapsed .subject-collapse-inner {
+  transform: scaleY(0.97);
+}
+
+/* Stagger dos cards ao expandir o assunto: cada card entra com um pequeno
+   atraso incremental (opacity + translateY). Os cards continuam montados
+   quando recolhido (truque do grid), então dirigimos por transition +
+   classe de estado no ancestral pra reanimar a cada abertura. */
+.stagger-cards > * {
+  transition:
+    opacity 240ms ease,
+    transform 240ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.subject-collapse.is-collapsed .stagger-cards > * {
+  opacity: 0;
+  transform: translateY(6px);
+  transition-delay: 0ms; /* ao recolher, todos saem juntos */
+}
+
+.subject-collapse:not(.is-collapsed) .stagger-cards > *:nth-child(1) { transition-delay: 30ms; }
+.subject-collapse:not(.is-collapsed) .stagger-cards > *:nth-child(2) { transition-delay: 65ms; }
+.subject-collapse:not(.is-collapsed) .stagger-cards > *:nth-child(3) { transition-delay: 100ms; }
+.subject-collapse:not(.is-collapsed) .stagger-cards > *:nth-child(4) { transition-delay: 135ms; }
+.subject-collapse:not(.is-collapsed) .stagger-cards > *:nth-child(5) { transition-delay: 170ms; }
+.subject-collapse:not(.is-collapsed) .stagger-cards > *:nth-child(6) { transition-delay: 205ms; }
+.subject-collapse:not(.is-collapsed) .stagger-cards > *:nth-child(n + 7) { transition-delay: 230ms; }
+
+/* Acento na barra lateral do cabeçalho do assunto aberto. Margin/padding
+   constantes (borda mora na "sarjeta") pra acender sem empurrar o texto. */
+.subject-head {
+  margin-left: -0.625rem;
+  padding-left: 0.625rem;
+  border-left: 2px solid transparent;
+  border-radius: 2px;
+  transition: border-color 220ms ease, background-color 220ms ease;
+}
+
+.subject-head.is-open {
+  border-left-color: rgb(37 99 235); /* blue-600 */
+  background-color: rgba(37, 99, 235, 0.05);
+}
+
+.dark .subject-head.is-open {
+  border-left-color: rgb(96 165 250); /* blue-400 */
+  background-color: rgba(96, 165, 250, 0.08);
 }
 
 /* Troca do ícone Eye ⇄ EyeOff (remonta via `key`) */
@@ -251,6 +305,44 @@
   animation: eye-swap 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/* ── Combos com busca (viagem, local…): stagger dos resultados ao abrir ─────── */
+
+/* "Stagger de filhos": em vez de `animation` no ciclo de vida de cada item
+   (que reanimava/piscava a cada tecla, porque a lista filtrada remonta nós),
+   a cascata é disparada UMA vez por abertura via a classe `.is-in` no
+   contêiner — igual ao padrão do playground de referência.
+
+   - Sem `.is-in`: itens começam escondidos (opacity 0 + translateY).
+   - Com `.is-in` (adicionada no frame seguinte à abertura): transicionam
+     para o estado natural, com `transition-delay` incremental por item.
+   - Enquanto digita: `.is-in` permanece, então itens que continuam montados
+     não reanimam; itens novos (ex.: ao apagar a busca) já nascem com o
+     estilo final e entram sem transição — nada de flicker.
+   - `transform: none` no estado final: sem `transform` residual, os cantos
+     arredondados do menu voltam a recortar a lista (bug do Chrome com
+     `border-radius` + `overflow: hidden` + filho transformado). */
+.combo-list > * {
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity 220ms ease,
+    transform 220ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.combo-list.is-in > * {
+  opacity: 1;
+  transform: none;
+}
+
+.combo-list.is-in > *:nth-child(1) { transition-delay: 30ms; }
+.combo-list.is-in > *:nth-child(2) { transition-delay: 65ms; }
+.combo-list.is-in > *:nth-child(3) { transition-delay: 100ms; }
+.combo-list.is-in > *:nth-child(4) { transition-delay: 135ms; }
+.combo-list.is-in > *:nth-child(5) { transition-delay: 170ms; }
+.combo-list.is-in > *:nth-child(6) { transition-delay: 205ms; }
+.combo-list.is-in > *:nth-child(7) { transition-delay: 240ms; }
+.combo-list.is-in > *:nth-child(n + 8) { transition-delay: 260ms; }
+
 @media (prefers-reduced-motion: reduce) {
   .subject-collapse {
     transition: none;
@@ -258,7 +350,26 @@
   .subject-collapse.is-collapsed {
     transform: none;
   }
+  .subject-collapse-inner,
+  .stagger-cards > * {
+    transition: none;
+  }
+  .subject-collapse.is-collapsed .subject-collapse-inner {
+    transform: none;
+  }
+  .subject-collapse.is-collapsed .stagger-cards > * {
+    opacity: 1;
+    transform: none;
+  }
+  .subject-head {
+    transition: none;
+  }
   .eye-swap {
     animation: none;
+  }
+  .combo-list > * {
+    opacity: 1;
+    transform: none;
+    transition: none;
   }
 }

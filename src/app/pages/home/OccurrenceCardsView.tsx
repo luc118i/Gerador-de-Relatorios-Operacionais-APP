@@ -27,6 +27,9 @@ interface OccurrenceCardsViewProps {
    * bloqueia a edição pra não mexer numa ocorrência que o robô pode estar
    * processando nesse momento. */
   editDisabled?: boolean;
+  /** Classe extra no contêiner da grade/lista. Usada pelo SubjectGroup pra
+   * ligar o stagger dos cards (`stagger-cards`) ao expandir o assunto. */
+  containerClassName?: string;
 }
 
 /** Grade ou lista compacta de `OccurrenceCard`, com a divisão por motorista
@@ -48,6 +51,7 @@ export function OccurrenceCardsView({
   medidasFolderId,
   onNeedFolderConfig,
   editDisabled = false,
+  containerClassName = "",
 }: OccurrenceCardsViewProps) {
   const items = occurrences.flatMap(splitByDriver);
 
@@ -75,7 +79,7 @@ export function OccurrenceCardsView({
 
   if (viewMode === "list") {
     return (
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
+      <div className={`bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden ${containerClassName}`}>
         <div
           className="flex items-center gap-0 bg-gray-50 dark:bg-gray-800/60 border-b border-gray-200 dark:border-gray-800 text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide"
           style={{ borderLeft: "3px solid transparent" }}
@@ -93,6 +97,8 @@ export function OccurrenceCardsView({
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{cards}</div>
+    <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ${containerClassName}`}>
+      {cards}
+    </div>
   );
 }

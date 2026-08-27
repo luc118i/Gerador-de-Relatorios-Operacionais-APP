@@ -74,6 +74,9 @@ export function AutocompleteViagem({
 }: AutocompleteViagemProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
+  // Dispara o stagger da lista uma única vez por abertura (classe `.is-in`),
+  // em vez de por item — evita reanimar/piscar a cada tecla digitada.
+  const [listIn, setListIn] = useState(false);
 
   const { data: trips = [], isLoading } = useTrips();
 
@@ -98,6 +101,17 @@ export function AutocompleteViagem({
     setIsOpen(false);
     setSearch("");
   }
+
+  // `.is-in` só entra no frame seguinte à abertura, pra a transição CSS ter
+  // um estado inicial (escondido) de onde partir.
+  useEffect(() => {
+    if (!isOpen) {
+      setListIn(false);
+      return;
+    }
+    const raf = requestAnimationFrame(() => setListIn(true));
+    return () => cancelAnimationFrame(raf);
+  }, [isOpen]);
 
   // Fecha o menu ao rolar a página — evita ele ficar "flutuando" desalinhado
   // do campo enquanto o usuário rola. Ignora o scroll da própria lista de
@@ -181,7 +195,7 @@ export function AutocompleteViagem({
             ) : null}
           </div>
 
-          <div className="overflow-y-auto max-h-60">
+          <div className={`combo-list overflow-y-auto max-h-60${listIn ? " is-in" : ""}`}>
             {isLoading ? (
               <div className="p-4 text-center text-gray-500 dark:text-gray-400 text-sm">
                 Carregando viagens...

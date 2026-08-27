@@ -23,6 +23,9 @@ export function LocalPicker({
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
+  // Dispara o stagger da lista uma única vez por abertura (classe `.is-in`),
+  // em vez de por item — evita reanimar/piscar a cada tecla digitada.
+  const [listIn, setListIn] = useState(false);
 
   const debounced = useDebouncedValue(search, 300);
   const { data, isLoading, isError } = useLocaisSearch(debounced);
@@ -41,6 +44,17 @@ export function LocalPicker({
     setIsOpen(false);
     setSearch("");
   }
+
+  // `.is-in` só entra no frame seguinte à abertura, pra a transição CSS ter
+  // um estado inicial (escondido) de onde partir.
+  useEffect(() => {
+    if (!isOpen) {
+      setListIn(false);
+      return;
+    }
+    const raf = requestAnimationFrame(() => setListIn(true));
+    return () => cancelAnimationFrame(raf);
+  }, [isOpen]);
 
   // Fecha o menu ao rolar a página — evita ele ficar "flutuando" desalinhado
   // do campo enquanto o usuário rola. Ignora o scroll da própria lista de
@@ -143,7 +157,7 @@ export function LocalPicker({
             </button>
           </div>
 
-          <div className="max-h-72 overflow-y-auto">
+          <div className={`combo-list max-h-72 overflow-y-auto${listIn ? " is-in" : ""}`}>
             {isLoading ? (
               <div className="p-4 text-sm text-slate-600 dark:text-slate-400">
                 Buscando locais...
