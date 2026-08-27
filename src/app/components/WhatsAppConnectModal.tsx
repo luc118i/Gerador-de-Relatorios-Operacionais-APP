@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Loader2, MessageCircle, X, CheckCircle2, AlertCircle } from "lucide-react";
 import type { WhatsAppAgentState } from "../../hooks/useWhatsAppAgent";
 
@@ -31,7 +32,17 @@ export function WhatsAppConnectModal({ whatsappAgent, onClose }: Props) {
     }
   }, [status, onClose]);
 
-  return (
+  // Trava o scroll do body enquanto o modal está aberto (mesmo padrão dos
+  // demais modais). Sem isso, a página rola por baixo do overlay e a faixa
+  // do footer aparece embaixo do fundo escurecido.
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, []);
+
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-sm mx-4 overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
@@ -106,6 +117,7 @@ export function WhatsAppConnectModal({ whatsappAgent, onClose }: Props) {
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
