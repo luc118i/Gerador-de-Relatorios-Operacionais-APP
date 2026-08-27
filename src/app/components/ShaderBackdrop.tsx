@@ -26,7 +26,7 @@ export function ShaderBackdrop({
   light = false,
   originX = 0.5,
   originY = 0.5,
-  spreadX = 1,
+  tileX = 0,
 }: {
   className?: string;
   scale?: number;
@@ -39,10 +39,11 @@ export function ShaderBackdrop({
    *  originY maior = centro mais pra cima. */
   originX?: number;
   originY?: number;
-  /** Achata os arcos na horizontal para que se espalhem por toda a largura
-   *  (útil em faixas largas e baixas, como o cabeçalho do dock).
-   *  1 = arcos circulares (original); >1 = arcos elípticos, mais abertos. */
-  spreadX?: number;
+  /** Repete o MESMO padrão de arcos ao longo da horizontal, para preencher
+   *  faixas largas e baixas (ex.: o cabeçalho do dock) sem alterar o desenho.
+   *  0 = sem repetição (original); >0 = período da repetição em unidades uv
+   *  (menor = cópias mais próximas). Um valor ~9–11 dá centro + laterais. */
+  tileX?: number;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const scaleRef = useRef(scale);
@@ -51,14 +52,14 @@ export function ShaderBackdrop({
   const chromaRef = useRef(chroma);
   const lightRef = useRef(light);
   const originRef = useRef({ x: originX, y: originY });
-  const spreadXRef = useRef(spreadX);
+  const tileXRef = useRef(tileX);
   scaleRef.current = scale;
   speedRef.current = speed;
   waveRef.current = wave;
   chromaRef.current = chroma;
   lightRef.current = light;
   originRef.current = { x: originX, y: originY };
-  spreadXRef.current = spreadX;
+  tileXRef.current = tileX;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -98,12 +99,17 @@ export function ShaderBackdrop({
         uniform float uChroma;
         uniform float uLight;
         uniform vec2 uOrigin;
-        uniform float uSpreadX;
+        uniform float uTileX;
 
         void main(void) {
           vec2 uv = (gl_FragCoord.xy - uOrigin * resolution) * 2.0 / min(resolution.x, resolution.y);
           uv *= uScale;
-          uv.x /= uSpreadX;
+
+          // Repete o mesmo padrão ao longo do eixo X (sem deformar o desenho):
+          // cada "ladrilho" é uma cópia idêntica do bloom central.
+          if (uTileX > 0.0) {
+            uv.x = mod(uv.x + uTileX * 0.5, uTileX) - uTileX * 0.5;
+          }
           float lineWidth = 0.002;
 
           float t = time * 0.05 - (uv.x + uv.y) * uWave;
@@ -169,7 +175,7 @@ export function ShaderBackdrop({
       const chromaLoc = gl.getUniformLocation(program, "uChroma");
       const lightLoc = gl.getUniformLocation(program, "uLight");
       const originLoc = gl.getUniformLocation(program, "uOrigin");
-      const spreadXLoc = gl.getUniformLocation(program, "uSpreadX");
+      const tileXLoc = gl.getUniformLocation(program, "uTileX");
 
       const resize = () => {
         const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -215,7 +221,7 @@ export function ShaderBackdrop({
         gl.uniform1f(chromaLoc, chromaRef.current);
         gl.uniform1f(lightLoc, lightRef.current ? 1 : 0);
         gl.uniform2f(originLoc, originRef.current.x, originRef.current.y);
-        gl.uniform1f(spreadXLoc, Math.max(0.0001, spreadXRef.current));
+        gl.uniform1f(tileXLoc, Math.max(0, tileXRef.current));
         gl.drawArrays(gl.TRIANGLES, 0, 6);
         revealSoon();
       };
