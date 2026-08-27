@@ -104,13 +104,14 @@ export function EmptyReportScene({
     <div
       className={`relative overflow-hidden rounded-2xl border border-sky-500/20 dark:border-sky-400/20 bg-[#f4f6fb] dark:bg-gray-900 min-h-[260px] ${className}`}
     >
-      {/* Shader animado em loop no fundo (igual ao da tela de login) */}
+      {/* Shader animado em loop no fundo (igual ao da tela de login),
+          com o centro dos arcos alinhado ao ícone de relatório. */}
       <div className="pointer-events-none absolute inset-0" aria-hidden>
         <div className="absolute inset-0 opacity-60 dark:hidden">
-          <ShaderBackdrop light speed={0.4} />
+          <ShaderBackdrop light speed={0.4} originY={0.62} />
         </div>
         <div className="absolute inset-0 hidden opacity-40 dark:block">
-          <ShaderBackdrop speed={0.4} />
+          <ShaderBackdrop speed={0.4} originY={0.62} />
         </div>
       </div>
 

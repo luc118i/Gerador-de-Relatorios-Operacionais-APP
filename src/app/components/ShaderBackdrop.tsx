@@ -24,6 +24,8 @@ export function ShaderBackdrop({
   wave = 0,
   chroma = 1,
   light = false,
+  originX = 0.5,
+  originY = 0.5,
 }: {
   className?: string;
   scale?: number;
@@ -32,6 +34,10 @@ export function ShaderBackdrop({
   chroma?: number;
   /** true = paleta clara (fundo quase branco, fios azuis) para telas claras. */
   light?: boolean;
+  /** Centro de onde os arcos irradiam, em fração [0..1]. (0.5, 0.5) = meio.
+   *  originY maior = centro mais pra cima. */
+  originX?: number;
+  originY?: number;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const scaleRef = useRef(scale);
@@ -39,11 +45,13 @@ export function ShaderBackdrop({
   const waveRef = useRef(wave);
   const chromaRef = useRef(chroma);
   const lightRef = useRef(light);
+  const originRef = useRef({ x: originX, y: originY });
   scaleRef.current = scale;
   speedRef.current = speed;
   waveRef.current = wave;
   chromaRef.current = chroma;
   lightRef.current = light;
+  originRef.current = { x: originX, y: originY };
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -82,9 +90,10 @@ export function ShaderBackdrop({
         uniform float uWave;
         uniform float uChroma;
         uniform float uLight;
+        uniform vec2 uOrigin;
 
         void main(void) {
-          vec2 uv = (gl_FragCoord.xy * 2.0 - resolution.xy) / min(resolution.x, resolution.y);
+          vec2 uv = (gl_FragCoord.xy - uOrigin * resolution) * 2.0 / min(resolution.x, resolution.y);
           uv *= uScale;
           float lineWidth = 0.002;
 
@@ -150,6 +159,7 @@ export function ShaderBackdrop({
       const waveLoc = gl.getUniformLocation(program, "uWave");
       const chromaLoc = gl.getUniformLocation(program, "uChroma");
       const lightLoc = gl.getUniformLocation(program, "uLight");
+      const originLoc = gl.getUniformLocation(program, "uOrigin");
 
       const resize = () => {
         const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -194,6 +204,7 @@ export function ShaderBackdrop({
         gl.uniform1f(waveLoc, waveRef.current);
         gl.uniform1f(chromaLoc, chromaRef.current);
         gl.uniform1f(lightLoc, lightRef.current ? 1 : 0);
+        gl.uniform2f(originLoc, originRef.current.x, originRef.current.y);
         gl.drawArrays(gl.TRIANGLES, 0, 6);
         revealSoon();
       };
