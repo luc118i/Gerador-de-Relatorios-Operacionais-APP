@@ -89,8 +89,16 @@ export function AgentProgressDock({ jobs }: { jobs: AgentJob[] }) {
               className={`pointer-events-none absolute inset-0 transition-opacity duration-[900ms] ease-out ${
                 anyRunning ? "opacity-100" : "opacity-0"
               }`}
+              // Máscara radial: a animação fica no centro e esmaece nas
+              // bordas, sem o corte seco no limite do canvas.
+              style={{
+                maskImage:
+                  "radial-gradient(115% 125% at 50% 50%, #000 35%, transparent 100%)",
+                WebkitMaskImage:
+                  "radial-gradient(115% 125% at 50% 50%, #000 35%, transparent 100%)",
+              }}
             >
-              <ShaderBackdrop scale={2.0} speed={0.7} wave={1.8} tileX={9.5} />
+              <ShaderBackdrop scale={2.0} speed={0.7} wave={1.8} />
             </span>
           )}
           {/* Véu escuro só o suficiente para o texto continuar legível. */}
