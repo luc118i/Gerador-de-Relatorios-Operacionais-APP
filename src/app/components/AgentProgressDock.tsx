@@ -90,7 +90,7 @@ export function AgentProgressDock({ jobs }: { jobs: AgentJob[] }) {
                 anyRunning ? "opacity-100" : "opacity-0"
               }`}
             >
-              <ShaderBackdrop scale={2.0} speed={0.7} wave={1.8} />
+              <ShaderBackdrop scale={2.0} speed={0.7} wave={1.8} spreadX={3.6} />
             </span>
           )}
           {/* Véu escuro só o suficiente para o texto continuar legível. */}
