@@ -185,7 +185,7 @@ export function AutocompleteViagem({
             ) : null}
           </div>
 
-          <div className={`combo-list flex-1 min-h-0 overflow-y-auto${listIn ? " is-in" : ""}`}>
+          <div className={`combo-list flex-1 min-h-0 overflow-y-auto overscroll-contain${listIn ? " is-in" : ""}`}>
             {isLoading ? (
               <div className="p-4 text-center text-gray-500 dark:text-gray-400 text-sm">
                 Carregando viagens...
