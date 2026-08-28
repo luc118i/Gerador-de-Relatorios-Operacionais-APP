@@ -153,10 +153,14 @@ export function AutocompleteViagem({
           align="start"
           sideOffset={4}
           hideWhenDetached
-          style={{ width: "var(--radix-popover-trigger-width)" }}
-          className="z-[100] p-0 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-md shadow-lg max-h-80 overflow-hidden"
+          style={{
+            width: "var(--radix-popover-trigger-width)",
+            maxHeight:
+              "min(20rem, var(--radix-popover-content-available-height))",
+          }}
+          className="z-[100] p-0 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-md shadow-lg overflow-hidden flex flex-col"
         >
-          <div className="p-2 border-b border-gray-200 dark:border-gray-800 space-y-2">
+          <div className="shrink-0 p-2 border-b border-gray-200 dark:border-gray-800 space-y-2">
             <input
               type="text"
               placeholder="Buscar por código, nome, horário ou sentido..."
@@ -181,7 +185,7 @@ export function AutocompleteViagem({
             ) : null}
           </div>
 
-          <div className={`combo-list overflow-y-auto max-h-60${listIn ? " is-in" : ""}`}>
+          <div className={`combo-list flex-1 min-h-0 overflow-y-auto${listIn ? " is-in" : ""}`}>
             {isLoading ? (
               <div className="p-4 text-center text-gray-500 dark:text-gray-400 text-sm">
                 Carregando viagens...
