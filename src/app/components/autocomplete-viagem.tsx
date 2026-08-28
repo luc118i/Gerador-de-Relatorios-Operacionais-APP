@@ -113,21 +113,6 @@ export function AutocompleteViagem({
     return () => cancelAnimationFrame(raf);
   }, [isOpen]);
 
-  // Fecha o menu ao rolar a página — evita ele ficar "flutuando" desalinhado
-  // do campo enquanto o usuário rola. Ignora o scroll da própria lista de
-  // resultados dentro do menu (senão rolar a lista já fecharia o menu).
-  useEffect(() => {
-    if (!isOpen) return;
-    function handleScroll(e: Event) {
-      const target = e.target;
-      if (target instanceof Element && target.closest('[data-slot="popover-content"]')) return;
-      closeMenu();
-    }
-    window.addEventListener("scroll", handleScroll, true);
-    return () => window.removeEventListener("scroll", handleScroll, true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen]);
-
   const displayText = value
     ? [
         `${value.codigoLinha} - ${value.nomeLinha}`,
@@ -167,6 +152,7 @@ export function AutocompleteViagem({
         <PopoverContent
           align="start"
           sideOffset={4}
+          hideWhenDetached
           style={{ width: "var(--radix-popover-trigger-width)" }}
           className="z-[100] p-0 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-md shadow-lg max-h-80 overflow-hidden"
         >
