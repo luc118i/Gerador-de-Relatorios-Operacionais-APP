@@ -162,10 +162,24 @@ export function OccurrenceTable() {
       ) : (
         <>
           <div className="overflow-x-auto">
-            <table className="w-full text-xs">
+            <table className="w-full text-xs table-fixed min-w-[900px]">
+              <colgroup>
+                <col className="w-8" />
+                <col className="w-[68px]" />
+                <col className="w-[132px]" />
+                <col className="w-[64px]" />
+                <col className="w-[116px]" />
+                <col className="w-[64px]" />
+                <col className="w-[128px]" />
+                <col className="w-[92px]" />
+                <col className="w-[132px]" />
+                <col className="w-[80px]" />
+                <col className="w-[96px]" />
+                <col className="w-7" />
+              </colgroup>
               <thead>
                 <tr className="border-b border-gray-100 dark:border-gray-800 text-gray-400 dark:text-gray-500">
-                  <th className="px-3 py-2 w-8">
+                  <th className="px-2.5 py-2 w-8">
                     <Checkbox
                       checked={allOnPageSelected}
                       onCheckedChange={() =>
@@ -186,10 +200,10 @@ export function OccurrenceTable() {
                   <Th label="Veículo" k="vehicle" {...{ sortKey, sortDir, toggleSort }} />
                   <Th label="Linha" k="line" {...{ sortKey, sortDir, toggleSort }} />
                   <Th label="Base" k="base" {...{ sortKey, sortDir, toggleSort }} />
-                  <th className="px-3 py-2 text-left font-semibold uppercase tracking-wide">Local</th>
+                  <th className="px-2.5 py-2 text-left font-semibold uppercase tracking-wide">Local</th>
                   <Th label="Duração" k="duration" {...{ sortKey, sortDir, toggleSort }} />
-                  <th className="px-3 py-2 text-left font-semibold uppercase tracking-wide">Tratativa</th>
-                  <th className="px-3 py-2 w-6" />
+                  <th className="px-2.5 py-2 text-left font-semibold uppercase tracking-wide">Tratativa</th>
+                  <th className="px-2.5 py-2 w-6" />
                 </tr>
               </thead>
               <tbody>
@@ -251,7 +265,7 @@ function Th({
 }) {
   const active = sortKey === k;
   return (
-    <th className="px-3 py-2 text-left font-semibold uppercase tracking-wide whitespace-nowrap">
+    <th className="px-2.5 py-2 text-left font-semibold uppercase tracking-wide whitespace-nowrap">
       <button onClick={() => toggleSort(k)} className="cursor-pointer inline-flex items-center gap-1 hover:text-gray-600 dark:hover:text-gray-300">
         {label}
         {active ? (
@@ -290,52 +304,54 @@ function Row({
           selected ? "bg-blue-50/50 dark:bg-blue-950/30" : "hover:bg-gray-50/60 dark:hover:bg-gray-800/40",
         )}
       >
-        <td className="px-3 py-2.5 align-middle">
+        <td className="px-2.5 py-2.5 align-middle">
           <Checkbox checked={selected} onCheckedChange={onToggleSelect} className="w-3.5 h-3.5" />
         </td>
-        <td className="px-3 py-2.5 align-middle whitespace-nowrap font-mono text-gray-600 dark:text-gray-400">
+        <td className="px-2.5 py-2.5 align-middle whitespace-nowrap font-mono text-gray-600 dark:text-gray-400">
           <div className="font-semibold text-gray-700 dark:text-gray-300">{o.startTime}</div>
           <div className="text-[10px] text-gray-400">{o.eventDate.slice(8)}/{o.eventDate.slice(5, 7)}</div>
         </td>
-        <td className="px-3 py-2.5 align-middle max-w-[180px]">
+        <td className="px-2.5 py-2.5 align-middle">
           <span className="font-medium text-gray-800 dark:text-gray-200 truncate block" title={occDisplayName(o)}>
             {occDisplayName(o)}
           </span>
         </td>
-        <td className="px-3 py-2.5 align-middle">
+        <td className="px-2.5 py-2.5 align-middle">
           <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded", SEV_BADGE[sev])}>
             {SEVERITY_LABEL[sev]}
           </span>
         </td>
-        <td className="px-3 py-2.5 align-middle whitespace-nowrap text-gray-700 dark:text-gray-300">
-          {d ? firstName(d.name) : "—"}
+        <td className="px-2.5 py-2.5 align-middle text-gray-700 dark:text-gray-300">
+          <span className="truncate block" title={d?.name}>{d ? firstName(d.name) : "—"}</span>
         </td>
-        <td className="px-3 py-2.5 align-middle font-mono text-gray-700 dark:text-gray-300">{o.vehicleNumber}</td>
-        <td className="px-3 py-2.5 align-middle max-w-[140px]">
+        <td className="px-2.5 py-2.5 align-middle font-mono text-gray-700 dark:text-gray-300 truncate">{o.vehicleNumber}</td>
+        <td className="px-2.5 py-2.5 align-middle">
           <span className="truncate block text-gray-600 dark:text-gray-400" title={lineOf(o)}>
             {lineOf(o)}
           </span>
         </td>
-        <td className="px-3 py-2.5 align-middle whitespace-nowrap text-gray-600 dark:text-gray-400">{baseOf(o)}</td>
-        <td className="px-3 py-2.5 align-middle max-w-[160px]">
+        <td className="px-2.5 py-2.5 align-middle text-gray-600 dark:text-gray-400">
+          <span className="truncate block" title={baseOf(o)}>{baseOf(o)}</span>
+        </td>
+        <td className="px-2.5 py-2.5 align-middle">
           <span className="truncate block text-gray-500 dark:text-gray-500" title={o.place}>
             {o.place || "—"}
           </span>
         </td>
-        <td className="px-3 py-2.5 align-middle whitespace-nowrap tabular-nums text-gray-600 dark:text-gray-400">
+        <td className="px-2.5 py-2.5 align-middle whitespace-nowrap tabular-nums text-gray-600 dark:text-gray-400">
           {dur != null ? `${dur} min` : "—"}
           {exc > 0 && <span className="text-amber-600 dark:text-amber-400 ml-1">(+{exc})</span>}
         </td>
-        <td className="px-3 py-2.5 align-middle whitespace-nowrap">
+        <td className="px-2.5 py-2.5 align-middle">
           {o.tratativa ? (
-            <span className="text-gray-700 dark:text-gray-300">{TRATATIVA_LABEL[o.tratativa] ?? o.tratativa}</span>
+            <span className="text-gray-700 dark:text-gray-300 truncate block" title={TRATATIVA_LABEL[o.tratativa] ?? o.tratativa}>{TRATATIVA_LABEL[o.tratativa] ?? o.tratativa}</span>
           ) : (
             <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400">
               pendente
             </span>
           )}
         </td>
-        <td className="px-3 py-2.5 align-middle">
+        <td className="px-2.5 py-2.5 align-middle">
           <button onClick={onToggleExpand} className="cursor-pointer text-gray-300 dark:text-gray-600 hover:text-gray-500">
             {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
