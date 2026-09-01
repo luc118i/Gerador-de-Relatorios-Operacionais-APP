@@ -121,6 +121,15 @@ export function PendingTreatmentSection() {
   // Acumula os números da rodada inteira (o agente devolve só por lote).
   const syncAcc = useRef({ verificadas: 0, solucionadas: 0, naoVerificaveis: 0 });
 
+  // Progresso das rodadas (verificação/registro) — barra no cabeçalho.
+  const [progress, setProgress] = useState<{
+    done: number;
+    total: number;
+    kind: "verify" | "register";
+  } | null>(null);
+  const progTotalRef = useRef(0);
+  const progDoneRef = useRef(0);
+
   // ── Registro em lote das "Fora do RIZER" ──────────────────────────────────
   const [showFoldersModal, setShowFoldersModal] = useState(false);
   const [regRunning, setRegRunning] = useState(false);
@@ -200,6 +209,15 @@ export function PendingTreatmentSection() {
       syncAcc.current.solucionadas += r.solucionadas;
       syncAcc.current.naoVerificaveis += r.naoVerificaveis;
 
+      // Progresso: total = processado até agora + restantes (fixado no 1º lote).
+      progDoneRef.current += r.verificadas + r.naoVerificaveis;
+      if (progTotalRef.current === 0) progTotalRef.current = progDoneRef.current + r.restantes;
+      setProgress({
+        done: progDoneRef.current,
+        total: Math.max(progTotalRef.current, progDoneRef.current),
+        kind: "verify",
+      });
+
       const acc = syncAcc.current;
       const partes = [
         `${acc.verificadas} verificada${acc.verificadas !== 1 ? "s" : ""}`,
@@ -216,6 +234,7 @@ export function PendingTreatmentSection() {
         setRunning(false);
         autoRuns.current = 0;
         setLoteAtual(0);
+        setProgress(null);
         if (r.restantes > 0) {
           toast.warning(`RIZER: ${partes.join(" · ")} — ${r.restantes} restantes, clique de novo`);
         } else {
@@ -227,6 +246,7 @@ export function PendingTreatmentSection() {
       setRunning(false);
       autoRuns.current = 0;
       setLoteAtual(0);
+      setProgress(null);
       toast.error(`Falha ao verificar no RIZER: ${(e as Error)?.message ?? "erro desconhecido"}`);
     },
   });
@@ -235,6 +255,9 @@ export function PendingTreatmentSection() {
     autoRuns.current = 0;
     afterIdRef.current = undefined;
     syncAcc.current = { verificadas: 0, solucionadas: 0, naoVerificaveis: 0 };
+    progDoneRef.current = 0;
+    progTotalRef.current = 0;
+    setProgress({ done: 0, total: Math.max(1, pendentes.length), kind: "verify" });
     setLoteAtual(1);
     setRunning(true);
     sync.mutate();
@@ -257,6 +280,15 @@ export function PendingTreatmentSection() {
       regAfterIdRef.current = r.lastId ?? regAfterIdRef.current;
       regAcc.current.registradas += r.registradas;
       regAcc.current.falhas += r.falharam.length;
+
+      progDoneRef.current += r.registradas + r.falharam.length;
+      if (progTotalRef.current === 0) progTotalRef.current = progDoneRef.current + r.restantes;
+      setProgress({
+        done: progDoneRef.current,
+        total: Math.max(progTotalRef.current, progDoneRef.current),
+        kind: "register",
+      });
+
       setRegResult((prev) => ({
         registradas: (prev?.registradas ?? 0) + r.registradas,
         falharam: [...(prev?.falharam ?? []), ...r.falharam],
@@ -274,6 +306,7 @@ export function PendingTreatmentSection() {
         setRegRunning(false);
         regAutoRuns.current = 0;
         setRegLote(0);
+        setProgress(null);
         const { registradas: ok, falhas } = regAcc.current;
         const extra: string[] = [];
         if (falhas > 0) extra.push(`${falhas} falharam`);
@@ -288,6 +321,7 @@ export function PendingTreatmentSection() {
       setRegRunning(false);
       regAutoRuns.current = 0;
       setRegLote(0);
+      setProgress(null);
       toast.error(`Falha ao registrar no RIZER: ${(e as Error)?.message ?? "erro desconhecido"}`);
     },
   });
@@ -300,6 +334,9 @@ export function PendingTreatmentSection() {
     regAutoRuns.current = 0;
     regAfterIdRef.current = undefined;
     regAcc.current = { registradas: 0, falhas: 0 };
+    progDoneRef.current = 0;
+    progTotalRef.current = 0;
+    setProgress({ done: 0, total: Math.max(1, foraDoRizer.length), kind: "register" });
     setRegResult(null);
     setRegLote(1);
     setRegRunning(true);
@@ -333,15 +370,35 @@ export function PendingTreatmentSection() {
               {verificadoLabel(lastRun)}
             </span>
           )}
-          {running && (
-            <span className="text-[11px] text-orange-500 dark:text-orange-400 hidden sm:inline">
-              verificando… {loteAtual > 1 ? `(lote ${loteAtual})` : ""}
-            </span>
-          )}
-          {regRunning && (
-            <span className="text-[11px] text-blue-500 dark:text-blue-400 hidden sm:inline">
-              registrando… {regLote > 1 ? `(lote ${regLote})` : ""}
-            </span>
+          {progress && (
+            <div className="flex items-center gap-2">
+              <span
+                className={cn(
+                  "text-[11px] whitespace-nowrap tabular-nums",
+                  progress.kind === "verify"
+                    ? "text-orange-500 dark:text-orange-400"
+                    : "text-blue-500 dark:text-blue-400",
+                )}
+              >
+                {progress.kind === "verify" ? "verificando" : "registrando"} {progress.done}/{progress.total}
+                {(progress.kind === "verify" ? loteAtual : regLote) > 1 &&
+                  ` · lote ${progress.kind === "verify" ? loteAtual : regLote}`}
+              </span>
+              <div className="w-24 sm:w-32 h-1.5 rounded-full bg-gray-200 dark:bg-gray-800 overflow-hidden">
+                <div
+                  className={cn(
+                    "h-full rounded-full transition-all duration-500",
+                    progress.kind === "verify" ? "bg-orange-500" : "bg-blue-500",
+                  )}
+                  style={{
+                    width: `${Math.min(
+                      100,
+                      Math.round((progress.done / Math.max(1, progress.total)) * 100),
+                    )}%`,
+                  }}
+                />
+              </div>
+            </div>
           )}
           <button
             onClick={startRegister}
