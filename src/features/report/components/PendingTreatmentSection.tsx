@@ -805,6 +805,7 @@ export function PendingTreatmentSection() {
           title="Cobrar devolutiva"
           subtitle="Uma mensagem por gestor com as ocorrências dele que estão sem devolutiva no RIZER, e o link direto de cada registro. Envio com pausa entre cada gestor."
           buildMessage={buildManagerCobrancaMessage}
+          shortenLinks={false}
           groups={managerReport.groups}
           occByBase={managerReport.occByBase}
           reportDate={period.end}

@@ -45,6 +45,10 @@ interface Props {
     reportDate: string,
     shortLinks: Map<string, string>,
   ) => string;
+  // Encurtar os links do Drive antes de montar o texto (default true — usado
+  // no relatório diário). A cobrança de devolutiva usa link do RIZER (curto),
+  // não precisa e evita depender do endpoint /links/shorten.
+  shortenLinks?: boolean;
 }
 
 // Confirmação antes de disparar o relatório diário pros gestores — mostra
@@ -63,6 +67,7 @@ export function SendManagersModal({
   title = "Enviar relatório diário",
   subtitle = "Uma mensagem de WhatsApp por gestor, com as ocorrências de todas as bases dele. Envio com pausa entre cada gestor, pra não mandar tudo de uma vez.",
   buildMessage = buildManagerDailyMessage,
+  shortenLinks = true,
 }: Props) {
   // Todas as mensagens abrem expandidas por padrão — é justamente pra
   // revisar o texto exato antes de confirmar o envio, não pra esconder atrás
@@ -72,13 +77,14 @@ export function SendManagersModal({
   const [sendingAll, setSendingAll] = useState(false);
   const [shortLinks, setShortLinks] = useState<Map<string, string>>(new Map());
   const [shorteningLinks, setShorteningLinks] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
 
   // Encurta (TinyURL, via backend) todos os links de relatório das
   // ocorrências desse envio — uma chamada em lote, antes de montar o texto.
   // Falha na chamada não trava nada: buildManagerDailyMessage cai pro link
   // original quando não acha entrada no map.
   useEffect(() => {
-    if (!open) return;
+    if (!open || !shortenLinks) return;
     const urls = collectReportLinks(groups, occByBase);
     if (urls.length === 0) return;
     let alive = true;
@@ -99,17 +105,23 @@ export function SendManagersModal({
 
   async function handleSendAll() {
     setSendingAll(true);
+    setSendError(null);
     const pending = groups.filter((g) => status[g.telefone] !== "sent");
     for (let i = 0; i < pending.length; i++) {
       const group = pending[i]!;
       setStatus((s) => ({ ...s, [group.telefone]: "sending" }));
       let ok = true;
       try {
-        await onSendOne(group, messages.get(group.telefone)!);
+        const msg = messages.get(group.telefone);
+        if (!msg) throw new Error("mensagem vazia (falha ao montar o texto)");
+        await onSendOne(group, msg);
         setStatus((s) => ({ ...s, [group.telefone]: "sent" }));
-      } catch {
+      } catch (e) {
         ok = false;
         setStatus((s) => ({ ...s, [group.telefone]: "error" }));
+        const detail = (e as Error)?.message ?? "erro desconhecido";
+        setSendError(`${group.responsavel}: ${detail}`);
+        console.error("[SendManagersModal] envio falhou:", group.telefone, e);
       }
       // Pausa entre um gestor e o próximo — não depois do último (nada mais
       // pra esperar) e só quando esse envio deu certo (erro já não chegou a
@@ -220,6 +232,13 @@ export function SendManagersModal({
             })
           )}
         </div>
+
+        {sendError && (
+          <div className="mx-5 mb-1 mt-2 flex items-start gap-2 rounded-lg border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 px-3 py-2 text-xs text-red-700 dark:text-red-400">
+            <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+            <span>Falha no envio — {sendError}</span>
+          </div>
+        )}
 
         {/* Footer */}
         <div className="flex justify-end gap-2 px-5 py-4 border-t border-gray-100 dark:border-gray-800">
