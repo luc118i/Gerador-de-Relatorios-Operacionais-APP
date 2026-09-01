@@ -104,6 +104,28 @@ const STATUS_META: Record<
 
 const PAGE_SIZE = 25;
 
+// Cursor da verificação persistido — permite retomar de onde parou se a aba
+// for fechada/recarregada no meio (mesma ideia da fila de lote da Home).
+const SYNC_CURSOR_KEY = "rizer_sync_cursor_v1";
+type SyncCursor = { from: string; to: string; afterId: string; done: number; total: number };
+
+function loadSyncCursor(): SyncCursor | null {
+  try {
+    const raw = localStorage.getItem(SYNC_CURSOR_KEY);
+    return raw ? (JSON.parse(raw) as SyncCursor) : null;
+  } catch {
+    return null;
+  }
+}
+function saveSyncCursor(c: SyncCursor | null) {
+  try {
+    if (c) localStorage.setItem(SYNC_CURSOR_KEY, JSON.stringify(c));
+    else localStorage.removeItem(SYNC_CURSOR_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
 export function PendingTreatmentSection() {
   const { all, period, periodLabel } = useReport();
   const queryClient = useQueryClient();
@@ -120,6 +142,12 @@ export function PendingTreatmentSection() {
   const afterIdRef = useRef<string | undefined>(undefined);
   // Acumula os números da rodada inteira (o agente devolve só por lote).
   const syncAcc = useRef({ verificadas: 0, solucionadas: 0, naoVerificaveis: 0 });
+  // Cursor salvo de uma rodada interrompida (para "Retomar").
+  const [savedCursor, setSavedCursor] = useState<SyncCursor | null>(() => loadSyncCursor());
+  const resumable =
+    savedCursor && savedCursor.from === period.start && savedCursor.to === period.end && savedCursor.afterId
+      ? savedCursor
+      : null;
 
   // Progresso das rodadas (verificação/registro) — barra no cabeçalho.
   const [progress, setProgress] = useState<{
@@ -226,6 +254,19 @@ export function PendingTreatmentSection() {
       ];
       if (acc.naoVerificaveis > 0) partes.push(`${acc.naoVerificaveis} não verificável(is)`);
 
+      // Salva o cursor pra permitir retomar se a aba fechar no meio.
+      if (r.restantes > 0 && afterIdRef.current) {
+        const cur: SyncCursor = {
+          from: period.start,
+          to: period.end,
+          afterId: afterIdRef.current,
+          done: progDoneRef.current,
+          total: Math.max(progTotalRef.current, progDoneRef.current),
+        };
+        saveSyncCursor(cur);
+        setSavedCursor(cur);
+      }
+
       if (r.restantes > 0 && autoRuns.current < MAX_LOTES) {
         autoRuns.current += 1;
         setLoteAtual(autoRuns.current + 1);
@@ -237,8 +278,10 @@ export function PendingTreatmentSection() {
         setLoteAtual(0);
         setProgress(null);
         if (r.restantes > 0) {
-          toast.warning(`RIZER: ${partes.join(" · ")} — ${r.restantes} restantes, clique de novo`);
+          toast.warning(`RIZER: ${partes.join(" · ")} — ${r.restantes} restantes, clique em "Retomar"`);
         } else {
+          saveSyncCursor(null);
+          setSavedCursor(null);
           toast.success(`RIZER: ${partes.join(" · ")}`);
         }
       }
@@ -248,17 +291,27 @@ export function PendingTreatmentSection() {
       autoRuns.current = 0;
       setLoteAtual(0);
       setProgress(null);
+      // cursor fica salvo — dá pra retomar depois
       toast.error(`Falha ao verificar no RIZER: ${(e as Error)?.message ?? "erro desconhecido"}`);
     },
   });
 
-  function startSync() {
+  function startSync(resume = false) {
     autoRuns.current = 0;
-    afterIdRef.current = undefined;
     syncAcc.current = { verificadas: 0, solucionadas: 0, naoVerificaveis: 0 };
-    progDoneRef.current = 0;
-    progTotalRef.current = 0;
-    setProgress({ done: 0, total: Math.max(1, pendentes.length), kind: "verify" });
+    if (resume && resumable) {
+      afterIdRef.current = resumable.afterId;
+      progDoneRef.current = resumable.done;
+      progTotalRef.current = resumable.total;
+      setProgress({ done: resumable.done, total: resumable.total, kind: "verify" });
+    } else {
+      afterIdRef.current = undefined;
+      progDoneRef.current = 0;
+      progTotalRef.current = 0;
+      saveSyncCursor(null);
+      setSavedCursor(null);
+      setProgress({ done: 0, total: Math.max(1, pendentes.length), kind: "verify" });
+    }
     setLoteAtual(1);
     setRunning(true);
     sync.mutate();
@@ -420,8 +473,18 @@ export function PendingTreatmentSection() {
             <FilePlus2 className={cn("w-3.5 h-3.5", regRunning && "animate-pulse")} />
             {regRunning ? "Registrando…" : `Registrar pendentes${foraDoRizer.length ? ` (${foraDoRizer.length})` : ""}`}
           </button>
+          {!running && resumable && (
+            <button
+              onClick={() => startSync(false)}
+              disabled={!canSync}
+              className="cursor-pointer text-[11px] text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-40"
+              title="Descartar o progresso salvo e verificar tudo de novo"
+            >
+              do zero
+            </button>
+          )}
           <button
-            onClick={startSync}
+            onClick={() => startSync(!!resumable)}
             disabled={!canSync}
             className={cn(
               "cursor-pointer text-xs font-medium px-2.5 py-1.5 rounded-lg inline-flex items-center gap-1.5 transition-colors",
@@ -432,11 +495,17 @@ export function PendingTreatmentSection() {
             title={
               !agentAvailable
                 ? "Abra o RIZER Agent para verificar o Status das ocorrências"
-                : "Abre o RIZER e lê o Status de cada ocorrência registrada no período"
+                : resumable
+                  ? `Retoma a verificação de onde parou (${resumable.done}/${resumable.total})`
+                  : "Abre o RIZER e lê o Status de cada ocorrência registrada no período"
             }
           >
             <RefreshCw className={cn("w-3.5 h-3.5", running && "animate-spin")} />
-            {running ? "Verificando…" : "Verificar no RIZER"}
+            {running
+              ? "Verificando…"
+              : resumable
+                ? `Retomar (${resumable.done}/${resumable.total})`
+                : "Verificar no RIZER"}
           </button>
         </div>
       </div>
