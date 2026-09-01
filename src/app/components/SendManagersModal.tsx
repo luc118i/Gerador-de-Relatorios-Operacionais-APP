@@ -34,13 +34,36 @@ interface Props {
   // cada envio (mesmo padrão dos envios individuais em OccurrenceCardDTO).
   onSendOne: (group: ManagerGroup, message: string) => Promise<void>;
   onClose: () => void;
+  // Título/subtítulo do header. Default: relatório diário.
+  title?: string;
+  subtitle?: string;
+  // Monta o texto de cada mensagem. Default: buildManagerDailyMessage. A
+  // seção "Ocorrências Pendentes de Tratamento" passa buildManagerCobrancaMessage.
+  buildMessage?: (
+    group: ManagerGroup,
+    occByBase: Map<string, OccurrenceDTO[]>,
+    reportDate: string,
+    shortLinks: Map<string, string>,
+  ) => string;
 }
 
 // Confirmação antes de disparar o relatório diário pros gestores — mostra
 // quem vai receber, o texto exato de cada mensagem (expansível) e quais
 // bases ficaram de fora por falta de telefone cadastrado. Só depois de
 // revisar aqui é que o envio de fato roda (ver relatorio-diario.tsx).
-export function SendManagersModal({ open, groups, occByBase, reportDate, basesSemTelefone, baseCodesSemCadastro, onSendOne, onClose }: Props) {
+export function SendManagersModal({
+  open,
+  groups,
+  occByBase,
+  reportDate,
+  basesSemTelefone,
+  baseCodesSemCadastro,
+  onSendOne,
+  onClose,
+  title = "Enviar relatório diário",
+  subtitle = "Uma mensagem de WhatsApp por gestor, com as ocorrências de todas as bases dele. Envio com pausa entre cada gestor, pra não mandar tudo de uma vez.",
+  buildMessage = buildManagerDailyMessage,
+}: Props) {
   // Todas as mensagens abrem expandidas por padrão — é justamente pra
   // revisar o texto exato antes de confirmar o envio, não pra esconder atrás
   // de clique. Guarda os RECOLHIDOS (conjunto vazio = tudo expandido).
@@ -71,7 +94,7 @@ export function SendManagersModal({ open, groups, occByBase, reportDate, basesSe
 
   if (!open) return null;
 
-  const messages = new Map(groups.map((g) => [g.telefone, buildManagerDailyMessage(g, occByBase, reportDate, shortLinks)]));
+  const messages = new Map(groups.map((g) => [g.telefone, buildMessage(g, occByBase, reportDate, shortLinks)]));
   const allDone = groups.length > 0 && groups.every((g) => status[g.telefone] === "sent");
 
   async function handleSendAll() {
@@ -113,15 +136,12 @@ export function SendManagersModal({ open, groups, occByBase, reportDate, basesSe
           </div>
           <div className="min-w-0 flex-1">
             <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-              Enviar relatório diário —{" "}
+              {title} —{" "}
               <span className="text-blue-600 dark:text-blue-400">
                 {groups.length} gestor{groups.length !== 1 ? "es" : ""}
               </span>
             </h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-              Uma mensagem de WhatsApp por gestor, com as ocorrências de todas as bases dele. Envio com pausa entre
-              cada gestor, pra não mandar tudo de uma vez.
-            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{subtitle}</p>
           </div>
           {shorteningLinks && (
             <span className="flex items-center gap-1 text-[10px] text-gray-400 dark:text-gray-500 shrink-0" title="Encurtando links dos relatórios">

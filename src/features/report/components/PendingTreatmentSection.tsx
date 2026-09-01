@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
@@ -12,6 +12,7 @@ import {
   CircleHelp,
   CircleDashed,
   FilePlus2,
+  Send,
 } from "lucide-react";
 import { cn } from "../../../app/components/ui/utils";
 import type { OccurrenceDTO } from "../../../domain/occurrences";
@@ -26,15 +27,17 @@ import {
 import { useAgentStatus } from "../../../hooks/useAgentStatus";
 import { useAutomationFolders, type AutomationFolders } from "../../../hooks/useAutomationFolders";
 import { AutomationFoldersModal } from "../../../app/components/AutomationFoldersModal";
-
-// Origem do RIZER pro deep-link "abrir no RIZER". Valor fixo (o domínio da
-// Viação Catedral é estável e a automação no backend já usa esse mesmo host
-// via RIZER_DISCIPLINARY_URL). `VITE_RIZER_BASE_URL` é só um override opcional
-// caso o domínio mude — não precisa ser configurado.
-const RIZER_BASE_URL = (
-  (import.meta.env.VITE_RIZER_BASE_URL as string | undefined) ||
-  "https://viacaocatedralocorrencias.rizerapps.com"
-).replace(/\/$/, "");
+import { useWhatsAppAgent } from "../../../hooks/useWhatsAppAgent";
+import { WhatsAppConnectModal } from "../../../app/components/WhatsAppConnectModal";
+import { SendManagersModal } from "../../../app/components/SendManagersModal";
+import { baseResponsaveisApi } from "../../../api/baseResponsaveis.api";
+import { whatsappAgentApi } from "../../../api/whatsappAgent.api";
+import {
+  groupOccurrencesByManager,
+  buildManagerCobrancaMessage,
+  type ManagerGroup,
+} from "../../../utils/managerReport";
+import { rizerDisciplinarEditUrl } from "../../../utils/rizer";
 
 const TRATATIVA_LABEL: Record<string, string> = {
   SUSPEICAO: "Suspensão",
@@ -48,10 +51,6 @@ function medidaLabel(o: OccurrenceDTO): string {
   if (o.suspensao) return "Suspensão";
   if (o.advertencia) return "Advertência";
   return "—";
-}
-
-function rizerEditUrl(rizerId: string): string {
-  return `${RIZER_BASE_URL}/ocorrencias_disciplinares/${rizerId}/edit`;
 }
 
 function verificadoLabel(iso: string | null | undefined): string {
@@ -131,6 +130,13 @@ export function PendingTreatmentSection() {
   const queryClient = useQueryClient();
   const agentAvailable = useAgentStatus();
   const automationFolders = useAutomationFolders();
+  const whatsappAgent = useWhatsAppAgent();
+  const { data: baseResponsaveis = [] } = useQuery({
+    queryKey: ["base-responsaveis"],
+    queryFn: baseResponsaveisApi.list,
+  });
+  const [showSendManagers, setShowSendManagers] = useState(false);
+  const [showWhatsAppConnect, setShowWhatsAppConnect] = useState(false);
   const [lastRun, setLastRun] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   // `running` cobre a rodada inteira (vários lotes encadeados); `sync.isPending`
@@ -218,6 +224,26 @@ export function PendingTreatmentSection() {
   const safePage = Math.min(page, pageCount - 1);
   const pageRows = rows.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE);
   useEffect(() => setPage(0), [period.start, period.end]);
+
+  // Cobrança de devolutiva: agrupa as pendentes por gestor (base_responsaveis).
+  // groupOccurrencesByManager já filtra pra `tratativa` aplicada e != REGISTRO.
+  const managerReport = useMemo(
+    () => groupOccurrencesByManager(pendentes, baseResponsaveis),
+    [pendentes, baseResponsaveis],
+  );
+
+  function handleCobrarGestores() {
+    if (managerReport.groups.length === 0) return;
+    if (!whatsappAgent.connected) {
+      setShowWhatsAppConnect(true);
+      return;
+    }
+    setShowSendManagers(true);
+  }
+
+  async function handleEnviarCobranca(group: ManagerGroup, message: string) {
+    await whatsappAgentApi.send({ phone: group.telefone, message, banner: "gestor" });
+  }
 
   // Teto de lotes encadeados por rodada (40 × 60 = 2400 ocorrências) — trava de
   // segurança contra loop infinito caso `restantes` nunca zere.
@@ -456,6 +482,26 @@ export function PendingTreatmentSection() {
             </div>
           )}
           <button
+            onClick={handleCobrarGestores}
+            disabled={!agentAvailable || managerReport.groups.length === 0}
+            className={cn(
+              "cursor-pointer text-xs font-medium px-2.5 py-1.5 rounded-lg inline-flex items-center gap-1.5 transition-colors",
+              !agentAvailable || managerReport.groups.length === 0
+                ? "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed"
+                : "bg-emerald-600 text-white hover:bg-emerald-700",
+            )}
+            title={
+              !agentAvailable
+                ? "Abra o RIZER Agent (e conecte o WhatsApp) para cobrar os gestores"
+                : managerReport.groups.length === 0
+                  ? "Nenhum gestor com telefone cadastrado para as pendentes com tratativa"
+                  : "Envia por WhatsApp a cobrança da devolutiva das pendentes, agrupada por gestor"
+            }
+          >
+            <Send className="w-3.5 h-3.5" />
+            Cobrar gestores{managerReport.groups.length ? ` (${managerReport.groups.length})` : ""}
+          </button>
+          <button
             onClick={startRegister}
             disabled={!canRegister}
             className={cn(
@@ -685,7 +731,7 @@ export function PendingTreatmentSection() {
                       <td className="px-2.5 py-2.5 align-middle">
                         {o.rizerId ? (
                           <a
-                            href={rizerEditUrl(o.rizerId)}
+                            href={rizerDisciplinarEditUrl(o.rizerId)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline"
@@ -743,6 +789,29 @@ export function PendingTreatmentSection() {
             toast.message('Pastas do Drive salvas — clique em "Registrar pendentes" de novo.');
           }}
           onClose={() => setShowFoldersModal(false)}
+        />
+      )}
+
+      {showWhatsAppConnect && (
+        <WhatsAppConnectModal
+          whatsappAgent={whatsappAgent}
+          onClose={() => setShowWhatsAppConnect(false)}
+        />
+      )}
+
+      {showSendManagers && (
+        <SendManagersModal
+          open
+          title="Cobrar devolutiva"
+          subtitle="Uma mensagem por gestor com as ocorrências dele que estão sem devolutiva no RIZER, e o link direto de cada registro. Envio com pausa entre cada gestor."
+          buildMessage={buildManagerCobrancaMessage}
+          groups={managerReport.groups}
+          occByBase={managerReport.occByBase}
+          reportDate={period.end}
+          basesSemTelefone={managerReport.basesSemTelefone}
+          baseCodesSemCadastro={managerReport.baseCodesSemCadastro}
+          onSendOne={handleEnviarCobranca}
+          onClose={() => setShowSendManagers(false)}
         />
       )}
     </Panel>

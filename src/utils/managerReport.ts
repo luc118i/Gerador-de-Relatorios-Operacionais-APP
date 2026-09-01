@@ -6,6 +6,7 @@
 import type { OccurrenceDTO } from "../domain/occurrences";
 import type { BaseResponsavel } from "../api/baseResponsaveis.api";
 import { formatPhoneForWhatsApp } from "./whatsapp";
+import { rizerDisciplinarEditUrl } from "./rizer";
 
 const TRATATIVA_LABEL: Record<string, string> = {
   SUSPEICAO: "Suspensão",
@@ -182,5 +183,53 @@ export function buildManagerDailyMessage(
     blocos.join("\n\n"),
     "",
     `Total: ${group.occurrenceCount} ocorrência(s).`,
+  ].join("\n");
+}
+
+/**
+ * Texto da COBRANÇA de devolutiva — usado na seção "Ocorrências Pendentes de
+ * Tratamento" do Centro de Relatórios. Diferente do relatório diário: lista só
+ * as ocorrências que o gestor ainda não fechou no RIZER (sem "Solucionado") e
+ * dá o link direto do registro pra ele abrir e preencher a devolutiva.
+ *
+ * Assinatura igual a `buildManagerDailyMessage` (o SendManagersModal chama as
+ * duas do mesmo jeito). `reportDate` e `shortLinks` não são usados aqui — o
+ * link do RIZER é curto e do mesmo domínio, não precisa encurtar.
+ */
+export function buildManagerCobrancaMessage(
+  group: ManagerGroup,
+  occByBase: Map<string, OccurrenceDTO[]>,
+  _reportDate?: string,
+  _shortLinks?: Map<string, string>,
+): string {
+  const primeiroNome = group.responsavel.trim().split(/\s+/)[0] || group.responsavel;
+
+  const blocos = group.bases.map((base) => {
+    const occs = occByBase.get(base.sigla) ?? [];
+    const linhas = occs
+      .map((o) => {
+        const nome = o.typeCode === "GENERICO" && o.reportTitle ? o.reportTitle : o.typeTitle;
+        const trat = o.tratativa ? TRATATIVA_LABEL[o.tratativa] ?? o.tratativa : "Sem tratativa";
+        const motorista = o.drivers.find((d) => d.position === 1)?.name ?? "—";
+        const dataEvento = formatDateBR(o.eventDate);
+        const linkLine = o.rizerId
+          ? `\n  Abrir no RIZER: ${rizerDisciplinarEditUrl(o.rizerId)}`
+          : "\n  (sem link — localizar no RIZER por matrícula)";
+        return `• *${o.vehicleNumber}* — ${motorista} — ${nome} — ${trat} — ${dataEvento}${linkLine}`;
+      })
+      .join("\n\n");
+    return `*${base.sigla} — ${base.visibilidade}* (${occs.length})\n${linhas}`;
+  });
+
+  return [
+    `⚠️ *OCORRÊNCIAS AGUARDANDO DEVOLUTIVA NO RIZER*`,
+    "",
+    `${getSaudacao()}, ${primeiroNome}!`,
+    "",
+    `As ocorrências abaixo já foram tratadas, mas ainda estão *sem devolutiva/providência* registrada no RIZER (status diferente de "Solucionado"). Por favor, abrir cada registro e concluir.`,
+    "",
+    blocos.join("\n\n"),
+    "",
+    `Total pendente de devolutiva: ${group.occurrenceCount} ocorrência(s).`,
   ].join("\n");
 }
