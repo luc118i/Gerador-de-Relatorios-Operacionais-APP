@@ -35,7 +35,7 @@ const AGENT_OFFLINE_MSG =
 export async function syncRizerSolucionado(
   from: string,
   to: string,
-  opts?: { useAgent?: boolean; force?: boolean; afterId?: string },
+  opts?: { useAgent?: boolean; force?: boolean; afterId?: string; max?: number },
 ): Promise<RizerSolucionadoSyncResult> {
   if (!(opts?.useAgent ?? false)) {
     throw new Error(AGENT_OFFLINE_MSG);
@@ -51,6 +51,7 @@ export async function syncRizerSolucionado(
         to,
         ...(opts?.force ? { force: true } : {}),
         ...(opts?.afterId ? { afterId: opts.afterId } : {}),
+        ...(opts?.max ? { max: opts.max } : {}),
       }),
     });
   } catch {
@@ -98,7 +99,7 @@ export async function registerRizerPendentes(
   from: string,
   to: string,
   folders: { relatoriosFolderId?: string; medidasFolderId?: string },
-  opts?: { useAgent?: boolean; afterId?: string },
+  opts?: { useAgent?: boolean; afterId?: string; max?: number },
 ): Promise<RizerRegisterPendentesResult> {
   if (!(opts?.useAgent ?? false)) {
     throw new Error(AGENT_OFFLINE_MSG);
@@ -115,6 +116,7 @@ export async function registerRizerPendentes(
         ...(folders.relatoriosFolderId ? { relatorios_folder_id: folders.relatoriosFolderId } : {}),
         ...(folders.medidasFolderId ? { medidas_folder_id: folders.medidasFolderId } : {}),
         ...(opts?.afterId ? { afterId: opts.afterId } : {}),
+        ...(opts?.max ? { max: opts.max } : {}),
       }),
     });
   } catch {

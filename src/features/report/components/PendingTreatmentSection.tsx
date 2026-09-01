@@ -200,6 +200,7 @@ export function PendingTreatmentSection() {
       syncRizerSolucionado(period.start, period.end, {
         useAgent: agentAvailable,
         afterId: afterIdRef.current,
+        max: 15,
       }),
     onSuccess: (r) => {
       setLastRun(r.verificadoEm);
@@ -272,7 +273,7 @@ export function PendingTreatmentSection() {
           relatoriosFolderId: foldersRef.current?.relatoriosFolderId,
           medidasFolderId: foldersRef.current?.medidasFolderId,
         },
-        { useAgent: agentAvailable, afterId: regAfterIdRef.current },
+        { useAgent: agentAvailable, afterId: regAfterIdRef.current, max: 8 },
       ),
     onSuccess: (r) => {
       setLastRun(r.verificadoEm);
@@ -389,11 +390,12 @@ export function PendingTreatmentSection() {
                   className={cn(
                     "h-full rounded-full transition-all duration-500",
                     progress.kind === "verify" ? "bg-orange-500" : "bg-blue-500",
+                    (sync.isPending || registerMut.isPending) && "animate-pulse",
                   )}
                   style={{
-                    width: `${Math.min(
-                      100,
-                      Math.round((progress.done / Math.max(1, progress.total)) * 100),
+                    width: `${Math.max(
+                      3,
+                      Math.min(100, Math.round((progress.done / Math.max(1, progress.total)) * 100)),
                     )}%`,
                   }}
                 />
