@@ -227,7 +227,7 @@ export function buildManagerCobrancaMessage(
     "",
     `${getSaudacao()}, ${primeiroNome}! Tudo bem? 👋`,
     "",
-    `Passando para lembrar das ocorrências abaixo — elas já foram tratadas, mas ainda estão *sem devolutiva/providência* registrada no RIZER (status diferente de "Solucionado"). Quando puder, é só abrir cada registro e concluir. 🙏`,
+    `Passando para lembrar das ocorrências abaixo — elas já foram tratadas por aqui e *aguardam a devolutiva do gestor* no RIZER. Favor acessar cada registro pelo link e informar a devolutiva. 🙏`,
     "",
     blocos.join("\n\n\n"),
     "",
