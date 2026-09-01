@@ -4,6 +4,8 @@ import { AGENT_URL } from "../hooks/useAgentStatus";
 export type RizerSolucionadoSyncResult = {
   janela: { from: string; to: string };
   totalRegistradas: number;
+  /** "Registro" — já tratadas do nosso lado, não lidas no RIZER */
+  tratadasRegistro: number;
   verificadas: number;
   solucionadas: number;
   pendentes: number;

@@ -54,10 +54,18 @@ function verificadoLabel(iso: string | null | undefined): string {
   return `verificado ${formatDistanceToNow(d, { addSuffix: true, locale: ptBR })}`;
 }
 
-type RowStatus = "solucionada" | "pendente-verificada" | "nao-verificada";
+// "Registro" (tratativa === REGISTRO) = "apenas registrar", sem medida
+// disciplinar — já está resolvida do nosso lado, mesmo que o RIZER nunca
+// receba o status "Solucionado". Conta como tratada.
+export function isTratada(o: OccurrenceDTO): boolean {
+  return Boolean(o.solucionado) || o.tratativa === "REGISTRO";
+}
+
+type RowStatus = "solucionada" | "registro" | "pendente-verificada" | "nao-verificada";
 
 function rowStatus(o: OccurrenceDTO): RowStatus {
   if (o.solucionado) return "solucionada";
+  if (o.tratativa === "REGISTRO") return "registro";
   return o.solucionadoVerificadoEm ? "pendente-verificada" : "nao-verificada";
 }
 
@@ -69,6 +77,11 @@ const STATUS_META: Record<
     Icon: CircleCheck,
     cls: "text-emerald-500 dark:text-emerald-400",
     label: "Solucionada no RIZER",
+  },
+  registro: {
+    Icon: ClipboardCheck,
+    cls: "text-emerald-500 dark:text-emerald-400",
+    label: "Registro — tratada no nosso sistema (sem medida disciplinar)",
   },
   "pendente-verificada": {
     Icon: CircleAlert,
@@ -113,22 +126,25 @@ export function PendingTreatmentSection() {
 
   // A auditoria olha o período inteiro, independente do filtro global do
   // painel — "somente o período selecionado", como pedido.
-  const { registradas, rows, pendentes, solucionadas, foraDoRizer, semId, nuncaVerificadas } =
+  const { registradas, rows, pendentes, tratadas, foraDoRizer, semId, naoVerificadas, verificaveis } =
     useMemo(() => {
       const byDateTime = (a: OccurrenceDTO, b: OccurrenceDTO) =>
         (a.eventDate + (a.startTime ?? "")).localeCompare(b.eventDate + (b.startTime ?? ""));
       const registradas = all.filter((o) => o.rizerRegistered);
-      const pendentes = registradas.filter((o) => !o.solucionado).sort(byDateTime);
-      const solucionadas = registradas.filter((o) => o.solucionado).sort(byDateTime);
+      const pendentes = registradas.filter((o) => !isTratada(o)).sort(byDateTime);
+      const tratadas = registradas.filter(isTratada).sort(byDateTime);
+      // "Registro" não precisa de leitura no RIZER — só as demais são "verificáveis".
+      const verificaveis = registradas.filter((o) => o.tratativa !== "REGISTRO");
       return {
         registradas,
-        // Pendentes primeiro (é o que exige ação); solucionadas ao fim, esmaecidas.
-        rows: [...pendentes, ...solucionadas],
+        // Pendentes primeiro (é o que exige ação); tratadas ao fim, esmaecidas.
+        rows: [...pendentes, ...tratadas],
         pendentes,
-        solucionadas,
+        tratadas,
+        verificaveis,
         foraDoRizer: all.filter((o) => !o.rizerRegistered),
         semId: pendentes.filter((o) => !o.rizerId),
-        nuncaVerificadas: registradas.filter((o) => !o.solucionadoVerificadoEm).length,
+        naoVerificadas: verificaveis.filter((o) => !o.solucionadoVerificadoEm).length,
       };
     }, [all]);
 
@@ -247,8 +263,8 @@ export function PendingTreatmentSection() {
         />
         <SummaryTile
           icon={<CircleCheck className="w-4 h-4" />}
-          label="Solucionadas"
-          value={solucionadas.length}
+          label="Tratadas"
+          value={tratadas.length}
           tone="emerald"
         />
         <SummaryTile
@@ -270,10 +286,11 @@ export function PendingTreatmentSection() {
         <LegendItem status="nao-verificada" />
         <LegendItem status="pendente-verificada" />
         <LegendItem status="solucionada" />
-        {nuncaVerificadas > 0 && (
+        <LegendItem status="registro" />
+        {naoVerificadas > 0 && (
           <span className="ml-auto text-gray-400 dark:text-gray-500">
-            {nuncaVerificadas} de {registradas.length} nunca verificada
-            {nuncaVerificadas !== 1 ? "s" : ""} no RIZER
+            {naoVerificadas} de {verificaveis.length} nunca verificada
+            {naoVerificadas !== 1 ? "s" : ""} no RIZER
           </span>
         )}
       </div>
@@ -293,7 +310,7 @@ export function PendingTreatmentSection() {
         <>
           {pendentes.length === 0 && (
             <div className="px-5 py-2.5 text-center text-xs text-emerald-600 dark:text-emerald-400 border-b border-gray-100 dark:border-gray-800 bg-emerald-50/50 dark:bg-emerald-950/20">
-              Todas as {registradas.length} ocorrências registradas no RIZER estão solucionadas.
+              Todas as {registradas.length} ocorrências registradas no RIZER estão tratadas.
             </div>
           )}
           <div className="overflow-x-auto">
@@ -334,7 +351,7 @@ export function PendingTreatmentSection() {
                       key={o.id}
                       className={cn(
                         "border-b border-gray-50 dark:border-gray-800/60 hover:bg-gray-50/60 dark:hover:bg-gray-800/40 transition-colors",
-                        st === "solucionada" && "opacity-55",
+                        (st === "solucionada" || st === "registro") && "opacity-55",
                       )}
                     >
                       <td className="px-2.5 py-2.5 align-middle">
