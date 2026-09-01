@@ -134,6 +134,14 @@ export type OccurrenceDTO = {
   devolutivaBeforeEvidences?: boolean | null;
   suspensao?: { dataInicio: string; dias: number } | null;
   rizerRegistered?: boolean;
+  /** ID da ocorrência no RIZER (`/ocorrencias_disciplinares/{rizerId}/edit`).
+   *  Gravado no fluxo de registro; pode ser null em registros antigos. */
+  rizerId?: string | null;
+  /** Espelho do campo "Status" do RIZER (Solucionado = tratada). Atualizado
+   *  sob demanda pelo botão "Verificar no RIZER" do Centro de Relatórios. */
+  solucionado?: boolean;
+  /** Quando a verificação de `solucionado` rodou pela última vez (ISO). */
+  solucionadoVerificadoEm?: string | null;
   advertencia?: boolean;
   faltaTratativa?: boolean;
   tratativa?: "SUSPEICAO" | "ADVERTENCIA" | "VALE" | "REGISTRO" | null;

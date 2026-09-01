@@ -16,6 +16,7 @@ import { OccurrenceTypePanel, OccurrenceTimeChart, WhereIsTheProblem } from "./c
 import { RankingsGrid } from "./components/Rankings";
 import { OperationalInsights } from "./components/OperationalInsights";
 import { OccurrenceTable } from "./components/OccurrenceTable";
+import { PendingTreatmentSection } from "./components/PendingTreatmentSection";
 import { ApuracaoSection } from "./components/ApuracaoSection";
 import { ReportSkeleton } from "./components/ReportSkeleton";
 import { PeriodTrendCard } from "./components/PeriodTrendCard";
@@ -99,6 +100,7 @@ export function ReportLayout({
             <RankingsGrid />
             <OperationalInsights />
             <OccurrenceTable />
+            <PendingTreatmentSection />
 
             {isSingleDay && (
               <>
