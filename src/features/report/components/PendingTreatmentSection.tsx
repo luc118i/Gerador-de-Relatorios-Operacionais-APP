@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -10,6 +10,7 @@ import {
   CircleCheck,
   CircleAlert,
   CircleHelp,
+  CircleDashed,
 } from "lucide-react";
 import { cn } from "../../../app/components/ui/utils";
 import type { OccurrenceDTO } from "../../../domain/occurrences";
@@ -53,27 +54,68 @@ function verificadoLabel(iso: string | null | undefined): string {
   return `verificado ${formatDistanceToNow(d, { addSuffix: true, locale: ptBR })}`;
 }
 
+type RowStatus = "solucionada" | "pendente-verificada" | "nao-verificada";
+
+function rowStatus(o: OccurrenceDTO): RowStatus {
+  if (o.solucionado) return "solucionada";
+  return o.solucionadoVerificadoEm ? "pendente-verificada" : "nao-verificada";
+}
+
+const STATUS_META: Record<
+  RowStatus,
+  { Icon: typeof CircleCheck; cls: string; label: string }
+> = {
+  solucionada: {
+    Icon: CircleCheck,
+    cls: "text-emerald-500 dark:text-emerald-400",
+    label: "Solucionada no RIZER",
+  },
+  "pendente-verificada": {
+    Icon: CircleAlert,
+    cls: "text-amber-500 dark:text-amber-400",
+    label: "Pendente de tratamento (verificada)",
+  },
+  "nao-verificada": {
+    Icon: CircleDashed,
+    cls: "text-gray-300 dark:text-gray-600",
+    label: "Ainda não verificada no RIZER",
+  },
+};
+
+const PAGE_SIZE = 25;
+
 export function PendingTreatmentSection() {
   const { all, period, periodLabel } = useReport();
   const queryClient = useQueryClient();
   const agentAvailable = useAgentStatus();
   const [lastRun, setLastRun] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
 
   // A auditoria olha o período inteiro, independente do filtro global do
   // painel — "somente o período selecionado", como pedido.
-  const { registradas, pendentes, solucionadas, foraDoRizer, semId } = useMemo(() => {
-    const registradas = all.filter((o) => o.rizerRegistered);
-    const pendentes = registradas
-      .filter((o) => !o.solucionado)
-      .sort((a, b) => (a.eventDate + (a.startTime ?? "")).localeCompare(b.eventDate + (b.startTime ?? "")));
-    return {
-      registradas,
-      pendentes,
-      solucionadas: registradas.filter((o) => o.solucionado),
-      foraDoRizer: all.filter((o) => !o.rizerRegistered),
-      semId: pendentes.filter((o) => !o.rizerId),
-    };
-  }, [all]);
+  const { registradas, rows, pendentes, solucionadas, foraDoRizer, semId, nuncaVerificadas } =
+    useMemo(() => {
+      const byDateTime = (a: OccurrenceDTO, b: OccurrenceDTO) =>
+        (a.eventDate + (a.startTime ?? "")).localeCompare(b.eventDate + (b.startTime ?? ""));
+      const registradas = all.filter((o) => o.rizerRegistered);
+      const pendentes = registradas.filter((o) => !o.solucionado).sort(byDateTime);
+      const solucionadas = registradas.filter((o) => o.solucionado).sort(byDateTime);
+      return {
+        registradas,
+        // Pendentes primeiro (é o que exige ação); solucionadas ao fim, esmaecidas.
+        rows: [...pendentes, ...solucionadas],
+        pendentes,
+        solucionadas,
+        foraDoRizer: all.filter((o) => !o.rizerRegistered),
+        semId: pendentes.filter((o) => !o.rizerId),
+        nuncaVerificadas: registradas.filter((o) => !o.solucionadoVerificadoEm).length,
+      };
+    }, [all]);
+
+  const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount - 1);
+  const pageRows = rows.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE);
+  useEffect(() => setPage(0), [period.start, period.end]);
 
   const sync = useMutation({
     mutationFn: () =>
@@ -178,6 +220,19 @@ export function PendingTreatmentSection() {
         />
       </div>
 
+      {/* Legenda dos ícones da coluna "Situação" */}
+      <div className="px-5 py-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-gray-800">
+        <LegendItem status="nao-verificada" />
+        <LegendItem status="pendente-verificada" />
+        <LegendItem status="solucionada" />
+        {nuncaVerificadas > 0 && (
+          <span className="ml-auto text-gray-400 dark:text-gray-500">
+            {nuncaVerificadas} de {registradas.length} nunca verificada
+            {nuncaVerificadas !== 1 ? "s" : ""} no RIZER
+          </span>
+        )}
+      </div>
+
       {semId.length > 0 && (
         <div className="px-5 py-2 text-[11px] text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800 bg-amber-50/50 dark:bg-amber-950/20">
           {semId.length} pendente{semId.length !== 1 ? "s" : ""} sem ID do RIZER salvo — a verificação tenta
@@ -189,104 +244,150 @@ export function PendingTreatmentSection() {
         <div className="px-5 py-10 text-center text-sm text-gray-400 dark:text-gray-500">
           Nenhuma ocorrência registrada no RIZER neste período.
         </div>
-      ) : pendentes.length === 0 ? (
-        <div className="px-5 py-10 text-center text-sm text-emerald-600 dark:text-emerald-400">
-          Todas as {registradas.length} ocorrências registradas no RIZER estão solucionadas.
-        </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs table-fixed min-w-[860px]">
-            <colgroup>
-              <col className="w-[84px]" />
-              <col className="w-[64px]" />
-              <col className="w-[128px]" />
-              <col className="w-[72px]" />
-              <col className="w-[132px]" />
-              <col className="w-[140px]" />
-              <col className="w-[104px]" />
-              <col className="w-[120px]" />
-              <col className="w-[92px]" />
-            </colgroup>
-            <thead>
-              <tr className="border-b border-gray-100 dark:border-gray-800 text-gray-400 dark:text-gray-500">
-                <Th>Data/Hora</Th>
-                <Th>Prefixo</Th>
-                <Th>Motorista</Th>
-                <Th>Matrícula</Th>
-                <Th>Tipo</Th>
-                <Th>Local</Th>
-                <Th>Medida</Th>
-                <Th>Autor</Th>
-                <Th>RIZER</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {pendentes.map((o) => {
-                const d = primaryDriver(o);
-                return (
-                  <tr
-                    key={o.id}
-                    className="border-b border-gray-50 dark:border-gray-800/60 hover:bg-gray-50/60 dark:hover:bg-gray-800/40 transition-colors"
-                  >
-                    <td className="px-2.5 py-2.5 align-middle whitespace-nowrap font-mono text-gray-600 dark:text-gray-400">
-                      <div className="font-semibold text-gray-700 dark:text-gray-300">{o.startTime || "--:--"}</div>
-                      <div className="text-[10px] text-gray-400">
-                        {o.eventDate.slice(8)}/{o.eventDate.slice(5, 7)}
-                      </div>
-                    </td>
-                    <td className="px-2.5 py-2.5 align-middle font-mono text-gray-700 dark:text-gray-300 truncate">
-                      {o.vehicleNumber || "—"}
-                    </td>
-                    <td className="px-2.5 py-2.5 align-middle text-gray-700 dark:text-gray-300">
-                      <span className="truncate block" title={d?.name ?? ""}>
-                        {d?.name ? firstName(d.name) : "—"}
-                      </span>
-                    </td>
-                    <td className="px-2.5 py-2.5 align-middle font-mono text-gray-600 dark:text-gray-400 truncate">
-                      {d?.registry || "—"}
-                    </td>
-                    <td className="px-2.5 py-2.5 align-middle">
-                      <span className="font-medium text-gray-800 dark:text-gray-200 truncate block" title={occDisplayName(o)}>
-                        {occDisplayName(o)}
-                      </span>
-                    </td>
-                    <td className="px-2.5 py-2.5 align-middle text-gray-500 dark:text-gray-500">
-                      <span className="truncate block" title={o.place}>
-                        {o.place || "—"}
-                      </span>
-                    </td>
-                    <td className="px-2.5 py-2.5 align-middle text-gray-600 dark:text-gray-400 truncate">
-                      {medidaLabel(o)}
-                    </td>
-                    <td className="px-2.5 py-2.5 align-middle text-gray-600 dark:text-gray-400">
-                      <span className="truncate block" title={o.analisadoPor ?? ""}>
-                        {o.analisadoPor ? firstName(o.analisadoPor) : "—"}
-                      </span>
-                    </td>
-                    <td className="px-2.5 py-2.5 align-middle">
-                      {o.rizerId ? (
-                        <a
-                          href={rizerEditUrl(o.rizerId)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline"
-                          title="Abrir o registro no RIZER para tratar"
-                        >
-                          Abrir
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                      ) : (
-                        <span className="text-gray-300 dark:text-gray-600" title="Sem ID do RIZER salvo">
-                          sem ID
-                        </span>
+        <>
+          {pendentes.length === 0 && (
+            <div className="px-5 py-2.5 text-center text-xs text-emerald-600 dark:text-emerald-400 border-b border-gray-100 dark:border-gray-800 bg-emerald-50/50 dark:bg-emerald-950/20">
+              Todas as {registradas.length} ocorrências registradas no RIZER estão solucionadas.
+            </div>
+          )}
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs table-fixed min-w-[900px]">
+              <colgroup>
+                <col className="w-[40px]" />
+                <col className="w-[84px]" />
+                <col className="w-[64px]" />
+                <col className="w-[128px]" />
+                <col className="w-[72px]" />
+                <col className="w-[132px]" />
+                <col className="w-[140px]" />
+                <col className="w-[104px]" />
+                <col className="w-[120px]" />
+                <col className="w-[92px]" />
+              </colgroup>
+              <thead>
+                <tr className="border-b border-gray-100 dark:border-gray-800 text-gray-400 dark:text-gray-500">
+                  <th className="px-2.5 py-2" />
+                  <Th>Data/Hora</Th>
+                  <Th>Prefixo</Th>
+                  <Th>Motorista</Th>
+                  <Th>Matrícula</Th>
+                  <Th>Tipo</Th>
+                  <Th>Local</Th>
+                  <Th>Medida</Th>
+                  <Th>Autor</Th>
+                  <Th>RIZER</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {pageRows.map((o) => {
+                  const d = primaryDriver(o);
+                  const st = rowStatus(o);
+                  const meta = STATUS_META[st];
+                  return (
+                    <tr
+                      key={o.id}
+                      className={cn(
+                        "border-b border-gray-50 dark:border-gray-800/60 hover:bg-gray-50/60 dark:hover:bg-gray-800/40 transition-colors",
+                        st === "solucionada" && "opacity-55",
                       )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                    >
+                      <td className="px-2.5 py-2.5 align-middle">
+                        <span
+                          className="inline-flex"
+                          title={
+                            st === "pendente-verificada"
+                              ? `${meta.label} · ${verificadoLabel(o.solucionadoVerificadoEm)}`
+                              : meta.label
+                          }
+                        >
+                          <meta.Icon className={cn("w-4 h-4", meta.cls)} aria-label={meta.label} />
+                        </span>
+                      </td>
+                      <td className="px-2.5 py-2.5 align-middle whitespace-nowrap font-mono text-gray-600 dark:text-gray-400">
+                        <div className="font-semibold text-gray-700 dark:text-gray-300">{o.startTime || "--:--"}</div>
+                        <div className="text-[10px] text-gray-400">
+                          {o.eventDate.slice(8)}/{o.eventDate.slice(5, 7)}
+                        </div>
+                      </td>
+                      <td className="px-2.5 py-2.5 align-middle font-mono text-gray-700 dark:text-gray-300 truncate">
+                        {o.vehicleNumber || "—"}
+                      </td>
+                      <td className="px-2.5 py-2.5 align-middle text-gray-700 dark:text-gray-300">
+                        <span className="truncate block" title={d?.name ?? ""}>
+                          {d?.name ? firstName(d.name) : "—"}
+                        </span>
+                      </td>
+                      <td className="px-2.5 py-2.5 align-middle font-mono text-gray-600 dark:text-gray-400 truncate">
+                        {d?.registry || "—"}
+                      </td>
+                      <td className="px-2.5 py-2.5 align-middle">
+                        <span className="font-medium text-gray-800 dark:text-gray-200 truncate block" title={occDisplayName(o)}>
+                          {occDisplayName(o)}
+                        </span>
+                      </td>
+                      <td className="px-2.5 py-2.5 align-middle text-gray-500 dark:text-gray-500">
+                        <span className="truncate block" title={o.place}>
+                          {o.place || "—"}
+                        </span>
+                      </td>
+                      <td className="px-2.5 py-2.5 align-middle text-gray-600 dark:text-gray-400 truncate">
+                        {medidaLabel(o)}
+                      </td>
+                      <td className="px-2.5 py-2.5 align-middle text-gray-600 dark:text-gray-400">
+                        <span className="truncate block" title={o.analisadoPor ?? ""}>
+                          {o.analisadoPor ? firstName(o.analisadoPor) : "—"}
+                        </span>
+                      </td>
+                      <td className="px-2.5 py-2.5 align-middle">
+                        {o.rizerId ? (
+                          <a
+                            href={rizerEditUrl(o.rizerId)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline"
+                            title="Abrir o registro no RIZER"
+                          >
+                            Abrir
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        ) : (
+                          <span className="text-gray-300 dark:text-gray-600" title="Sem ID do RIZER salvo">
+                            sem ID
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {pageCount > 1 && (
+            <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+              <span>
+                {rows.length} registro{rows.length !== 1 ? "s" : ""} · página {safePage + 1} de {pageCount}
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setPage(Math.max(0, safePage - 1))}
+                  disabled={safePage === 0}
+                  className="cursor-pointer px-2 py-1 rounded-md border border-gray-200 dark:border-gray-800 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-800"
+                >
+                  Anterior
+                </button>
+                <button
+                  onClick={() => setPage(Math.min(pageCount - 1, safePage + 1))}
+                  disabled={safePage >= pageCount - 1}
+                  className="cursor-pointer px-2 py-1 rounded-md border border-gray-200 dark:border-gray-800 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-800"
+                >
+                  Próxima
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </Panel>
   );
@@ -295,6 +396,16 @@ export function PendingTreatmentSection() {
 function Th({ children }: { children: React.ReactNode }) {
   return (
     <th className="px-2.5 py-2 text-left font-semibold uppercase tracking-wide whitespace-nowrap">{children}</th>
+  );
+}
+
+function LegendItem({ status }: { status: RowStatus }) {
+  const { Icon, cls, label } = STATUS_META[status];
+  return (
+    <span className="inline-flex items-center gap-1">
+      <Icon className={cn("w-3.5 h-3.5", cls)} />
+      {label}
+    </span>
   );
 }
 
