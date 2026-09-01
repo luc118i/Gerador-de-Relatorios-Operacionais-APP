@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -90,6 +90,26 @@ export function PendingTreatmentSection() {
   const agentAvailable = useAgentStatus();
   const [lastRun, setLastRun] = useState<string | null>(null);
   const [page, setPage] = useState(0);
+  // `running` cobre a rodada inteira (vários lotes encadeados); `sync.isPending`
+  // é só o lote atual. `loteAtual` é só pro rótulo do progresso.
+  const [running, setRunning] = useState(false);
+  const [loteAtual, setLoteAtual] = useState(0);
+  const autoRuns = useRef(0);
+
+  const invalidateDays = () =>
+    queryClient.invalidateQueries({
+      predicate: (q) => q.queryKey[0] === "report" && q.queryKey[1] === "day",
+    });
+
+  // Enquanto a rodada está em andamento, recarrega os dias do período a cada
+  // 8s — o agente grava `solucionado` no banco ocorrência por ocorrência, então
+  // os ícones vão virando verde/âmbar sem esperar o lote terminar.
+  useEffect(() => {
+    if (!running) return;
+    const t = setInterval(invalidateDays, 8000);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [running]);
 
   // A auditoria olha o período inteiro, independente do filtro global do
   // painel — "somente o período selecionado", como pedido.
@@ -117,36 +137,56 @@ export function PendingTreatmentSection() {
   const pageRows = rows.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE);
   useEffect(() => setPage(0), [period.start, period.end]);
 
+  // Teto de lotes encadeados por rodada (40 × 60 = 2400 ocorrências) — trava de
+  // segurança contra loop infinito caso `restantes` nunca zere.
+  const MAX_LOTES = 40;
+
   const sync = useMutation({
     mutationFn: () =>
       syncRizerSolucionado(period.start, period.end, { useAgent: agentAvailable }),
     onSuccess: (r) => {
       setLastRun(r.verificadoEm);
-      // Os dias do período usam a queryKey ["report","day",iso] — invalida
-      // todas pra o novo `solucionado` fluir de volta pra tela.
-      queryClient.invalidateQueries({
-        predicate: (q) => q.queryKey[0] === "report" && q.queryKey[1] === "day",
-      });
+      invalidateDays();
+
       const partes = [
         `${r.verificadas} verificada${r.verificadas !== 1 ? "s" : ""}`,
         `${r.solucionadas} solucionada${r.solucionadas !== 1 ? "s" : ""}`,
         `${r.pendentes} pendente${r.pendentes !== 1 ? "s" : ""}`,
       ];
       if (r.naoVerificaveis > 0) partes.push(`${r.naoVerificaveis} não verificável(is)`);
-      if (r.restantes > 0) {
-        toast.warning(
-          `RIZER: ${partes.join(" · ")} — faltam ${r.restantes}, clique em "Verificar" de novo`,
-        );
+
+      if (r.restantes > 0 && autoRuns.current < MAX_LOTES) {
+        autoRuns.current += 1;
+        setLoteAtual(autoRuns.current + 1);
+        toast.message(`RIZER: ${partes.join(" · ")} — continuando (${r.restantes} restantes)…`);
+        sync.mutate();
       } else {
-        toast.success(`RIZER: ${partes.join(" · ")}`);
+        setRunning(false);
+        autoRuns.current = 0;
+        setLoteAtual(0);
+        if (r.restantes > 0) {
+          toast.warning(`RIZER: ${partes.join(" · ")} — ${r.restantes} restantes, clique de novo`);
+        } else {
+          toast.success(`RIZER: ${partes.join(" · ")}`);
+        }
       }
     },
     onError: (e) => {
+      setRunning(false);
+      autoRuns.current = 0;
+      setLoteAtual(0);
       toast.error(`Falha ao verificar no RIZER: ${(e as Error)?.message ?? "erro desconhecido"}`);
     },
   });
 
-  const canSync = agentAvailable && !sync.isPending && registradas.length > 0;
+  function startSync() {
+    autoRuns.current = 0;
+    setLoteAtual(1);
+    setRunning(true);
+    sync.mutate();
+  }
+
+  const canSync = agentAvailable && !running && registradas.length > 0;
 
   if (all.length === 0) return null;
 
@@ -166,13 +206,18 @@ export function PendingTreatmentSection() {
               RIZER Agent offline
             </span>
           )}
-          {agentAvailable && lastRun && (
+          {agentAvailable && !running && lastRun && (
             <span className="text-[11px] text-gray-400 dark:text-gray-500 hidden sm:inline">
               {verificadoLabel(lastRun)}
             </span>
           )}
+          {running && (
+            <span className="text-[11px] text-orange-500 dark:text-orange-400 hidden sm:inline">
+              verificando… {loteAtual > 1 ? `(lote ${loteAtual})` : ""}
+            </span>
+          )}
           <button
-            onClick={() => sync.mutate()}
+            onClick={startSync}
             disabled={!canSync}
             className={cn(
               "cursor-pointer text-xs font-medium px-2.5 py-1.5 rounded-lg inline-flex items-center gap-1.5 transition-colors",
@@ -186,8 +231,8 @@ export function PendingTreatmentSection() {
                 : "Abre o RIZER e lê o Status de cada ocorrência registrada no período"
             }
           >
-            <RefreshCw className={cn("w-3.5 h-3.5", sync.isPending && "animate-spin")} />
-            {sync.isPending ? "Verificando…" : "Verificar no RIZER"}
+            <RefreshCw className={cn("w-3.5 h-3.5", running && "animate-spin")} />
+            {running ? "Verificando…" : "Verificar no RIZER"}
           </button>
         </div>
       </div>
