@@ -213,23 +213,30 @@ export function buildManagerCobrancaMessage(
         const motorista = o.drivers.find((d) => d.position === 1)?.name ?? "—";
         const dataEvento = formatDateBR(o.eventDate);
         const linkLine = o.rizerId
-          ? `\n  Abrir no RIZER: ${rizerDisciplinarEditUrl(o.rizerId)}`
-          : "\n  (sem link — localizar no RIZER por matrícula)";
-        return `• *${o.vehicleNumber}* — ${motorista} — ${nome} — ${trat} — ${dataEvento}${linkLine}`;
+          ? `\n   🔗 ${rizerDisciplinarEditUrl(o.rizerId)}`
+          : "\n   (sem link — localizar no RIZER por matrícula)";
+        return `• *${o.vehicleNumber}* — ${motorista}\n   ${nome} · ${trat} · ${dataEvento}${linkLine}`;
       })
+      // Linha em branco entre cada ocorrência pra facilitar a leitura no WhatsApp.
       .join("\n\n");
-    return `*${base.sigla} — ${base.visibilidade}* (${occs.length})\n${linhas}`;
+    return `*${base.sigla} — ${base.visibilidade}* (${occs.length})\n\n${linhas}`;
   });
 
   return [
     `⚠️ *OCORRÊNCIAS AGUARDANDO DEVOLUTIVA NO RIZER*`,
     "",
-    `${getSaudacao()}, ${primeiroNome}!`,
+    `${getSaudacao()}, ${primeiroNome}! Tudo bem? 👋`,
     "",
-    `As ocorrências abaixo já foram tratadas, mas ainda estão *sem devolutiva/providência* registrada no RIZER (status diferente de "Solucionado"). Por favor, abrir cada registro e concluir.`,
+    `Passando para lembrar das ocorrências abaixo — elas já foram tratadas, mas ainda estão *sem devolutiva/providência* registrada no RIZER (status diferente de "Solucionado"). Quando puder, é só abrir cada registro e concluir. 🙏`,
     "",
-    blocos.join("\n\n"),
+    blocos.join("\n\n\n"),
     "",
-    `Total pendente de devolutiva: ${group.occurrenceCount} ocorrência(s).`,
+    `Total pendente de devolutiva: *${group.occurrenceCount}* ocorrência(s).`,
+    "",
+    `Qualquer dúvida, estamos à disposição. Obrigado!`,
+    "",
+    `_Equipe de Monitoramento_`,
+    "",
+    `_*Caso não tenha acesso ao RIZER, favor buscar orientação com os responsáveis da equipe de TI.*_`,
   ].join("\n");
 }
