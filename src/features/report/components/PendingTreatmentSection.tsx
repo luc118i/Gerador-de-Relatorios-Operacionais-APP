@@ -11,14 +11,21 @@ import {
   CircleAlert,
   CircleHelp,
   CircleDashed,
+  FilePlus2,
 } from "lucide-react";
 import { cn } from "../../../app/components/ui/utils";
 import type { OccurrenceDTO } from "../../../domain/occurrences";
 import { useReport } from "../ReportContext";
 import { Panel } from "./primitives";
 import { occDisplayName, primaryDriver, firstName } from "../occ-helpers";
-import { syncRizerSolucionado } from "../../../api/rizerSolucionado.api";
+import {
+  syncRizerSolucionado,
+  registerRizerPendentes,
+  type RizerRegisterPendentesResult,
+} from "../../../api/rizerSolucionado.api";
 import { useAgentStatus } from "../../../hooks/useAgentStatus";
+import { useAutomationFolders, type AutomationFolders } from "../../../hooks/useAutomationFolders";
+import { AutomationFoldersModal } from "../../../app/components/AutomationFoldersModal";
 
 // Origem do RIZER pro deep-link "abrir no RIZER". Valor fixo (o domínio da
 // Viação Catedral é estável e a automação no backend já usa esse mesmo host
@@ -101,6 +108,7 @@ export function PendingTreatmentSection() {
   const { all, period, periodLabel } = useReport();
   const queryClient = useQueryClient();
   const agentAvailable = useAgentStatus();
+  const automationFolders = useAutomationFolders();
   const [lastRun, setLastRun] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   // `running` cobre a rodada inteira (vários lotes encadeados); `sync.isPending`
@@ -109,20 +117,36 @@ export function PendingTreatmentSection() {
   const [loteAtual, setLoteAtual] = useState(0);
   const autoRuns = useRef(0);
 
+  // ── Registro em lote das "Fora do RIZER" ──────────────────────────────────
+  const [showFoldersModal, setShowFoldersModal] = useState(false);
+  const [regRunning, setRegRunning] = useState(false);
+  const [regLote, setRegLote] = useState(0);
+  const regAutoRuns = useRef(0);
+  const regAcc = useRef({ registradas: 0, falhas: 0 });
+  const foldersRef = useRef<AutomationFolders | null>(automationFolders.config);
+  const [regResult, setRegResult] = useState<{
+    registradas: number;
+    falharam: RizerRegisterPendentesResult["falharam"];
+    precisamDecisao: number;
+  } | null>(null);
+  useEffect(() => {
+    foldersRef.current = automationFolders.config;
+  }, [automationFolders.config]);
+
   const invalidateDays = () =>
     queryClient.invalidateQueries({
       predicate: (q) => q.queryKey[0] === "report" && q.queryKey[1] === "day",
     });
 
-  // Enquanto a rodada está em andamento, recarrega os dias do período a cada
-  // 8s — o agente grava `solucionado` no banco ocorrência por ocorrência, então
-  // os ícones vão virando verde/âmbar sem esperar o lote terminar.
+  // Enquanto uma rodada (verificação ou registro) está em andamento, recarrega
+  // os dias do período a cada 8s — o agente grava no banco ocorrência por
+  // ocorrência, então a tela vai refletindo o progresso sem esperar o lote.
   useEffect(() => {
-    if (!running) return;
+    if (!running && !regRunning) return;
     const t = setInterval(invalidateDays, 8000);
     return () => clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [running]);
+  }, [running, regRunning]);
 
   // A auditoria olha o período inteiro, independente do filtro global do
   // painel — "somente o período selecionado", como pedido.
@@ -202,7 +226,73 @@ export function PendingTreatmentSection() {
     sync.mutate();
   }
 
-  const canSync = agentAvailable && !running && registradas.length > 0;
+  const registerMut = useMutation({
+    mutationFn: () =>
+      registerRizerPendentes(
+        period.start,
+        period.end,
+        {
+          relatoriosFolderId: foldersRef.current?.relatoriosFolderId,
+          medidasFolderId: foldersRef.current?.medidasFolderId,
+        },
+        { useAgent: agentAvailable },
+      ),
+    onSuccess: (r) => {
+      setLastRun(r.verificadoEm);
+      invalidateDays();
+      regAcc.current.registradas += r.registradas;
+      regAcc.current.falhas += r.falharam.length;
+      setRegResult((prev) => ({
+        registradas: (prev?.registradas ?? 0) + r.registradas,
+        falharam: [...(prev?.falharam ?? []), ...r.falharam],
+        precisamDecisao: r.precisamDecisao,
+      }));
+
+      if (r.restantes > 0 && regAutoRuns.current < MAX_LOTES) {
+        regAutoRuns.current += 1;
+        setRegLote(regAutoRuns.current + 1);
+        toast.message(
+          `RIZER: ${regAcc.current.registradas} registrada(s) — continuando (${r.restantes} restantes)…`,
+        );
+        registerMut.mutate();
+      } else {
+        setRegRunning(false);
+        regAutoRuns.current = 0;
+        setRegLote(0);
+        const { registradas: ok, falhas } = regAcc.current;
+        const extra: string[] = [];
+        if (falhas > 0) extra.push(`${falhas} falharam`);
+        if (r.precisamDecisao > 0) extra.push(`${r.precisamDecisao} sem tratativa (defina na Home)`);
+        const suffix = extra.length ? ` · ${extra.join(" · ")}` : "";
+        if (ok > 0 && falhas === 0) toast.success(`RIZER: ${ok} registrada(s)${suffix}`);
+        else if (ok === 0) toast.warning(`RIZER: nada registrado${suffix || "."}`);
+        else toast.warning(`RIZER: ${ok} registrada(s)${suffix}`);
+      }
+    },
+    onError: (e) => {
+      setRegRunning(false);
+      regAutoRuns.current = 0;
+      setRegLote(0);
+      toast.error(`Falha ao registrar no RIZER: ${(e as Error)?.message ?? "erro desconhecido"}`);
+    },
+  });
+
+  function startRegister() {
+    if (!foldersRef.current) {
+      setShowFoldersModal(true);
+      return;
+    }
+    regAutoRuns.current = 0;
+    regAcc.current = { registradas: 0, falhas: 0 };
+    setRegResult(null);
+    setRegLote(1);
+    setRegRunning(true);
+    registerMut.mutate();
+  }
+
+  const busy = running || regRunning;
+  const canSync = agentAvailable && !busy && registradas.length > 0;
+  const canRegister = agentAvailable && !busy && foraDoRizer.length > 0;
 
   if (all.length === 0) return null;
 
@@ -232,6 +322,29 @@ export function PendingTreatmentSection() {
               verificando… {loteAtual > 1 ? `(lote ${loteAtual})` : ""}
             </span>
           )}
+          {regRunning && (
+            <span className="text-[11px] text-blue-500 dark:text-blue-400 hidden sm:inline">
+              registrando… {regLote > 1 ? `(lote ${regLote})` : ""}
+            </span>
+          )}
+          <button
+            onClick={startRegister}
+            disabled={!canRegister}
+            className={cn(
+              "cursor-pointer text-xs font-medium px-2.5 py-1.5 rounded-lg inline-flex items-center gap-1.5 transition-colors",
+              !canRegister
+                ? "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed"
+                : "bg-blue-600 text-white hover:bg-blue-700",
+            )}
+            title={
+              !agentAvailable
+                ? "Abra o RIZER Agent para registrar as ocorrências"
+                : "Registra no RIZER as ocorrências do período ainda não registradas (medida derivada da tratativa; sem tratativa é pulada)"
+            }
+          >
+            <FilePlus2 className={cn("w-3.5 h-3.5", regRunning && "animate-pulse")} />
+            {regRunning ? "Registrando…" : `Registrar pendentes${foraDoRizer.length ? ` (${foraDoRizer.length})` : ""}`}
+          </button>
           <button
             onClick={startSync}
             disabled={!canSync}
@@ -294,6 +407,30 @@ export function PendingTreatmentSection() {
           </span>
         )}
       </div>
+
+      {regResult && (
+        <div className="px-5 py-2.5 text-[11px] text-gray-600 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800 bg-blue-50/40 dark:bg-blue-950/20">
+          <span className="font-medium text-gray-700 dark:text-gray-300">Registro em lote:</span>{" "}
+          {regResult.registradas} registrada{regResult.registradas !== 1 ? "s" : ""}
+          {regResult.precisamDecisao > 0 &&
+            ` · ${regResult.precisamDecisao} sem tratativa (defina na Home antes de registrar)`}
+          {regResult.falharam.length > 0 && ` · ${regResult.falharam.length} falharam:`}
+          {regResult.falharam.length > 0 && (
+            <ul className="mt-1 space-y-0.5">
+              {regResult.falharam.slice(0, 10).map((f) => (
+                <li key={f.id} className="text-gray-500 dark:text-gray-500">
+                  • {f.motorista ?? f.id.slice(0, 8)} — {f.motivo}
+                </li>
+              ))}
+              {regResult.falharam.length > 10 && (
+                <li className="text-gray-400 dark:text-gray-500">
+                  … e mais {regResult.falharam.length - 10}
+                </li>
+              )}
+            </ul>
+          )}
+        </div>
+      )}
 
       {semId.length > 0 && (
         <div className="px-5 py-2 text-[11px] text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800 bg-amber-50/50 dark:bg-amber-950/20">
@@ -450,6 +587,19 @@ export function PendingTreatmentSection() {
             </div>
           )}
         </>
+      )}
+
+      {showFoldersModal && (
+        <AutomationFoldersModal
+          current={automationFolders.config}
+          onConfirm={(data) => {
+            automationFolders.save(data);
+            foldersRef.current = data;
+            setShowFoldersModal(false);
+            toast.message('Pastas do Drive salvas — clique em "Registrar pendentes" de novo.');
+          }}
+          onClose={() => setShowFoldersModal(false)}
+        />
       )}
     </Panel>
   );
