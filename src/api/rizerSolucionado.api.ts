@@ -6,13 +6,18 @@ export type RizerSolucionadoSyncResult = {
   totalRegistradas: number;
   /** "Registro" — já tratadas do nosso lado, não lidas no RIZER */
   tratadasRegistro: number;
+  /** deste lote */
   verificadas: number;
+  /** deste lote */
   solucionadas: number;
+  /** deste lote */
   pendentes: number;
   naoVerificaveis: number;
   idsEncontrados: number;
   /** ocorrências ainda não processadas nesta janela — chame de novo até zerar */
   restantes: number;
+  /** maior id processado — reenvie como `afterId` no próximo lote */
+  lastId: string | null;
   verificadoEm: string;
 };
 
@@ -30,7 +35,7 @@ const AGENT_OFFLINE_MSG =
 export async function syncRizerSolucionado(
   from: string,
   to: string,
-  opts?: { useAgent?: boolean; force?: boolean },
+  opts?: { useAgent?: boolean; force?: boolean; afterId?: string },
 ): Promise<RizerSolucionadoSyncResult> {
   if (!(opts?.useAgent ?? false)) {
     throw new Error(AGENT_OFFLINE_MSG);
@@ -41,7 +46,12 @@ export async function syncRizerSolucionado(
     res = await fetch(`${AGENT_URL}/automation/sync-solucionado`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ from, to, ...(opts?.force ? { force: true } : {}) }),
+      body: JSON.stringify({
+        from,
+        to,
+        ...(opts?.force ? { force: true } : {}),
+        ...(opts?.afterId ? { afterId: opts.afterId } : {}),
+      }),
     });
   } catch {
     throw new Error(AGENT_OFFLINE_MSG);
@@ -71,6 +81,8 @@ export type RizerRegisterPendentesResult = {
   falharam: Array<{ id: string; motorista: string | null; motivo: string }>;
   /** elegíveis ainda não processadas nesta janela — chame de novo até zerar */
   restantes: number;
+  /** maior id processado — reenvie como `afterId` no próximo lote */
+  lastId: string | null;
   verificadoEm: string;
 };
 
@@ -86,7 +98,7 @@ export async function registerRizerPendentes(
   from: string,
   to: string,
   folders: { relatoriosFolderId?: string; medidasFolderId?: string },
-  opts?: { useAgent?: boolean },
+  opts?: { useAgent?: boolean; afterId?: string },
 ): Promise<RizerRegisterPendentesResult> {
   if (!(opts?.useAgent ?? false)) {
     throw new Error(AGENT_OFFLINE_MSG);
@@ -102,6 +114,7 @@ export async function registerRizerPendentes(
         to,
         ...(folders.relatoriosFolderId ? { relatorios_folder_id: folders.relatoriosFolderId } : {}),
         ...(folders.medidasFolderId ? { medidas_folder_id: folders.medidasFolderId } : {}),
+        ...(opts?.afterId ? { afterId: opts.afterId } : {}),
       }),
     });
   } catch {

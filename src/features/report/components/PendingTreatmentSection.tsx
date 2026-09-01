@@ -116,12 +116,17 @@ export function PendingTreatmentSection() {
   const [running, setRunning] = useState(false);
   const [loteAtual, setLoteAtual] = useState(0);
   const autoRuns = useRef(0);
+  // Cursor de paginação entre lotes encadeados (id da última ocorrência lida).
+  const afterIdRef = useRef<string | undefined>(undefined);
+  // Acumula os números da rodada inteira (o agente devolve só por lote).
+  const syncAcc = useRef({ verificadas: 0, solucionadas: 0, naoVerificaveis: 0 });
 
   // ── Registro em lote das "Fora do RIZER" ──────────────────────────────────
   const [showFoldersModal, setShowFoldersModal] = useState(false);
   const [regRunning, setRegRunning] = useState(false);
   const [regLote, setRegLote] = useState(0);
   const regAutoRuns = useRef(0);
+  const regAfterIdRef = useRef<string | undefined>(undefined);
   const regAcc = useRef({ registradas: 0, falhas: 0 });
   const foldersRef = useRef<AutomationFolders | null>(automationFolders.config);
   const [regResult, setRegResult] = useState<{
@@ -183,17 +188,24 @@ export function PendingTreatmentSection() {
 
   const sync = useMutation({
     mutationFn: () =>
-      syncRizerSolucionado(period.start, period.end, { useAgent: agentAvailable }),
+      syncRizerSolucionado(period.start, period.end, {
+        useAgent: agentAvailable,
+        afterId: afterIdRef.current,
+      }),
     onSuccess: (r) => {
       setLastRun(r.verificadoEm);
       invalidateDays();
+      afterIdRef.current = r.lastId ?? afterIdRef.current;
+      syncAcc.current.verificadas += r.verificadas;
+      syncAcc.current.solucionadas += r.solucionadas;
+      syncAcc.current.naoVerificaveis += r.naoVerificaveis;
 
+      const acc = syncAcc.current;
       const partes = [
-        `${r.verificadas} verificada${r.verificadas !== 1 ? "s" : ""}`,
-        `${r.solucionadas} solucionada${r.solucionadas !== 1 ? "s" : ""}`,
-        `${r.pendentes} pendente${r.pendentes !== 1 ? "s" : ""}`,
+        `${acc.verificadas} verificada${acc.verificadas !== 1 ? "s" : ""}`,
+        `${acc.solucionadas} solucionada${acc.solucionadas !== 1 ? "s" : ""}`,
       ];
-      if (r.naoVerificaveis > 0) partes.push(`${r.naoVerificaveis} não verificável(is)`);
+      if (acc.naoVerificaveis > 0) partes.push(`${acc.naoVerificaveis} não verificável(is)`);
 
       if (r.restantes > 0 && autoRuns.current < MAX_LOTES) {
         autoRuns.current += 1;
@@ -221,6 +233,8 @@ export function PendingTreatmentSection() {
 
   function startSync() {
     autoRuns.current = 0;
+    afterIdRef.current = undefined;
+    syncAcc.current = { verificadas: 0, solucionadas: 0, naoVerificaveis: 0 };
     setLoteAtual(1);
     setRunning(true);
     sync.mutate();
@@ -235,11 +249,12 @@ export function PendingTreatmentSection() {
           relatoriosFolderId: foldersRef.current?.relatoriosFolderId,
           medidasFolderId: foldersRef.current?.medidasFolderId,
         },
-        { useAgent: agentAvailable },
+        { useAgent: agentAvailable, afterId: regAfterIdRef.current },
       ),
     onSuccess: (r) => {
       setLastRun(r.verificadoEm);
       invalidateDays();
+      regAfterIdRef.current = r.lastId ?? regAfterIdRef.current;
       regAcc.current.registradas += r.registradas;
       regAcc.current.falhas += r.falharam.length;
       setRegResult((prev) => ({
@@ -283,6 +298,7 @@ export function PendingTreatmentSection() {
       return;
     }
     regAutoRuns.current = 0;
+    regAfterIdRef.current = undefined;
     regAcc.current = { registradas: 0, falhas: 0 };
     setRegResult(null);
     setRegLote(1);
