@@ -13,6 +13,7 @@ import { cn } from "../../../app/components/ui/utils";
 import { useReport } from "../ReportContext";
 import { buildDailyReport } from "../../../utils/relatorio-diario";
 import { groupOccurrencesByManager } from "../../../utils/managerReport";
+import { buildCobrancaXlsx } from "../cobrancaXlsx";
 import { getDailyReportPdf } from "../../../api/occurrences.api";
 import { baseResponsaveisApi } from "../../../api/baseResponsaveis.api";
 import { reportsDriveApi } from "../../../api/reportsDrive.api";
@@ -127,7 +128,15 @@ export function ReportActions() {
     group: (typeof managerReport.groups)[number],
     message: string,
   ) {
-    await whatsappAgentApi.send({ phone: group.telefone, message, banner: "gestor" });
+    // Planilha .xlsx do gestor — as ocorrências do dia de todas as bases dele.
+    const porBase = group.bases
+      .map((b) => ({ sigla: b.sigla, occurrences: managerReport.occByBase.get(b.sigla) ?? [] }))
+      .filter((b) => b.occurrences.length > 0);
+    const attachment =
+      porBase.length > 0
+        ? buildCobrancaXlsx(group.responsavel, porBase, { filenamePrefix: "relatorio-diario" })
+        : undefined;
+    await whatsappAgentApi.send({ phone: group.telefone, message, banner: "gestor", attachment });
   }
 
   const btnBase =

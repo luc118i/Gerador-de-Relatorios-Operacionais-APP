@@ -183,6 +183,8 @@ export function buildManagerDailyMessage(
     blocos.join("\n\n"),
     "",
     `Total: ${group.occurrenceCount} ocorrência(s).`,
+    "",
+    `📎 Segue em anexo a planilha com todas as ocorrências e o link de cada uma no RIZER.`,
   ].join("\n");
 }
 

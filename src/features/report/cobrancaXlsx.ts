@@ -3,8 +3,10 @@ import type { OccurrenceDTO } from "../../domain/occurrences";
 import { occDisplayName, primaryDriver } from "./occ-helpers";
 import { rizerDisciplinarEditUrl } from "../../utils/rizer";
 
-// Planilha .xlsx anexada à cobrança de devolutiva (WhatsApp). Uma por gestor,
-// com as pendentes dele, formatada e com o link do RIZER clicável.
+// Planilha .xlsx anexada às notificações por gestor no WhatsApp — usada tanto
+// na "Cobrança de devolutiva" (seção Pendentes de Tratamento) quanto no
+// relatório diário por gestor. Uma por gestor, formatada, com o link do RIZER
+// clicável em cada linha.
 
 const TRATATIVA_LABEL: Record<string, string> = {
   SUSPEICAO: "Suspensão",
@@ -27,7 +29,7 @@ const COLUMNS = [
   "Local",
   "Tratativa",
   "Autor",
-  "Devolutiva no RIZER",
+  "Link RIZER",
 ] as const;
 
 // ── Estilo ─────────────────────────────────────────────────────────────────
@@ -111,13 +113,15 @@ export type CobrancaAttachment = {
 };
 
 /**
- * Monta a planilha de um gestor. `porBase` = ocorrências pendentes agrupadas
- * por sigla de base (o que `groupOccurrencesByManager` devolve em `occByBase`,
- * recortado pras bases do gestor).
+ * Monta a planilha de um gestor. `porBase` = ocorrências agrupadas por sigla
+ * de base (o que `groupOccurrencesByManager` devolve em `occByBase`, recortado
+ * pras bases do gestor). `filenamePrefix` muda só o nome do arquivo
+ * ("pendentes-devolutiva" na cobrança, "relatorio-diario" no envio diário).
  */
 export function buildCobrancaXlsx(
   responsavelNome: string,
   porBase: Array<{ sigla: string; occurrences: OccurrenceDTO[] }>,
+  opts?: { filenamePrefix?: string },
 ): CobrancaAttachment {
   const flat: Array<{ o: OccurrenceDTO; sigla: string }> = [];
   for (const b of porBase) {
@@ -135,7 +139,7 @@ export function buildCobrancaXlsx(
   const range = XLSX.utils.decode_range(ws["!ref"] ?? "A1");
   const lastCol = range.e.c;
   const lastRow = range.e.r;
-  const linkCol = COLUMNS.indexOf("Devolutiva no RIZER");
+  const linkCol = COLUMNS.indexOf("Link RIZER");
 
   // cabeçalho
   for (let c = 0; c <= lastCol; c++) {
@@ -177,20 +181,22 @@ export function buildCobrancaXlsx(
   ws["!freeze"] = { xSplit: 0, ySplit: 1, topLeftCell: "A2", activePane: "bottomLeft", state: "frozen" } as any;
 
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Pendentes");
+  XLSX.utils.book_append_sheet(wb, ws, "Ocorrências");
   const dataBase64 = XLSX.write(wb, { bookType: "xlsx", type: "base64", cellStyles: true }) as string;
 
-  const slug = responsavelNome
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-zA-Z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .toLowerCase() || "gestor";
+  const slug =
+    responsavelNome
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .replace(/[^a-zA-Z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .toLowerCase() || "gestor";
   const hoje = new Date().toISOString().slice(0, 10);
+  const prefix = opts?.filenamePrefix ?? "pendentes-devolutiva";
 
   return {
     dataBase64,
-    filename: `pendentes-devolutiva-${slug}-${hoje}.xlsx`,
+    filename: `${prefix}-${slug}-${hoje}.xlsx`,
     mimetype: XLSX_MIME,
   };
 }
