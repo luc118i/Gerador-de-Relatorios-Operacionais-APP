@@ -38,6 +38,7 @@ import {
   type ManagerGroup,
 } from "../../../utils/managerReport";
 import { rizerDisciplinarEditUrl } from "../../../utils/rizer";
+import { buildCobrancaXlsx } from "../cobrancaXlsx";
 
 const TRATATIVA_LABEL: Record<string, string> = {
   SUSPEICAO: "Suspensão",
@@ -242,7 +243,12 @@ export function PendingTreatmentSection() {
   }
 
   async function handleEnviarCobranca(group: ManagerGroup, message: string) {
-    await whatsappAgentApi.send({ phone: group.telefone, message, banner: "gestor" });
+    // Planilha .xlsx do gestor — as pendentes de todas as bases dele.
+    const porBase = group.bases
+      .map((b) => ({ sigla: b.sigla, occurrences: managerReport.occByBase.get(b.sigla) ?? [] }))
+      .filter((b) => b.occurrences.length > 0);
+    const attachment = porBase.length > 0 ? buildCobrancaXlsx(group.responsavel, porBase) : undefined;
+    await whatsappAgentApi.send({ phone: group.telefone, message, banner: "gestor", attachment });
   }
 
   // Teto de lotes encadeados por rodada (40 × 60 = 2400 ocorrências) — trava de

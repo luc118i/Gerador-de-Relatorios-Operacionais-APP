@@ -63,7 +63,15 @@ export const whatsappAgentApi = {
   // banner: qual arte anexar quando attachBanner !== false — "motorista"
   // (default, omitido) é o aviso em tela cheia; "gestor" é a versão usada no
   // relatório diário consolidado (ver handleEnviarParaGestor).
-  send(input: { phone: string; message: string; attachBanner?: boolean; banner?: "motorista" | "gestor" }) {
+  send(input: {
+    phone: string;
+    message: string;
+    attachBanner?: boolean;
+    banner?: "motorista" | "gestor";
+    // Documento anexo (ex.: planilha .xlsx da cobrança). dataBase64 sem o
+    // prefixo "data:..."; enviado como documento numa mensagem separada.
+    attachment?: { dataBase64: string; filename: string; mimetype: string };
+  }) {
     return agentRequest<{ success: true }>("/whatsapp/send", {
       method: "POST",
       body: JSON.stringify(input),

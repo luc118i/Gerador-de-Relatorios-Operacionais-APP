@@ -233,6 +233,8 @@ export function buildManagerCobrancaMessage(
     "",
     `Total pendente de devolutiva: *${group.occurrenceCount}* ocorrência(s).`,
     "",
+    `📎 Segue em anexo a planilha com todas as ocorrências organizadas e o link de cada uma.`,
+    "",
     `Qualquer dúvida, estamos à disposição. Obrigado!`,
     "",
     `_Equipe de Monitoramento_`,
