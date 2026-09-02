@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { AppDialog } from "../../../app/components/ui/app-dialog";
+import { useAuth } from "../../../app/context/AuthContext";
 import { useCreateDriver } from "../../../features/occurrences/queries/drivers.queries";
 import { useBasesRegistry } from "../../../features/occurrences/queries/bases.queries";
 import { DriverFormFields } from "./DriverFormFields";
@@ -20,6 +21,7 @@ export function DriverCreateModal({
 }: DriverCreateModalProps) {
   const createDriver = useCreateDriver();
   const { options: baseOptions } = useBasesRegistry();
+  const { profileName, user } = useAuth();
 
   const [form, setForm] = useState<DriverFormValues>(emptyDriverForm);
   const [showErrors, setShowErrors] = useState(false);
@@ -47,7 +49,11 @@ export function DriverCreateModal({
     setShowErrors(true);
     if (!isValid || busy) return;
 
-    const created = await createDriver.mutateAsync(driverFormToPayload(form));
+    const created = await createDriver.mutateAsync({
+      ...driverFormToPayload(form),
+      criadoPor: profileName.trim() || null,
+      criadoPorId: user?.id ?? null,
+    });
     onCreated(created);
     onOpenChange(false);
   }

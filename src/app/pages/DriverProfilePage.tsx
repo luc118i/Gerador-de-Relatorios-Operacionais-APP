@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, Home, AlertTriangle, ShieldAlert, ShieldCheck, Info, ExternalLink, FileDown, Loader2, RefreshCw } from "lucide-react";
+import { ArrowLeft, Home, AlertTriangle, ShieldAlert, ShieldCheck, Info, ExternalLink, FileDown, Loader2, RefreshCw, UserRound } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -18,6 +18,7 @@ import type { Driver, DriverOccurrenceHistoryEntry, DriverRizerComparison } from
 import { driversApi } from "../../api/drivers.api";
 import { getBaseBannerImage } from "../lib/baseImages";
 import {
+  useDriver,
   useDriverSituation,
   useDriverMonthlyOccurrences,
   useDriverOccurrenceHistory,
@@ -130,6 +131,18 @@ function formatDate(dateISO: string): string {
   return `${day}/${month}/${year}`;
 }
 
+function formatDateTime(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 function TratativaBadge({ tratativa }: { tratativa: DriverOccurrenceHistoryEntry["tratativa"] }) {
   if (!tratativa) {
     return (
@@ -176,6 +189,13 @@ export function DriverProfilePage({ driver, onVoltar, onHome }: DriverProfilePag
   const [isComparingRizer, setIsComparingRizer] = useState(false);
   const [rizerComparison, setRizerComparison] = useState<DriverRizerComparison | null>(null);
   const [rizerError, setRizerError] = useState<string | null>(null);
+  // Ficha completa — traz o log de autoria do cadastro (criadoPor/criadoEm),
+  // que a lista de motoristas nem sempre inclui.
+  const detailQuery = useDriver(driver.id);
+  const full = detailQuery.data ?? driver;
+  const criadoPor = (full.criadoPor ?? "").trim();
+  const criadoEm = (full.criadoEm ?? "").trim();
+
   const situationQuery = useDriverSituation(driver.id);
   // occurrences tem retenção de 90 dias (purge mensal, ver
   // purge_occurrences_last_month no banco) — 3 meses é o máximo que a fonte
@@ -349,6 +369,22 @@ export function DriverProfilePage({ driver, onVoltar, onHome }: DriverProfilePag
               <span className="font-semibold">{driver.base ?? "-"}</span>
             </p>
           </div>
+        </div>
+
+        {/* Log de autoria do cadastro */}
+        <div className="flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
+          <UserRound className="w-3.5 h-3.5 shrink-0" />
+          {criadoPor ? (
+            <span>
+              Cadastrado por{" "}
+              <span className="font-medium text-gray-700 dark:text-gray-300">
+                {criadoPor}
+              </span>
+              {criadoEm ? ` · ${formatDateTime(criadoEm)}` : ""}
+            </span>
+          ) : (
+            <span>Autor do cadastro não registrado.</span>
+          )}
         </div>
 
         {situationQuery.isError && (

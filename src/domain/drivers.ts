@@ -4,6 +4,12 @@ export type Driver = {
   name: string;
   base: string | null;
   phone: string | null; // WhatsApp do motorista (com ou sem DDI/DDD)
+  // Log de autoria do cadastro. Preenchido pelo frontend no POST /drivers
+  // (mesmo padrão do `analisadoPor` das ocorrências) — só aparece na ficha
+  // quando o backend devolve os campos.
+  criadoPor?: string | null; // nome de exibição de quem cadastrou
+  criadoPorId?: string | null; // auth.user.id (estável a rename de perfil)
+  criadoEm?: string | null; // ISO timestamp
 };
 
 export type CreateDriverInput = {
@@ -11,6 +17,8 @@ export type CreateDriverInput = {
   name: string;
   base?: string | null;
   phone?: string | null;
+  criadoPor?: string | null;
+  criadoPorId?: string | null;
 };
 
 // Estatísticas do motorista no período retido pelo banco (mês corrente).

@@ -1,5 +1,5 @@
 import { useId } from "react";
-import { CircleAlert, IdCard, Phone, UserRound } from "lucide-react";
+import { CircleAlert, IdCard, Phone, TriangleAlert, UserRound } from "lucide-react";
 import { formatPhoneInputMask } from "../../../utils/whatsapp";
 import { BaseSelect } from "./BaseSelect";
 import {
@@ -60,6 +60,22 @@ export function DriverFormFields({
 
   return (
     <div className="space-y-5">
+      {/* Alerta de atenção — cadastro errado contamina relatórios, cobranças
+          e o perfil disciplinar do motorista. */}
+      <div className="flex items-start gap-3 rounded-xl border-2 border-amber-300 dark:border-amber-500/60 bg-amber-50 dark:bg-amber-950/40 px-4 py-3">
+        <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-amber-400/20 text-amber-600 dark:text-amber-300">
+          <TriangleAlert className="h-4 w-4" />
+        </span>
+        <div className="text-sm text-amber-800 dark:text-amber-200">
+          <p className="font-semibold">Confira os dados com atenção.</p>
+          <p className="mt-0.5 text-amber-700 dark:text-amber-300/90">
+            A <span className="font-semibold">Base</span> define relatórios,
+            cobranças de gestor e o perfil disciplinar. Selecione a base
+            correta — dados errados são difíceis de rastrear depois.
+          </p>
+        </div>
+      </div>
+
       {apiError ? (
         <div className="flex items-start gap-2.5 rounded-xl border border-red-200 dark:border-red-800/60 bg-red-50 dark:bg-red-950/40 px-4 py-3 text-sm text-red-700 dark:text-red-300">
           <CircleAlert className="w-4 h-4 mt-0.5 shrink-0" />

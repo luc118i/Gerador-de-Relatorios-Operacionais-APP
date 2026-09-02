@@ -17,6 +17,7 @@ import {
   type DriverFormValues,
 } from "../components/DriverCreateModal/driverForm";
 import { useBasesRegistry } from "../../features/occurrences/queries/bases.queries";
+import { useAuth } from "../context/AuthContext";
 
 interface DriversPageProps {
   onVoltar: () => void;
@@ -25,6 +26,7 @@ interface DriversPageProps {
 export function DriversPage({ onVoltar }: DriversPageProps) {
   const queryClient = useQueryClient();
   const { options: baseOptions } = useBasesRegistry();
+  const { profileName, user } = useAuth();
 
   const [search, setSearch] = useState("");
   const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
@@ -48,6 +50,8 @@ export function DriversPage({ onVoltar }: DriversPageProps) {
       name: string;
       base?: string | null;
       phone?: string | null;
+      criadoPor?: string | null;
+      criadoPorId?: string | null;
     }) => driversApi.createDriver(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["drivers"] });
@@ -125,7 +129,11 @@ export function DriversPage({ onVoltar }: DriversPageProps) {
       }
       updateMutation.mutate({ id: editingDriver.id, payload });
     } else {
-      createMutation.mutate(driverFormToPayload(form));
+      createMutation.mutate({
+        ...driverFormToPayload(form),
+        criadoPor: profileName.trim() || null,
+        criadoPorId: user?.id ?? null,
+      });
     }
   }
 
