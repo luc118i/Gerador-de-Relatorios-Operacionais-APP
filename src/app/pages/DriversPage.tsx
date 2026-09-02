@@ -1,12 +1,16 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2, Edit2, Loader2 } from "lucide-react";
+import { Plus, Trash2, Edit2 } from "lucide-react";
 import { driversApi } from "../../api/drivers.api";
 import type { Driver } from "../../domain/drivers";
 import { DriverProfilePage } from "./DriverProfilePage";
 import { DriversDashboard } from "../components/DriversDashboard";
 import { AppDialog } from "../components/ui/app-dialog";
 import { DriverFormFields } from "../components/DriverCreateModal/DriverFormFields";
+import {
+  SaveConfirmActions,
+  SaveConfirmPanel,
+} from "../components/DriverCreateModal/SaveConfirm";
 import {
   driverFormDiff,
   driverFormToPayload,
@@ -33,6 +37,7 @@ export function DriversPage({ onVoltar }: DriversPageProps) {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [form, setForm] = useState<DriverFormValues>(emptyDriverForm);
   const [showErrors, setShowErrors] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [isDeleting, setIsDeleting] = useState<Driver | null>(null);
   const [viewingDriver, setViewingDriver] = useState<Driver | null>(null);
 
@@ -57,6 +62,7 @@ export function DriversPage({ onVoltar }: DriversPageProps) {
       queryClient.invalidateQueries({ queryKey: ["drivers"] });
       closeForm();
     },
+    onError: () => setConfirming(false),
   });
 
   const updateMutation = useMutation({
@@ -68,6 +74,7 @@ export function DriversPage({ onVoltar }: DriversPageProps) {
       queryClient.invalidateQueries({ queryKey: ["drivers"] });
       closeForm();
     },
+    onError: () => setConfirming(false),
   });
 
   const deleteMutation = useMutation({
@@ -93,6 +100,7 @@ export function DriversPage({ onVoltar }: DriversPageProps) {
     setEditingDriver(null);
     setForm(emptyDriverForm());
     setShowErrors(false);
+    setConfirming(false);
     createMutation.reset();
     updateMutation.reset();
     setIsFormOpen(true);
@@ -102,6 +110,7 @@ export function DriversPage({ onVoltar }: DriversPageProps) {
     setEditingDriver(driver);
     setForm(driverToForm(driver));
     setShowErrors(false);
+    setConfirming(false);
     createMutation.reset();
     updateMutation.reset();
     setIsFormOpen(true);
@@ -111,14 +120,27 @@ export function DriversPage({ onVoltar }: DriversPageProps) {
     setIsFormOpen(false);
     setEditingDriver(null);
     setShowErrors(false);
+    setConfirming(false);
   }
 
   function patch(next: Partial<DriverFormValues>) {
     setForm((s) => ({ ...s, ...next }));
   }
 
-  function handleSubmit() {
+  // "Salvar" → valida e abre a conferência (não salva ainda).
+  function requestConfirm() {
     setShowErrors(true);
+    if (!isValid || busy) return;
+
+    // Edição sem nenhuma mudança: só fecha, sem etapa de confirmação.
+    if (editingDriver && Object.keys(driverFormDiff(form, editingDriver)).length === 0) {
+      closeForm();
+      return;
+    }
+    setConfirming(true);
+  }
+
+  function doSave() {
     if (!isValid || busy) return;
 
     if (editingDriver) {
@@ -255,40 +277,58 @@ export function DriversPage({ onVoltar }: DriversPageProps) {
           }}
           title={editingDriver ? "Editar motorista" : "Novo motorista"}
           subtitle={
-            editingDriver
-              ? `Atualize os dados de ${editingDriver.name}.`
-              : "Preencha os dados cadastrais do motorista."
+            confirming
+              ? "Confira os dados antes de confirmar."
+              : editingDriver
+                ? `Atualize os dados de ${editingDriver.name}.`
+                : "Preencha os dados cadastrais do motorista."
           }
           size="md"
           closeOnOutside={false}
           showClose={!busy}
           actions={
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={busy || (showErrors && !isValid)}
-              className={[
-                "cursor-pointer inline-flex items-center gap-2 h-9 px-5 rounded-lg text-sm font-semibold",
-                "bg-blue-600 text-white shadow-sm shadow-blue-600/20",
-                "hover:bg-blue-700 active:bg-blue-800",
-                "disabled:opacity-50 disabled:cursor-not-allowed",
-                "focus:outline-none focus:ring-2 focus:ring-blue-500/40",
-              ].join(" ")}
-            >
-              {busy && <Loader2 className="w-4 h-4 animate-spin" />}
-              {busy ? "Salvando…" : "Salvar"}
-            </button>
+            confirming ? (
+              <SaveConfirmActions
+                busy={busy}
+                onBack={() => setConfirming(false)}
+                onConfirm={doSave}
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={requestConfirm}
+                disabled={busy || (showErrors && !isValid)}
+                className={[
+                  "cursor-pointer inline-flex items-center gap-2 h-9 px-5 rounded-lg text-sm font-semibold",
+                  "bg-blue-600 text-white shadow-sm shadow-blue-600/20",
+                  "hover:bg-blue-700 active:bg-blue-800",
+                  "disabled:opacity-50 disabled:cursor-not-allowed",
+                  "focus:outline-none focus:ring-2 focus:ring-blue-500/40",
+                ].join(" ")}
+              >
+                Salvar
+              </button>
+            )
           }
         >
-          <DriverFormFields
-            values={form}
-            errors={errors}
-            showErrors={showErrors}
-            onChange={patch}
-            disabled={busy}
-            autoFocusFirst
-            apiError={apiError}
-          />
+          {confirming ? (
+            <SaveConfirmPanel
+              authorName={profileName}
+              values={form}
+              baseOptions={baseOptions}
+              editing={!!editingDriver}
+            />
+          ) : (
+            <DriverFormFields
+              values={form}
+              errors={errors}
+              showErrors={showErrors}
+              onChange={patch}
+              disabled={busy}
+              autoFocusFirst
+              apiError={apiError}
+            />
+          )}
         </AppDialog>
 
         {/* Modal confirmação exclusão */}
