@@ -95,7 +95,7 @@ export function OccurrenceCardsView({
           <div className="flex-1 px-2 py-2">Ocorrência</div>
           {cols.horario && <div className="w-[115px] flex-shrink-0 px-2 py-2 hidden sm:block">Horário</div>}
           {cols.motorista && <div className="w-[170px] flex-shrink-0 px-2 py-2 hidden lg:block">Motorista</div>}
-          <div className="w-[264px] flex-shrink-0 px-1 py-2 text-right">Ações</div>
+          <div className="w-[264px] flex-shrink-0 px-1 py-2 text-center">Ações</div>
         </div>
         {cards}
       </div>
