@@ -77,14 +77,20 @@ export function HomeHeader({
 }: HomeHeaderProps) {
   // Ícone da navbar "encolhe" e se acomoda na barra ao rolar a página, com
   // as sombras em camadas se escondendo atrás dele — tudo via transição CSS.
+  // A animação é de mão única: assim que a página rola uma vez, a navbar fica
+  // no tamanho pequeno e não volta ao rolar de volta pro topo. Só um reload
+  // restaura o tamanho padrão.
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8);
+    if (scrolled) return;
+    const onScroll = () => {
+      if (window.scrollY > 8) setScrolled(true);
+    };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  }, [scrolled]);
 
   return (
     <header
