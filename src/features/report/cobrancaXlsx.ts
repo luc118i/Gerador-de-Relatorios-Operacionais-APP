@@ -30,45 +30,52 @@ const COLUMNS = [
   "Devolutiva no RIZER",
 ] as const;
 
-// ── Paleta (mesma do export do Centro de Relatórios) ────────────────────────
-const HEADER_FILL = "1F4E79";
-const ZEBRA_FILL = "EEF3F8";
-const BORDER_RGB = "D6E0EA";
+// ── Estilo ─────────────────────────────────────────────────────────────────
+const FONT = "Inter";
+const HEADER_FILL = "E8792B"; // laranja
+const ZEBRA_FILL = "FBF0E8"; // laranja bem claro
+const BORDER_RGB = "E5D3C4";
 const LINK_RGB = "1155CC";
 
 const THIN = { style: "thin", color: { rgb: BORDER_RGB } } as const;
 const BORDERS = { top: THIN, bottom: THIN, left: THIN, right: THIN };
 
 const HEADER_STYLE = {
-  font: { name: "Calibri", sz: 11, bold: true, color: { rgb: "FFFFFF" } },
+  font: { name: FONT, sz: 12, bold: true, color: { rgb: "FFFFFF" } },
   fill: { patternType: "solid", fgColor: { rgb: HEADER_FILL } },
   alignment: { horizontal: "center", vertical: "center", wrapText: true },
   border: BORDERS,
 };
 
 type Align = "left" | "center" | "right";
-const COL_META: { align: Align; z?: string }[] = [
+const COL_META: { align: Align; z?: string; bold?: boolean; italic?: boolean }[] = [
   { align: "center", z: "dd/mm/yyyy" }, // Data
   { align: "center" }, // Hora
   { align: "left" }, // Base
   { align: "center" }, // Prefixo
-  { align: "left" }, // Motorista
+  { align: "left", bold: true }, // Motorista
   { align: "center" }, // Matrícula
-  { align: "left" }, // Tipo
+  { align: "left", bold: true, italic: true }, // Tipo
   { align: "left" }, // Local
   { align: "center" }, // Tratativa
   { align: "left" }, // Autor
   { align: "left" }, // Devolutiva no RIZER (link)
 ];
 
-function bodyStyle(rowIdx: number, align: Align, link = false) {
+function bodyStyle(
+  rowIdx: number,
+  meta: { align: Align; bold?: boolean; italic?: boolean },
+  link = false,
+) {
   return {
     font: {
-      name: "Calibri",
-      sz: 10,
+      name: FONT,
+      sz: 12,
+      ...(meta.bold ? { bold: true } : {}),
+      ...(meta.italic ? { italic: true } : {}),
       ...(link ? { color: { rgb: LINK_RGB }, underline: true } : {}),
     },
-    alignment: { horizontal: align, vertical: "center" },
+    alignment: { horizontal: meta.align, vertical: "center" },
     border: BORDERS,
     ...(rowIdx % 2 === 1
       ? { fill: { patternType: "solid", fgColor: { rgb: ZEBRA_FILL } } }
@@ -93,7 +100,7 @@ function toRow(o: OccurrenceDTO, baseSigla: string): Cell[] {
     o.place ?? "",
     o.tratativa ? TRATATIVA_LABEL[o.tratativa] ?? o.tratativa : "",
     o.analisadoPor ?? "",
-    o.rizerId ? "Abrir no RIZER" : "sem ID — localizar por matrícula",
+    o.rizerId ? "Abrir no RIZER" : "Sem link, busque manualmente no rizer",
   ];
 }
 
@@ -144,7 +151,7 @@ export function buildCobrancaXlsx(
       const cell = ws[ref];
       const meta = COL_META[c] ?? { align: "left" as Align };
       const isLink = c === linkCol && !!flat[r - 1]?.o.rizerId;
-      cell.s = bodyStyle(r - 1, meta.align, isLink);
+      cell.s = bodyStyle(r - 1, meta, isLink);
       if (meta.z && cell.v !== "" && cell.v != null) cell.z = meta.z;
       if (isLink) {
         cell.l = { Target: rizerDisciplinarEditUrl(flat[r - 1]!.o.rizerId!), Tooltip: "Abrir no RIZER" };
