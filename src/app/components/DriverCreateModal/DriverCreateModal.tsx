@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
+import { Loader2 } from "lucide-react";
 import { AppDialog } from "../../../app/components/ui/app-dialog";
 import { useCreateDriver } from "../../../features/occurrences/queries/drivers.queries";
+import { useBasesRegistry } from "../../../features/occurrences/queries/bases.queries";
+import { DriverFormFields } from "./DriverFormFields";
+import {
+  driverFormToPayload,
+  emptyDriverForm,
+  hasErrors,
+  validateDriverForm,
+  type DriverFormValues,
+} from "./driverForm";
 import type { DriverCreateModalProps } from "./driverCreateModal.types";
-
-type FormState = {
-  code: string;
-  name: string;
-  base: string;
-  phone: string;
-};
 
 export function DriverCreateModal({
   open,
@@ -16,41 +19,35 @@ export function DriverCreateModal({
   onCreated,
 }: DriverCreateModalProps) {
   const createDriver = useCreateDriver();
+  const { options: baseOptions } = useBasesRegistry();
 
-  const [form, setForm] = useState<FormState>({ code: "", name: "", base: "", phone: "" });
-  const [touched, setTouched] = useState<{ code?: boolean; name?: boolean }>(
-    {},
-  );
+  const [form, setForm] = useState<DriverFormValues>(emptyDriverForm);
+  const [showErrors, setShowErrors] = useState(false);
 
-  // reset ao abrir/fechar
   useEffect(() => {
     if (!open) {
-      setForm({ code: "", name: "", base: "", phone: "" });
-      setTouched({});
+      setForm(emptyDriverForm());
+      setShowErrors(false);
       createDriver.reset();
     }
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const errors = useMemo(() => {
-    const e: Record<string, string> = {};
-    if (!form.code.trim()) e.code = "Matrícula é obrigatória.";
-    if (!form.name.trim()) e.name = "Nome é obrigatório.";
-    return e;
-  }, [form.code, form.name]);
+  const errors = useMemo(
+    () => validateDriverForm(form, baseOptions),
+    [form, baseOptions],
+  );
+  const isValid = !hasErrors(errors);
+  const busy = createDriver.isPending;
 
-  const canSubmit = Object.keys(errors).length === 0 && !createDriver.isPending;
+  function patch(next: Partial<DriverFormValues>) {
+    setForm((s) => ({ ...s, ...next }));
+  }
 
   async function handleSubmit() {
-    setTouched({ code: true, name: true });
-    if (!canSubmit) return;
+    setShowErrors(true);
+    if (!isValid || busy) return;
 
-    const created = await createDriver.mutateAsync({
-      code: form.code.trim(),
-      name: form.name.trim(),
-      base: form.base.trim() ? form.base.trim() : null,
-      phone: form.phone.trim() ? form.phone.trim() : null,
-    });
-
+    const created = await createDriver.mutateAsync(driverFormToPayload(form));
     onCreated(created);
     onOpenChange(false);
   }
@@ -59,115 +56,46 @@ export function DriverCreateModal({
     <AppDialog
       open={open}
       onOpenChange={(v) => {
-        if (!createDriver.isPending) onOpenChange(v);
+        if (!busy) onOpenChange(v);
       }}
       title="Cadastrar motorista"
-      subtitle="Cadastre em tempo real para selecionar no formulário."
+      subtitle="Os dados ficam disponíveis na hora para seleção no formulário."
       size="md"
-      closeOnOutside={!createDriver.isPending}
+      closeOnOutside={false}
+      showClose={!busy}
       actions={
         <button
           type="button"
           onClick={handleSubmit}
-          disabled={!canSubmit}
+          disabled={busy || (showErrors && !isValid)}
           className={[
-            "cursor-pointer h-9 px-4 rounded-lg font-medium",
-            "bg-slate-900 text-white",
+            "cursor-pointer inline-flex items-center gap-2 h-9 px-5 rounded-lg text-sm font-semibold",
+            "bg-blue-600 text-white shadow-sm shadow-blue-600/20",
+            "hover:bg-blue-700 active:bg-blue-800",
             "disabled:opacity-50 disabled:cursor-not-allowed",
-            "hover:bg-slate-800",
-            "focus:outline-none focus:ring-2 focus:ring-slate-900/20",
+            "focus:outline-none focus:ring-2 focus:ring-blue-500/40",
           ].join(" ")}
         >
-          {createDriver.isPending ? "Salvando..." : "Salvar"}
+          {busy && <Loader2 className="w-4 h-4 animate-spin" />}
+          {busy ? "Salvando…" : "Salvar"}
         </button>
       }
     >
-      <div className="space-y-4">
-        {/* Erro de API */}
-        {createDriver.isError ? (
-          <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-4 py-3 text-sm text-red-700 dark:text-red-400">
-            Falha ao cadastrar motorista. Verifique os dados e tente novamente.
-          </div>
-        ) : null}
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Matrícula */}
-          <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-400">
-              Matrícula <span className="text-red-600 dark:text-red-400">*</span>
-            </label>
-            <input
-              value={form.code}
-              onChange={(e) => setForm((s) => ({ ...s, code: e.target.value }))}
-              onBlur={() => setTouched((t) => ({ ...t, code: true }))}
-              placeholder="Ex: 4997"
-              className={[
-                "w-full h-10 px-3 rounded-lg border bg-white/70 dark:bg-white/5 text-slate-900 dark:text-slate-100",
-                "border-white/40 dark:border-white/10",
-                "focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-white/60 dark:focus:border-white/20",
-              ].join(" ")}
-            />
-            {touched.code && errors.code ? (
-              <p className="text-xs text-red-600 dark:text-red-400">{errors.code}</p>
-            ) : null}
-          </div>
-
-          {/* Base */}
-          <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-400">
-              Base
-            </label>
-            <input
-              value={form.base}
-              onChange={(e) => setForm((s) => ({ ...s, base: e.target.value }))}
-              placeholder="Ex: Montes Claros"
-              className={[
-                "w-full h-10 px-3 rounded-lg border bg-white/70 dark:bg-white/5 text-slate-900 dark:text-slate-100",
-                "border-white/40 dark:border-white/10",
-                "focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-white/60 dark:focus:border-white/20",
-              ].join(" ")}
-            />
-          </div>
-        </div>
-
-        {/* Nome */}
-        <div className="space-y-1">
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-400">
-            Nome <span className="text-red-600 dark:text-red-400">*</span>
-          </label>
-          <input
-            value={form.name}
-            onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))}
-            onBlur={() => setTouched((t) => ({ ...t, name: true }))}
-            placeholder="Ex: Jeová Barbosa"
-            className={[
-              "w-full h-10 px-3 rounded-lg border bg-white/70 dark:bg-white/5 text-slate-900 dark:text-slate-100",
-              "border-white/40 dark:border-white/10",
-              "focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-white/60 dark:focus:border-white/20",
-            ].join(" ")}
-          />
-          {touched.name && errors.name ? (
-            <p className="text-xs text-red-600 dark:text-red-400">{errors.name}</p>
-          ) : null}
-        </div>
-
-        {/* Telefone / WhatsApp */}
-        <div className="space-y-1">
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-400">
-            Telefone / WhatsApp (opcional)
-          </label>
-          <input
-            value={form.phone}
-            onChange={(e) => setForm((s) => ({ ...s, phone: e.target.value }))}
-            placeholder="Ex: (31) 99999-9999"
-            className={[
-              "w-full h-10 px-3 rounded-lg border bg-white/70 dark:bg-white/5 text-slate-900 dark:text-slate-100",
-              "border-white/40 dark:border-white/10",
-              "focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-white/60 dark:focus:border-white/20",
-            ].join(" ")}
-          />
-        </div>
-      </div>
+      <DriverFormFields
+        values={form}
+        errors={errors}
+        showErrors={showErrors}
+        onChange={patch}
+        disabled={busy}
+        autoFocusFirst
+        apiError={
+          createDriver.isError
+            ? createDriver.error instanceof Error && createDriver.error.message
+              ? createDriver.error.message
+              : "Falha ao cadastrar o motorista. Verifique os dados e tente novamente."
+            : null
+        }
+      />
     </AppDialog>
   );
 }

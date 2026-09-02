@@ -1,10 +1,22 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2, Edit2, X } from "lucide-react";
+import { Plus, Trash2, Edit2, Loader2 } from "lucide-react";
 import { driversApi } from "../../api/drivers.api";
 import type { Driver } from "../../domain/drivers";
 import { DriverProfilePage } from "./DriverProfilePage";
 import { DriversDashboard } from "../components/DriversDashboard";
+import { AppDialog } from "../components/ui/app-dialog";
+import { DriverFormFields } from "../components/DriverCreateModal/DriverFormFields";
+import {
+  driverFormDiff,
+  driverFormToPayload,
+  driverToForm,
+  emptyDriverForm,
+  hasErrors,
+  validateDriverForm,
+  type DriverFormValues,
+} from "../components/DriverCreateModal/driverForm";
+import { useBasesRegistry } from "../../features/occurrences/queries/bases.queries";
 
 interface DriversPageProps {
   onVoltar: () => void;
@@ -12,9 +24,13 @@ interface DriversPageProps {
 
 export function DriversPage({ onVoltar }: DriversPageProps) {
   const queryClient = useQueryClient();
+  const { options: baseOptions } = useBasesRegistry();
+
   const [search, setSearch] = useState("");
   const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [form, setForm] = useState<DriverFormValues>(emptyDriverForm);
+  const [showErrors, setShowErrors] = useState(false);
   const [isDeleting, setIsDeleting] = useState<Driver | null>(null);
   const [viewingDriver, setViewingDriver] = useState<Driver | null>(null);
 
@@ -35,8 +51,7 @@ export function DriversPage({ onVoltar }: DriversPageProps) {
     }) => driversApi.createDriver(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["drivers"] });
-      setIsFormOpen(false);
-      setEditingDriver(null);
+      closeForm();
     },
   });
 
@@ -47,8 +62,7 @@ export function DriversPage({ onVoltar }: DriversPageProps) {
     }) => driversApi.updateDriver(args.id, args.payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["drivers"] });
-      setIsFormOpen(false);
-      setEditingDriver(null);
+      closeForm();
     },
   });
 
@@ -60,39 +74,58 @@ export function DriversPage({ onVoltar }: DriversPageProps) {
     },
   });
 
+  const errors = useMemo(
+    () => validateDriverForm(form, baseOptions),
+    [form, baseOptions],
+  );
+  const isValid = !hasErrors(errors);
+  const busy = createMutation.isPending || updateMutation.isPending;
+  const apiError =
+    createMutation.isError || updateMutation.isError
+      ? "Não foi possível salvar o motorista. Revise os dados e tente novamente."
+      : null;
+
   function openCreate() {
     setEditingDriver(null);
+    setForm(emptyDriverForm());
+    setShowErrors(false);
+    createMutation.reset();
+    updateMutation.reset();
     setIsFormOpen(true);
   }
 
   function openEdit(driver: Driver) {
     setEditingDriver(driver);
+    setForm(driverToForm(driver));
+    setShowErrors(false);
+    createMutation.reset();
+    updateMutation.reset();
     setIsFormOpen(true);
   }
 
-  function handleSubmitForm(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const code = (formData.get("code") as string)?.trim();
-    const name = (formData.get("name") as string)?.trim();
-    const baseRaw = (formData.get("base") as string)?.trim();
-    const base = baseRaw.length ? baseRaw : null;
-    const phoneRaw = (formData.get("phone") as string)?.trim();
-    const phone = phoneRaw.length ? phoneRaw : null;
+  function closeForm() {
+    setIsFormOpen(false);
+    setEditingDriver(null);
+    setShowErrors(false);
+  }
 
-    if (!code || !name) return;
+  function patch(next: Partial<DriverFormValues>) {
+    setForm((s) => ({ ...s, ...next }));
+  }
+
+  function handleSubmit() {
+    setShowErrors(true);
+    if (!isValid || busy) return;
 
     if (editingDriver) {
-      const payload: { code?: string; name?: string; base?: string | null; phone?: string | null } =
-        {};
-      if (code !== editingDriver.code) payload.code = code;
-      if (name !== editingDriver.name) payload.name = name;
-      if (base !== editingDriver.base) payload.base = base;
-      if (phone !== editingDriver.phone) payload.phone = phone;
-
+      const payload = driverFormDiff(form, editingDriver);
+      if (Object.keys(payload).length === 0) {
+        closeForm();
+        return;
+      }
       updateMutation.mutate({ id: editingDriver.id, payload });
     } else {
-      createMutation.mutate({ code, name, base, phone });
+      createMutation.mutate(driverFormToPayload(form));
     }
   }
 
@@ -205,101 +238,50 @@ export function DriversPage({ onVoltar }: DriversPageProps) {
           </div>
         )}
 
-        {/* Modal formulário */}
-        {isFormOpen && (
-          <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg w-full max-w-md p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  {editingDriver ? "Editar Motorista" : "Novo Motorista"}
-                </h2>
-                <button
-                  onClick={() => {
-                    setIsFormOpen(false);
-                    setEditingDriver(null);
-                  }}
-                  className="cursor-pointer text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <form onSubmit={handleSubmitForm} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Código
-                  </label>
-                  <input
-                    name="code"
-                    defaultValue={editingDriver?.code ?? ""}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required={!editingDriver}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Nome
-                  </label>
-                  <input
-                    name="name"
-                    defaultValue={editingDriver?.name ?? ""}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required={!editingDriver}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Base (opcional)
-                  </label>
-                  <input
-                    name="base"
-                    defaultValue={editingDriver?.base ?? ""}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Telefone / WhatsApp (opcional)
-                  </label>
-                  <input
-                    name="phone"
-                    defaultValue={editingDriver?.phone ?? ""}
-                    placeholder="Ex: (31) 99999-9999"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                    Usado pelo botão "Notificar via WhatsApp" na preview da ocorrência.
-                  </p>
-                </div>
-
-                <div className="flex justify-end gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsFormOpen(false);
-                      setEditingDriver(null);
-                    }}
-                    className="cursor-pointer px-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={
-                      createMutation.isPending || updateMutation.isPending
-                    }
-                    className="cursor-pointer px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60"
-                  >
-                    {editingDriver ? "Salvar" : "Criar"}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
+        {/* Modal formulário — criação e edição usam o mesmo componente */}
+        <AppDialog
+          open={isFormOpen}
+          onOpenChange={(v) => {
+            if (busy) return;
+            v ? setIsFormOpen(true) : closeForm();
+          }}
+          title={editingDriver ? "Editar motorista" : "Novo motorista"}
+          subtitle={
+            editingDriver
+              ? `Atualize os dados de ${editingDriver.name}.`
+              : "Preencha os dados cadastrais do motorista."
+          }
+          size="md"
+          closeOnOutside={false}
+          showClose={!busy}
+          actions={
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={busy || (showErrors && !isValid)}
+              className={[
+                "cursor-pointer inline-flex items-center gap-2 h-9 px-5 rounded-lg text-sm font-semibold",
+                "bg-blue-600 text-white shadow-sm shadow-blue-600/20",
+                "hover:bg-blue-700 active:bg-blue-800",
+                "disabled:opacity-50 disabled:cursor-not-allowed",
+                "focus:outline-none focus:ring-2 focus:ring-blue-500/40",
+              ].join(" ")}
+            >
+              {busy && <Loader2 className="w-4 h-4 animate-spin" />}
+              {busy ? "Salvando…" : "Salvar"}
+            </button>
+          }
+        >
+          <DriverFormFields
+            values={form}
+            errors={errors}
+            showErrors={showErrors}
+            onChange={patch}
+            disabled={busy}
+            autoFocusFirst
+            apiError={apiError}
+          />
+        </AppDialog>
 
         {/* Modal confirmação exclusão */}
         {isDeleting && (
