@@ -1,5 +1,17 @@
+import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { eachDayOfInterval, format, parseISO } from "date-fns";
+import { toast } from "sonner";
+import { FileDown } from "lucide-react";
 import type { Driver } from "../../domain/drivers";
 import { useDriverDashboard } from "../../features/occurrences/queries/drivers.queries";
+import { exportDriversDashboardXlsx } from "../../features/report/driversDashboardXlsx";
+import { scanOccurrencesForDays } from "../../features/report/scanRecentOccurrences";
+import {
+  DriversReportModal,
+  type ReportPeriod,
+} from "../../features/report/components/DriversReportModal";
+import { getOccurrencesByDay } from "../../api/occurrences.api";
 
 interface DriversDashboardProps {
   onSelectDriver: (driver: Driver) => void;
@@ -34,6 +46,10 @@ function CardSkeleton() {
 
 export function DriversDashboard({ onSelectDriver }: DriversDashboardProps) {
   const { data, isLoading, isError } = useDriverDashboard();
+  const queryClient = useQueryClient();
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
 
   if (isError) {
     return (
@@ -48,8 +64,70 @@ export function DriversDashboard({ onSelectDriver }: DriversDashboardProps) {
   const ranking = data?.ranking ?? [];
   const maxPorBase = Math.max(1, ...porBase.map((b) => b.total));
 
+  async function handleGenerate(period: ReportPeriod) {
+    if (!data || exporting) return;
+    setExporting(true);
+    setProgress({ done: 0, total: 0 });
+    try {
+      const days = eachDayOfInterval({
+        start: parseISO(period.start),
+        end: parseISO(period.end),
+      }).map((d) => format(d, "yyyy-MM-dd"));
+
+      // Varre o período dia-a-dia reaproveitando o cache do Centro de
+      // Relatórios — pode levar alguns segundos na primeira vez.
+      const { occurrences, failedDays } = await scanOccurrencesForDays(
+        (iso) =>
+          queryClient.fetchQuery({
+            queryKey: ["report", "day", iso],
+            queryFn: () => getOccurrencesByDay(iso),
+            staleTime: 30_000,
+          }),
+        days,
+        { onProgress: (done, total) => setProgress({ done, total }) },
+      );
+      exportDriversDashboardXlsx(data, occurrences, period);
+      setPickerOpen(false);
+      if (failedDays > 0) {
+        toast.warning(
+          `${failedDays} dia(s) não carregaram — a aba "Ocorrências por motorista" pode estar incompleta.`,
+        );
+      }
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Falha ao gerar o relatório geral.",
+      );
+    } finally {
+      setExporting(false);
+      setProgress(null);
+    }
+  }
+
   return (
     <div className="mb-6 space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+          Painel de indicadores
+        </h2>
+        <button
+          onClick={() => setPickerOpen(true)}
+          disabled={isLoading || !data}
+          title="Escolha o período e baixe um .xlsx: resumo da frota, ocorrências por base, piores situações e uma aba com as ocorrências por motorista (link do RIZER incluso)"
+          className="cursor-pointer flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <FileDown className="w-3.5 h-3.5" />
+          Relatório geral (.xlsx)
+        </button>
+      </div>
+
+      <DriversReportModal
+        open={pickerOpen}
+        onClose={() => !exporting && setPickerOpen(false)}
+        onConfirm={handleGenerate}
+        exporting={exporting}
+        progress={progress}
+      />
+
       {/* Cards de totais */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {isLoading ? (
