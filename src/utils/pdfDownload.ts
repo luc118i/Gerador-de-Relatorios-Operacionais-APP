@@ -72,19 +72,29 @@ export function buildDriverPdfFileName(args: {
   base?: string | null;
   occurrenceTitle?: string | null;
   eventDate?: string | Date | null;
+  /**
+   * Quando não há matrícula nem nome de motorista, usa o título por extenso
+   * em vez da sigla (ex.: "RECLAMAÇÕES COMERCIAIS - SAC - 22.05.26.pdf" no
+   * lugar de "RECLA_COMER - 22.05.26.pdf"). A sigla só existe pra caber ao
+   * lado de "matrícula - nome - base"; sem esses campos ela só confunde.
+   * Opt-in pra não mexer no nome usado na busca da medida no Drive.
+   */
+  readableWhenAnonymous?: boolean;
 }) {
   const date = formatDateDDMMAA(args.eventDate ?? new Date());
-  const typeAbbr = abbreviateOccurrenceTitle(args.occurrenceTitle ?? "");
+  const registry = sanitizeFileName(String(args.registry || ""));
+  const name = sanitizeFileName(String(args.name || ""));
+  const base = sanitizeFileName(String(args.base || ""));
 
-  const parts = [
-    args.registry ?? "",
-    args.name ?? "",
-    args.base ?? "",
-    typeAbbr,
-    date,
-  ]
-    .map((p) => sanitizeFileName(String(p || "")))
-    .filter(Boolean);
+  const anonymous = !registry && !name;
+  if (args.readableWhenAnonymous && anonymous) {
+    const title =
+      sanitizeFileName(String(args.occurrenceTitle || "").toUpperCase()) || "RELATÓRIO";
+    return `${[title, base, date].filter(Boolean).join(" - ")}.pdf`;
+  }
+
+  const typeAbbr = abbreviateOccurrenceTitle(args.occurrenceTitle ?? "");
+  const parts = [registry, name, base, typeAbbr, date].filter(Boolean);
 
   return `${parts.join(" - ")}.pdf`;
 }

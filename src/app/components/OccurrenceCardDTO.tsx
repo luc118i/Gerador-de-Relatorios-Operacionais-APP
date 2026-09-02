@@ -50,6 +50,10 @@ import { RizerRegisterModal, type TipoMedida } from "./RizerRegisterModal";
 import { ConfirmTratativaModal } from "./ConfirmTratativaModal";
 import { tratativaToTipoMedida } from "../../utils/tratativa";
 import { dtoToMinimalOcorrencia } from "../../utils/occurrenceDto";
+import {
+  getOccurrenceFieldVisibility,
+  type OccurrenceFieldVisibility,
+} from "../config/occurrencePresentation";
 
 // ── TratativaBadge ────────────────────────────────────────────────────────────
 const TRATATIVA_META: Record<string, { label: string; dot: string; cls: string }> = {
@@ -118,6 +122,9 @@ interface OccurrenceCardProps {
   /** true enquanto um lote (registro/tratativa/revisão) está rodando — evita editar
    * uma ocorrência que o robô pode estar lendo/escrevendo no RIZER nesse momento. */
   editDisabled?: boolean;
+  /** Colunas visíveis na lista (modo compacto), calculadas pelo grupo em
+   * `OccurrenceCardsView`. Sem isso, cada linha decide sozinha. */
+  listColumns?: OccurrenceFieldVisibility;
 }
 
 export type OccurrenceDetailDTO = OccurrenceDTO & {
@@ -150,7 +157,13 @@ export function OccurrenceCard({
   driverSlot = 1,
   duplicateVehicleCount = 1,
   editDisabled = false,
+  listColumns,
 }: OccurrenceCardProps) {
+  // Visibilidade por linha (este relatório tem/‑não‑tem cada campo) e por
+  // coluna (o grupo inteiro na lista). Na lista usamos a de coluna pra decidir
+  // se o slot existe, e a de linha pra decidir se mostra valor ou vazio.
+  const fieldVis = getOccurrenceFieldVisibility(occurrence);
+  const cols = listColumns ?? fieldVis;
   const [loadingEdit, setLoadingEdit] = useState(false);
   const [copiedWpp, setCopiedWpp] = useState(false);
   const [copiedRelat, setCopiedRelat] = useState(false);
@@ -673,23 +686,27 @@ export function OccurrenceCard({
         )}
 
         {/* Prefixo */}
-        <div className="w-[70px] flex-shrink-0 px-3 py-2.5 flex items-center gap-1">
-          {isSecondDriverCard ? (
-            <span className="text-gray-300 dark:text-gray-600 text-sm" title="Mesma ocorrência do card acima">↳</span>
-          ) : (
-            <>
-              <span className="font-bold text-sm text-gray-900 dark:text-gray-100 tabular-nums">
-                {occurrence.vehicleNumber}
-              </span>
-              {isDuplicateVehicle && (
-                <span
-                  className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0"
-                  title={`Este veículo tem ${duplicateVehicleCount} ocorrências hoje`}
-                />
-              )}
-            </>
-          )}
-        </div>
+        {cols.prefixo && (
+          <div className="w-[70px] flex-shrink-0 px-3 py-2.5 flex items-center gap-1">
+            {isSecondDriverCard ? (
+              <span className="text-gray-300 dark:text-gray-600 text-sm" title="Mesma ocorrência do card acima">↳</span>
+            ) : fieldVis.prefixo ? (
+              <>
+                <span className="font-bold text-sm text-gray-900 dark:text-gray-100 tabular-nums">
+                  {occurrence.vehicleNumber}
+                </span>
+                {isDuplicateVehicle && (
+                  <span
+                    className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0"
+                    title={`Este veículo tem ${duplicateVehicleCount} ocorrências hoje`}
+                  />
+                )}
+              </>
+            ) : (
+              <span className="text-gray-300 dark:text-gray-600 text-sm">—</span>
+            )}
+          </div>
+        )}
 
         {/* Base (abreviada) */}
         <div className="w-[80px] flex-shrink-0 px-1 py-2.5 hidden sm:block">
@@ -776,28 +793,39 @@ export function OccurrenceCard({
         </div>
 
         {/* Horário */}
-        <div className="w-[115px] flex-shrink-0 px-2 py-2.5 hidden sm:flex items-center gap-1">
-          <Clock className="w-3 h-3 text-gray-300 dark:text-gray-600 flex-shrink-0" />
-          <span className="text-xs text-gray-500 dark:text-gray-400 tabular-nums">
-            {occurrence.typeCode === "EXCESSO_VELOCIDADE" || occurrence.startTime === occurrence.endTime
-              ? occurrence.startTime
-              : `${occurrence.startTime} – ${occurrence.endTime}`}
-          </span>
-        </div>
+        {cols.horario && (
+          <div className="w-[115px] flex-shrink-0 px-2 py-2.5 hidden sm:flex items-center gap-1">
+            {fieldVis.horario ? (
+              <>
+                <Clock className="w-3 h-3 text-gray-300 dark:text-gray-600 flex-shrink-0" />
+                <span className="text-xs text-gray-500 dark:text-gray-400 tabular-nums">
+                  {occurrence.typeCode === "EXCESSO_VELOCIDADE" || occurrence.startTime === occurrence.endTime
+                    ? occurrence.startTime
+                    : `${occurrence.startTime} – ${occurrence.endTime}`}
+                </span>
+              </>
+            ) : (
+              <span className="text-xs text-gray-300 dark:text-gray-600">—</span>
+            )}
+          </div>
+        )}
 
         {/* Motorista(s) */}
-        <div className="w-[170px] flex-shrink-0 px-2 py-2.5 hidden lg:block">
-          <span
-            className={`text-xs truncate block ${isSecondDriverCard ? "text-gray-700 dark:text-gray-300 font-medium" : "text-gray-500 dark:text-gray-400"}`}
-            title={(isSecondDriverCard ? driver2?.name : driver1?.name) ?? undefined}
-          >
-            {(isSecondDriverCard ? driver2?.name : driver1?.name) ?? "—"}
-          </span>
-        </div>
+        {cols.motorista && (
+          <div className="w-[170px] flex-shrink-0 px-2 py-2.5 hidden lg:block">
+            <span
+              className={`text-xs truncate block ${isSecondDriverCard ? "text-gray-700 dark:text-gray-300 font-medium" : "text-gray-500 dark:text-gray-400"}`}
+              title={(isSecondDriverCard ? driver2?.name : driver1?.name) ?? undefined}
+            >
+              {(isSecondDriverCard ? driver2?.name : driver1?.name) ?? "—"}
+            </span>
+          </div>
+        )}
 
-        {/* Ações */}
+        {/* Ações — largura fixa + alinhado à direita pra bater com o cabeçalho
+            mesmo quando um botão condicional (tratativa/rizer/drive) some. */}
         <div
-          className="flex items-center gap-0 flex-shrink-0 px-1"
+          className="flex items-center justify-end gap-0 flex-shrink-0 w-[264px] px-1"
           onClick={(e) => e.stopPropagation()}
         >
           <button
@@ -1055,10 +1083,12 @@ export function OccurrenceCard({
               <span className="text-gray-300 dark:text-gray-600 text-base" title="Mesma ocorrência do card acima">↳</span>
             ) : (
               <>
-                <span className="font-semibold text-lg text-gray-900 dark:text-gray-100">
-                  {occurrence.vehicleNumber}
-                </span>
-                {isDuplicateVehicle && (
+                {fieldVis.prefixo && (
+                  <span className="font-semibold text-lg text-gray-900 dark:text-gray-100">
+                    {occurrence.vehicleNumber}
+                  </span>
+                )}
+                {fieldVis.prefixo && isDuplicateVehicle && (
                   <span
                     className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0"
                     title={`Este veículo tem ${duplicateVehicleCount} ocorrências hoje`}
@@ -1123,19 +1153,21 @@ export function OccurrenceCard({
       <div className="space-y-2">
         {!isSecondDriverCard && (
         <>
-        <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-          <Clock className="w-4 h-4 text-gray-400 dark:text-gray-500" />
-          {occurrence.typeCode === "EXCESSO_VELOCIDADE" || occurrence.startTime === occurrence.endTime ? (
-            <span>{occurrence.startTime}</span>
-          ) : (
-            <>
-              <span>
-                {occurrence.startTime} - {occurrence.endTime}
-              </span>
-              <span className="text-gray-400 dark:text-gray-500">({tempoParada})</span>
-            </>
-          )}
-        </div>
+        {fieldVis.horario && (
+          <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+            <Clock className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+            {occurrence.typeCode === "EXCESSO_VELOCIDADE" || occurrence.startTime === occurrence.endTime ? (
+              <span>{occurrence.startTime}</span>
+            ) : (
+              <>
+                <span>
+                  {occurrence.startTime} - {occurrence.endTime}
+                </span>
+                <span className="text-gray-400 dark:text-gray-500">({tempoParada})</span>
+              </>
+            )}
+          </div>
+        )}
 
         {occurrence.typeCode === "EXCESSO_VELOCIDADE" ? (
           <div className="flex items-center gap-2">
@@ -1145,16 +1177,17 @@ export function OccurrenceCard({
             </span>
           </div>
         ) : occurrence.typeCode === "GENERICO" ? (
-          <p className="text-sm text-gray-600 dark:text-gray-400">📋 {occurrence.place || "—"}</p>
+          fieldVis.local && <p className="text-sm text-gray-600 dark:text-gray-400">📋 {occurrence.place}</p>
         ) : (
           <p className="text-sm text-gray-600 dark:text-gray-400">📍 {occurrence.place}</p>
         )}
         </>
         )}
 
+        {(fieldVis.motorista || occurrence.analisadoPor) && (
         <div className="text-xs text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between gap-2">
           <span className={isSecondDriverCard ? "text-gray-700 dark:text-gray-300 font-medium" : undefined}>
-            {isSecondDriverCard ? (driver2?.name ?? "—") : (driver1?.name ?? "—")}
+            {isSecondDriverCard ? (driver2?.name ?? "—") : (fieldVis.motorista ? (driver1?.name ?? "—") : "")}
           </span>
           {occurrence.analisadoPor && (
             <span className="text-[11px] text-gray-400 dark:text-gray-500 flex items-center gap-1 flex-shrink-0">
@@ -1163,6 +1196,7 @@ export function OccurrenceCard({
             </span>
           )}
         </div>
+        )}
       </div>
 
       {/* Rodapé com botões */}

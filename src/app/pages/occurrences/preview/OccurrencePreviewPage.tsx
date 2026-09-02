@@ -154,6 +154,15 @@ export function OccurrencePreviewPage(props: {
 
   const hasDrivers = !!(drivers.d1 || drivers.d2);
 
+  // Campos que só aparecem se o relatório de fato os tem — um GENÉRICO pode
+  // ser salvo sem horário/prefixo (placeholders "00:00" / "0").
+  const hasHorario =
+    !!occurrence.horarioInicial && occurrence.horarioInicial !== "00:00";
+  const hasPrefixo = (() => {
+    const p = getViagemPrefixo(occurrence.viagem).trim();
+    return !!p && p !== "0";
+  })();
+
   async function handleSummarize() {
     if (!relatorioTxt.trim() || aiCooldown > 0) return;
     setAiLoading(true);
@@ -440,48 +449,60 @@ export function OccurrencePreviewPage(props: {
                 </div>
                 {occurrence.showSectionDados !== false && (
                   <>
-                    <div>
-                      <div className="text-gray-500 dark:text-gray-400">Operador CCO</div>
-                      <div className="font-medium text-gray-900 dark:text-gray-100">
-                        {occurrence.ccoOperator || "—"}
+                    {occurrence.ccoOperator && (
+                      <div>
+                        <div className="text-gray-500 dark:text-gray-400">Operador CCO</div>
+                        <div className="font-medium text-gray-900 dark:text-gray-100">
+                          {occurrence.ccoOperator}
+                        </div>
                       </div>
-                    </div>
+                    )}
                     <div>
                       <div className="text-gray-500 dark:text-gray-400">Data Origem</div>
                       <div className="font-medium text-gray-900 dark:text-gray-100">
                         {occurrence.dataEvento}
                       </div>
                     </div>
-                    <div>
-                      <div className="text-gray-500 dark:text-gray-400">Horário</div>
-                      <div className="font-medium text-gray-900 dark:text-gray-100">
-                        {occurrence.horarioInicial}
+                    {hasHorario && (
+                      <div>
+                        <div className="text-gray-500 dark:text-gray-400">Horário</div>
+                        <div className="font-medium text-gray-900 dark:text-gray-100">
+                          {occurrence.horarioInicial}
+                        </div>
                       </div>
-                    </div>
-                    <div>
-                      <div className="text-gray-500 dark:text-gray-400">Prefixo do Veículo</div>
-                      <div className="font-medium text-gray-900 dark:text-gray-100">
-                        {getViagemPrefixo(occurrence.viagem)}
+                    )}
+                    {hasPrefixo && (
+                      <div>
+                        <div className="text-gray-500 dark:text-gray-400">Prefixo do Veículo</div>
+                        <div className="font-medium text-gray-900 dark:text-gray-100">
+                          {getViagemPrefixo(occurrence.viagem)}
+                        </div>
                       </div>
-                    </div>
-                    <div>
-                      <div className="text-gray-500 dark:text-gray-400">Itinerário</div>
-                      <div className="font-medium text-gray-900 dark:text-gray-100">
-                        {getViagemLinha(occurrence.viagem)}
+                    )}
+                    {getViagemLinha(occurrence.viagem) && (
+                      <div>
+                        <div className="text-gray-500 dark:text-gray-400">Itinerário</div>
+                        <div className="font-medium text-gray-900 dark:text-gray-100">
+                          {getViagemLinha(occurrence.viagem)}
+                        </div>
                       </div>
-                    </div>
-                    <div>
-                      <div className="text-gray-500 dark:text-gray-400">Local</div>
-                      <div className="font-medium text-gray-900 dark:text-gray-100">
-                        {occurrence.localParada || "—"}
+                    )}
+                    {occurrence.localParada && (
+                      <div>
+                        <div className="text-gray-500 dark:text-gray-400">Local</div>
+                        <div className="font-medium text-gray-900 dark:text-gray-100">
+                          {occurrence.localParada}
+                        </div>
                       </div>
-                    </div>
-                    <div>
-                      <div className="text-gray-500 dark:text-gray-400">KM do Veículo</div>
-                      <div className="font-medium text-gray-900 dark:text-gray-100">
-                        {occurrence.vehicleKm ?? "—"}
+                    )}
+                    {occurrence.vehicleKm != null && (
+                      <div>
+                        <div className="text-gray-500 dark:text-gray-400">KM do Veículo</div>
+                        <div className="font-medium text-gray-900 dark:text-gray-100">
+                          {occurrence.vehicleKm}
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </>
                 )}
                 {occurrence.showSectionPassageiros !== false && (

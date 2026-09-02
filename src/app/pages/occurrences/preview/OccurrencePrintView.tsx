@@ -94,7 +94,11 @@ export function OccurrencePrintView({ occurrence, drivers }: Props) {
   const driversLine = [drivers.d1, drivers.d2]
     .filter(Boolean)
     .map((d) => [d!.registry, d!.name, d!.base].filter(Boolean).join(" — "))
-    .join("\n") || "—";
+    .join("\n");
+
+  const prefixo = occurrence.viagem?.prefixo?.trim();
+  const linha = occurrence.viagem?.linha?.trim();
+  const hasHorario = !!occurrence.horarioInicial && occurrence.horarioInicial !== "00:00";
 
   const occurrenceTitle =
     isGenerico
@@ -127,9 +131,9 @@ export function OccurrencePrintView({ occurrence, drivers }: Props) {
         {/* ── Tabela meta ─────────────────────────────────────── */}
         <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "10px", fontSize: "9pt" }}>
           <tbody>
-            <MetaRow label="Linha" value={occurrence.viagem?.linha || "—"} />
-            <MetaRow label="Veículo" value={occurrence.viagem?.prefixo || "—"} />
-            <MetaRow label="Motorista" value={driversLine} />
+            {linha && <MetaRow label="Linha" value={linha} />}
+            {prefixo && prefixo !== "0" && <MetaRow label="Veículo" value={prefixo} />}
+            {driversLine && <MetaRow label="Motorista" value={driversLine} />}
             <MetaRow label="Data Relatório" value={fmtToday()} />
             <MetaRow label="Data da viagem" value={fmtDateBR(occurrence.dataEvento)} />
           </tbody>
@@ -139,7 +143,7 @@ export function OccurrencePrintView({ occurrence, drivers }: Props) {
         <div style={{ border: "1px solid #ccc", borderRadius: "4px", padding: "8px 10px", marginBottom: "10px", fontSize: "9pt", background: "#fafafa" }}>
           <div><span style={{ fontWeight: "bold" }}>OCORRÊNCIA:</span> {occurrenceTitle}</div>
           <div><span style={{ fontWeight: "bold" }}>DATA:</span> {fmtDateBR(occurrence.dataViagem)}</div>
-          {!isGenerico && (
+          {hasHorario && (
             <div>
               <span style={{ fontWeight: "bold" }}>Horário do evento:</span>{" "}
               {occurrence.horarioInicial}

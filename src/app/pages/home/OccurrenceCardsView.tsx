@@ -1,5 +1,6 @@
 import { OccurrenceCard, type BatchOverlay, type DriveStatus } from "../../components/OccurrenceCardDTO";
 import type { OccurrenceDTO } from "../../../domain/occurrences";
+import { mergeFieldVisibility } from "../../config/occurrencePresentation";
 
 function splitByDriver(occ: OccurrenceDTO): Array<{ occ: OccurrenceDTO; driverSlot: 1 | 2 }> {
   const hasDriver2 = (occ.drivers ?? []).some((d) => d.position === 2 && d.name);
@@ -55,10 +56,15 @@ export function OccurrenceCardsView({
 }: OccurrenceCardsViewProps) {
   const items = occurrences.flatMap(splitByDriver);
 
+  // Colunas mostradas na lista dependem do que o grupo de fato usa: um grupo
+  // de "RECLAMAÇÕES SAC" sem motorista não mostra a coluna Motorista, etc.
+  const cols = mergeFieldVisibility(occurrences);
+
   const cards = items.map(({ occ, driverSlot }) => (
     <OccurrenceCard
       key={driverSlot === 2 ? `${occ.id}-2` : occ.id}
       compact={viewMode === "list"}
+      listColumns={cols}
       occurrence={occ}
       driverSlot={driverSlot}
       duplicateVehicleCount={vehicleOccurrenceCount.get(occ.vehicleNumber) ?? 1}
@@ -84,12 +90,12 @@ export function OccurrenceCardsView({
           className="flex items-center gap-0 bg-gray-50 dark:bg-gray-800/60 border-b border-gray-200 dark:border-gray-800 text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide"
           style={{ borderLeft: "3px solid transparent" }}
         >
-          <div className="w-[70px] flex-shrink-0 px-3 py-2">Prefixo</div>
+          {cols.prefixo && <div className="w-[70px] flex-shrink-0 px-3 py-2">Prefixo</div>}
           <div className="w-[80px] flex-shrink-0 px-1 py-2 hidden sm:block">Base</div>
           <div className="flex-1 px-2 py-2">Ocorrência</div>
-          <div className="w-[115px] flex-shrink-0 px-2 py-2 hidden sm:block">Horário</div>
-          <div className="w-[170px] flex-shrink-0 px-2 py-2 hidden lg:block">Motorista</div>
-          <div className="w-[310px] flex-shrink-0 px-1 py-2">Ações</div>
+          {cols.horario && <div className="w-[115px] flex-shrink-0 px-2 py-2 hidden sm:block">Horário</div>}
+          {cols.motorista && <div className="w-[170px] flex-shrink-0 px-2 py-2 hidden lg:block">Motorista</div>}
+          <div className="w-[264px] flex-shrink-0 px-1 py-2 text-right">Ações</div>
         </div>
         {cards}
       </div>

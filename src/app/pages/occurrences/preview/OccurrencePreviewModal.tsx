@@ -27,6 +27,7 @@ import { useDriveFolder } from "../../../../hooks/useDriveFolder";
 import { requestDriveToken } from "../../../../utils/googleAuth";
 import { getDriveLink, setDriveLink } from "../../../../utils/driveLinkCache";
 import { resolveAnalisadoPorUserId } from "../../../../utils/analisadoPor";
+import { getOccurrenceFieldVisibility } from "../../../config/occurrencePresentation";
 
 import {
   buildDriverPdfFileName,
@@ -101,6 +102,7 @@ export function OccurrencePreviewModal({ occurrenceId, open, onClose }: Props) {
             ? (occ as any).reportTitle
             : occ.typeTitle,
         eventDate: occ.eventDate,
+        readableWhenAnonymous: true,
       });
 
       downloadBlob(blob, fileName);
@@ -119,6 +121,7 @@ export function OccurrencePreviewModal({ occurrenceId, open, onClose }: Props) {
       : occ?.typeTitle ?? "Ocorrência";
 
   const driver = occ?.drivers?.[0];
+  const fields = occ ? getOccurrenceFieldVisibility(occ) : null;
 
   return (
     <div className="fixed inset-0 z-50">
@@ -139,12 +142,14 @@ export function OccurrencePreviewModal({ occurrenceId, open, onClose }: Props) {
             <div className="min-w-0">
               <h2 className="text-[15px] font-semibold text-gray-900 dark:text-gray-100 truncate">
                 {occ
-                  ? `${occ.vehicleNumber} • ${occ.lineLabel ?? "—"}`
+                  ? [fields?.prefixo && occ.vehicleNumber, fields?.linha && occ.lineLabel]
+                      .filter(Boolean)
+                      .join(" • ") || tipoTitulo
                   : "Ocorrência"}
               </h2>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 {occ
-                  ? `${formatDateBR(occ.eventDate)} às ${occ.startTime}`
+                  ? `${formatDateBR(occ.eventDate)}${fields?.horario ? ` às ${occ.startTime}` : ""}`
                   : ""}
               </p>
             </div>
@@ -202,9 +207,12 @@ export function OccurrencePreviewModal({ occurrenceId, open, onClose }: Props) {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {/* Dados da viagem */}
                   <InfoCard icon={Bus} title="Dados da viagem">
-                    <InfoLine label="Prefixo" value={occ.vehicleNumber} />
-                    <InfoLine label="Linha" value={occ.lineLabel ?? "—"} />
-                    <InfoLine label="Horário" value={occ.startTime} />
+                    {fields?.prefixo && <InfoLine label="Prefixo" value={occ.vehicleNumber} />}
+                    {fields?.linha && <InfoLine label="Linha" value={occ.lineLabel ?? "—"} />}
+                    {fields?.horario && <InfoLine label="Horário" value={occ.startTime} />}
+                    {!fields?.prefixo && !fields?.linha && !fields?.horario && (
+                      <p className="text-xs text-gray-400 dark:text-gray-500">Sem dados de viagem</p>
+                    )}
                   </InfoCard>
 
                   {/* Motorista */}
