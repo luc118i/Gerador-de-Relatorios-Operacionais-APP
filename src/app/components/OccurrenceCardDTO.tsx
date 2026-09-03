@@ -316,6 +316,9 @@ export function OccurrenceCard({
   }
 
   const isAnaliseOp = occurrence.typeCode === "ANALISE_OP";
+  // ANÁLISE OPERACIONAL DE VIAGEM não tem "horário do evento" — o horário
+  // relevante é o de partida da linha (tripTime).
+  const horarioLinha = (occurrence.tripTime ?? "").trim();
 
   const tempoParada = calcularTempoParada(
     occurrence.startTime,
@@ -708,16 +711,20 @@ export function OccurrenceCard({
           </div>
         )}
 
-        {/* Base (abreviada) */}
-        <div className="w-[80px] flex-shrink-0 px-1 py-2.5 hidden sm:block">
-          <span
-            className="text-[10px] font-medium px-1.5 py-0.5 rounded truncate block max-w-full"
-            style={{ background: baseColor + "22", color: baseColor }}
-            title={rawBase}
-          >
-            {baseSigla}
-          </span>
-        </div>
+        {/* Base (abreviada) — só quando o grupo tem base de verdade */}
+        {cols.base && (
+          <div className="w-[80px] flex-shrink-0 px-1 py-2.5 hidden sm:block">
+            {fieldVis.base && (
+              <span
+                className="text-[10px] font-medium px-1.5 py-0.5 rounded truncate block max-w-full"
+                style={{ background: baseColor + "22", color: baseColor }}
+                title={rawBase}
+              >
+                {baseSigla}
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Assunto */}
         <div className="flex-1 min-w-0 px-2 py-2.5">
@@ -731,6 +738,14 @@ export function OccurrenceCard({
                 <span className="text-sm text-gray-800 dark:text-gray-200 truncate leading-tight">
                   {subjectTitle}
                 </span>
+                {isAnaliseOp && (
+                  <span
+                    title="Análise Operacional de Viagem"
+                    className="inline-flex items-center px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 font-bold text-[10px] leading-none whitespace-nowrap flex-shrink-0"
+                  >
+                    AOV
+                  </span>
+                )}
                 {hasSecondDriverCard && (
                   <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 font-semibold text-[10px] leading-none whitespace-nowrap flex-shrink-0">
                     <UserCheck className="w-2.5 h-2.5" />
@@ -795,7 +810,14 @@ export function OccurrenceCard({
         {/* Horário */}
         {cols.horario && (
           <div className="w-[115px] flex-shrink-0 px-2 py-2.5 hidden sm:flex items-center gap-1">
-            {fieldVis.horario ? (
+            {isAnaliseOp && horarioLinha ? (
+              <>
+                <Clock className="w-3 h-3 text-gray-300 dark:text-gray-600 flex-shrink-0" />
+                <span className="text-xs text-gray-500 dark:text-gray-400 tabular-nums" title="Horário da linha">
+                  {horarioLinha}
+                </span>
+              </>
+            ) : fieldVis.horario ? (
               <>
                 <Clock className="w-3 h-3 text-gray-300 dark:text-gray-600 flex-shrink-0" />
                 <span className="text-xs text-gray-500 dark:text-gray-400 tabular-nums">
@@ -1094,7 +1116,15 @@ export function OccurrenceCard({
                     title={`Este veículo tem ${duplicateVehicleCount} ocorrências hoje`}
                   />
                 )}
-                <BaseChip base={driver1?.baseCode ?? occurrence.baseCode} />
+                {fieldVis.base && <BaseChip base={driver1?.baseCode ?? occurrence.baseCode} />}
+                {isAnaliseOp && (
+                  <span
+                    title="Análise Operacional de Viagem"
+                    className="inline-flex items-center px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 font-bold text-[10px] leading-none whitespace-nowrap"
+                  >
+                    AOV
+                  </span>
+                )}
                 {hasSecondDriverCard && (
                   <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 font-semibold text-[10px] leading-none whitespace-nowrap">
                     <UserCheck className="w-2.5 h-2.5" />
@@ -1153,7 +1183,13 @@ export function OccurrenceCard({
       <div className="space-y-2">
         {!isSecondDriverCard && (
         <>
-        {fieldVis.horario && (
+        {isAnaliseOp && horarioLinha ? (
+          <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+            <Clock className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+            <span>{horarioLinha}</span>
+            <span className="text-gray-400 dark:text-gray-500">(horário da linha)</span>
+          </div>
+        ) : fieldVis.horario && (
           <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
             <Clock className="w-4 h-4 text-gray-400 dark:text-gray-500" />
             {occurrence.typeCode === "EXCESSO_VELOCIDADE" || occurrence.startTime === occurrence.endTime ? (

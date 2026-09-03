@@ -122,6 +122,11 @@ export function OccurrencePreviewModal({ occurrenceId, open, onClose }: Props) {
 
   const driver = occ?.drivers?.[0];
   const fields = occ ? getOccurrenceFieldVisibility(occ) : null;
+  // ANÁLISE OPERACIONAL DE VIAGEM não tem "horário do evento" — usa o horário
+  // de partida da linha (tripTime).
+  const isAnaliseOp = occ?.typeCode === "ANALISE_OP";
+  const horarioLinha = (occ?.tripTime ?? "").trim();
+  const horarioValue = isAnaliseOp && horarioLinha ? horarioLinha : occ?.startTime;
 
   return (
     <div className="fixed inset-0 z-50">
@@ -149,7 +154,7 @@ export function OccurrencePreviewModal({ occurrenceId, open, onClose }: Props) {
               </h2>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 {occ
-                  ? `${formatDateBR(occ.eventDate)}${fields?.horario ? ` às ${occ.startTime}` : ""}`
+                  ? `${formatDateBR(occ.eventDate)}${fields?.horario && horarioValue ? ` às ${horarioValue}` : ""}`
                   : ""}
               </p>
             </div>
@@ -209,7 +214,9 @@ export function OccurrencePreviewModal({ occurrenceId, open, onClose }: Props) {
                   <InfoCard icon={Bus} title="Dados da viagem">
                     {fields?.prefixo && <InfoLine label="Prefixo" value={occ.vehicleNumber} />}
                     {fields?.linha && <InfoLine label="Linha" value={occ.lineLabel ?? "—"} />}
-                    {fields?.horario && <InfoLine label="Horário" value={occ.startTime} />}
+                    {fields?.horario && horarioValue && (
+                      <InfoLine label={isAnaliseOp ? "Horário da linha" : "Horário"} value={horarioValue} />
+                    )}
                     {!fields?.prefixo && !fields?.linha && !fields?.horario && (
                       <p className="text-xs text-gray-400 dark:text-gray-500">Sem dados de viagem</p>
                     )}
