@@ -48,7 +48,8 @@ const EMPTY_LIST: OccurrenceDTO[] = [];
 export function CentralOcorrenciasPage({ onVoltar }: Props) {
   const queryClient = useQueryClient();
   const { profileName, user } = useAuth();
-  const { layout, setView, setDensity, toggleShow, toggleColumn } = useCentralLayout();
+  const { layout, setView, setDensity, toggleShow, toggleColumn, setCoverImage } =
+    useCentralLayout();
 
   // Tela diária: por padrão carrega só o dia de hoje. O período é ajustável
   // nos filtros (De / Até) pra puxar dias anteriores quando precisar.
@@ -278,10 +279,12 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
             density={layout.density}
             show={layout.show}
             hiddenColumns={layout.hiddenColumns}
+            coverImage={layout.coverImage}
             onView={setView}
             onDensity={setDensity}
             onToggleShow={toggleShow}
             onToggleColumn={toggleColumn}
+            onSetCover={setCoverImage}
           />
           {layout.hiddenColumns.length > 0 && layout.view !== "tabela" && (
             <button
@@ -323,9 +326,25 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
         </div>
       </div>
 
-      <div className="mx-auto max-w-[1600px] px-4 sm:px-6">
+      <div className="relative mx-auto max-w-[1600px] px-4 sm:px-6">
+        {/* Plano de fundo do cabeçalho — bem discreto, com véu que garante a
+            legibilidade do título por cima. */}
+        {layout.coverImage && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 top-0 z-0 h-[168px] overflow-hidden"
+          >
+            <img
+              src={layout.coverImage}
+              alt=""
+              className="h-full w-full object-cover opacity-[0.16] dark:opacity-[0.12]"
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-gray-50/30 via-gray-50/70 to-gray-50 dark:from-gray-950/30 dark:via-gray-950/70 dark:to-gray-950" />
+          </div>
+        )}
+
         {/* Bloco de identidade — tratamento de título de página */}
-        <div className="pb-3 pt-6">
+        <div className="relative z-10 pb-3 pt-6">
           <div className="flex items-center gap-2">
             <img src="/logo.png" alt="" className="h-[18px] w-[18px] object-contain dark:hidden" />
             <img
@@ -345,8 +364,10 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
           </p>
         </div>
 
-        <BoardIndicators occurrences={visible} active={indicator} onPick={setIndicator} />
-        <div className="mt-3">
+        <div className="relative z-10">
+          <BoardIndicators occurrences={visible} active={indicator} onPick={setIndicator} />
+        </div>
+        <div className="relative z-10 mt-3">
           <BoardFiltersBar
             value={filters}
             onChange={setFilters}

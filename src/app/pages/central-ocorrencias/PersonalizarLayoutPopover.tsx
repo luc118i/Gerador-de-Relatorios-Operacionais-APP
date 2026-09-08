@@ -1,4 +1,6 @@
-import { SlidersHorizontal } from "lucide-react";
+import { useRef } from "react";
+import { ImagePlus, SlidersHorizontal, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "../../components/ui/popover";
 import { RadioGroup, RadioGroupItem } from "../../components/ui/radio-group";
 import { Checkbox } from "../../components/ui/checkbox";
@@ -14,11 +16,31 @@ type Props = {
   density: CentralDensity;
   show: Record<CentralShowKey, boolean>;
   hiddenColumns: string[];
+  coverImage: string | null;
   onView: (v: CentralView) => void;
   onDensity: (d: CentralDensity) => void;
   onToggleShow: (k: CentralShowKey) => void;
   onToggleColumn: (status: string) => void;
+  onSetCover: (dataUrl: string | null) => void;
 };
+
+/** Reduz a imagem escolhida (máx. 1600px de largura, JPEG ~0.72) para caber
+ *  no localStorage sem estourar a cota. */
+async function fileToCoverDataUrl(file: File): Promise<string> {
+  const bitmap = await createImageBitmap(file);
+  const maxW = 1600;
+  const scale = Math.min(1, maxW / bitmap.width);
+  const w = Math.max(1, Math.round(bitmap.width * scale));
+  const h = Math.max(1, Math.round(bitmap.height * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("canvas");
+  ctx.drawImage(bitmap, 0, 0, w, h);
+  bitmap.close?.();
+  return canvas.toDataURL("image/jpeg", 0.72);
+}
 
 const VIEWS: { value: CentralView; label: string }[] = [
   { value: "kanban", label: "Kanban" },
@@ -45,11 +67,34 @@ export function PersonalizarLayoutPopover({
   density,
   show,
   hiddenColumns,
+  coverImage,
   onView,
   onDensity,
   onToggleShow,
   onToggleColumn,
+  onSetCover,
 }: Props) {
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = async (file: File | undefined) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Selecione um arquivo de imagem.");
+      return;
+    }
+    try {
+      const dataUrl = await fileToCoverDataUrl(file);
+      if (dataUrl.length > 3_000_000) {
+        toast.error("Imagem muito grande. Tente uma com menos detalhes.");
+        return;
+      }
+      onSetCover(dataUrl);
+      toast.success("Plano de fundo atualizado.");
+    } catch {
+      toast.error("Não foi possível carregar a imagem.");
+    }
+  };
+
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -116,6 +161,44 @@ export function PersonalizarLayoutPopover({
                 </label>
               );
             })}
+          </section>
+
+          <section className="space-y-2 border-t border-gray-100 pt-3 dark:border-gray-800">
+            <p className={label}>Plano de fundo</p>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                void handleFile(e.target.files?.[0]);
+                e.target.value = "";
+              }}
+            />
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                className="inline-flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-md border border-gray-200 px-2 py-1.5 text-[13px] text-gray-600 transition-colors hover:bg-black/[0.03] dark:border-gray-800 dark:text-gray-300 dark:hover:bg-white/[0.05]"
+              >
+                <ImagePlus className="h-3.5 w-3.5" />
+                {coverImage ? "Trocar imagem" : "Adicionar imagem"}
+              </button>
+              {coverImage && (
+                <button
+                  type="button"
+                  onClick={() => onSetCover(null)}
+                  title="Remover imagem"
+                  aria-label="Remover imagem"
+                  className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md border border-gray-200 text-gray-400 transition-colors hover:bg-black/[0.03] hover:text-gray-600 dark:border-gray-800 dark:hover:bg-white/[0.05]"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+            <p className="text-[11px] leading-snug text-gray-400 dark:text-gray-500">
+              Fica bem discreta atrás do título, sem atrapalhar a leitura.
+            </p>
           </section>
         </div>
       </PopoverContent>
