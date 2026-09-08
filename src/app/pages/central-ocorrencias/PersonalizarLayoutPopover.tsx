@@ -72,7 +72,6 @@ const DENSITIES: { value: CentralDensity; label: string }[] = [
 ];
 const SHOW: { key: CentralShowKey; label: string }[] = [
   { key: "contagem", label: "Contagem" },
-  { key: "descricao", label: "Descrição" },
   { key: "datas", label: "Datas" },
   { key: "prioridade", label: "Prioridade" },
 ];

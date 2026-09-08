@@ -76,7 +76,8 @@ export const OccurrenceBoardCard = memo(function OccurrenceBoardCard({
   const prioCode = o.prioridade ?? "MEDIA";
   const stripe =
     show.prioridade && (prioCode === "CRITICA" || prioCode === "ALTA") ? prio.dot : null;
-  const showDesc = descricao && (show.descricao || expanded);
+  // Descrição só aparece com o card expandido — recolhido fica limpo.
+  const showDesc = !!descricao && expanded;
 
   const rota =
     o.tripLineName || (o.lineLabel ?? "").split(" - ").slice(1).join(" - ") || o.lineLabel || "";
@@ -176,7 +177,6 @@ export const OccurrenceBoardCard = memo(function OccurrenceBoardCard({
             <CardMenu
               occurrence={o}
               actor={actor}
-              hiddenColumns={layout.hiddenColumns}
               onOpen={onSelect}
               onEdit={onEdit}
             />

@@ -13,16 +13,12 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "../../components/ui/dropdown-menu";
 import { ConfirmActionModal } from "../home/ConfirmActionModal";
 import type { OccurrenceDTO, WorkflowStatus } from "../../../domain/occurrences";
 import {
   STATUS_NEEDS_CONFIRM,
-  WORKFLOW_STATUSES,
   getWorkflowStatusConfig,
 } from "../../config/occurrenceWorkflow";
 import {
@@ -36,8 +32,6 @@ type Actor = { actorUserId?: string | null; actorNome?: string | null };
 type Props = {
   occurrence: OccurrenceDTO;
   actor: Actor;
-  /** colunas ocultas — não aparecem em "Mover para…" */
-  hiddenColumns?: string[];
   onOpen: (o: OccurrenceDTO) => void;
   onEdit: (id: string) => void;
   /** classe extra no trigger (ex.: posição no card) */
@@ -47,7 +41,6 @@ type Props = {
 export function CardMenu({
   occurrence: o,
   actor,
-  hiddenColumns = [],
   onOpen,
   onEdit,
   triggerClassName,
@@ -97,19 +90,6 @@ export function CardMenu({
             <Pencil className="h-4 w-4" />
             Editar
           </DropdownMenuItem>
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger>Mover para…</DropdownMenuSubTrigger>
-            <DropdownMenuSubContent>
-              {WORKFLOW_STATUSES.filter(
-                (s) => s.code !== o.workflowStatus && !hiddenColumns.includes(s.code),
-              ).map((s) => (
-                <DropdownMenuItem key={s.code} onSelect={() => moveTo(s.code)}>
-                  <span className={`inline-block h-1.5 w-1.5 rounded-full ${s.dot}`} />
-                  {s.label}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuSubContent>
-          </DropdownMenuSub>
           <DropdownMenuItem
             onSelect={() =>
               dup.mutate(o.id, {

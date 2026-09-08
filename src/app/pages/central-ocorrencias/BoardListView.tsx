@@ -93,7 +93,6 @@ export function BoardListView({ occurrences, layout, actor, onOpen, onEdit }: Pr
                     <CardMenu
                       occurrence={o}
                       actor={actor}
-                      hiddenColumns={layout.hiddenColumns}
                       onOpen={onOpen}
                       onEdit={onEdit}
                     />

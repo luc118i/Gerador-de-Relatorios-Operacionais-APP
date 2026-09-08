@@ -173,7 +173,6 @@ export function BoardTableView({ occurrences, layout, actor, onOpen, onEdit }: P
                   <CardMenu
                     occurrence={o}
                     actor={actor}
-                    hiddenColumns={layout.hiddenColumns}
                     onOpen={onOpen}
                     onEdit={onEdit}
                   />
