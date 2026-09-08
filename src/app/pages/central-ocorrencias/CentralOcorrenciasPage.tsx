@@ -215,8 +215,15 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
       setOverStatus(null);
       setDrag(null);
       if (!item || item.from === to) return;
-      if (STATUS_NEEDS_CONFIRM.includes(to)) setPendingMove({ id: item.id, to });
-      else applyMove(item.id, to);
+      // Adia pro próximo tick: agir ainda dentro do evento `drop` deixa o
+      // navegador sem terminar de limpar a imagem-fantasma do card arrastado,
+      // que fica presa sob o modal / durante a animação.
+      const move = { id: item.id, to };
+      if (STATUS_NEEDS_CONFIRM.includes(to)) {
+        setTimeout(() => setPendingMove(move), 0);
+      } else {
+        setTimeout(() => applyMove(move.id, move.to), 0);
+      }
     },
     [applyMove],
   );
