@@ -78,6 +78,8 @@ export function useNovaOcorrenciaForm({ onSaved, edicao }: NovaOcorrenciaProps) 
 
   // ── Análise e Tratativa ──────────────────────────────────────────────────
   const [tratativa, setTratativa] = useState<"SUSPEICAO" | "ADVERTENCIA" | "VALE" | "REGISTRO" | null>(null);
+  // Central de Ocorrências: prioridade no quadro. Default MÉDIA.
+  const [prioridade, setPrioridade] = useState<"CRITICA" | "ALTA" | "MEDIA" | "BAIXA">("MEDIA");
   const [analisadoPor, setAnalisadoPor] = useState("");
   // Guarda o valor exato que o próprio app pré-preencheu em "Quem apurou"
   // (ver efeito abaixo). Se o campo ainda está intocado na hora de salvar,
@@ -225,6 +227,7 @@ export function useNovaOcorrenciaForm({ onSaved, edicao }: NovaOcorrenciaProps) 
     setShowSectionTripulacao(edicao.showSectionTripulacao ?? true);
     setShowSectionPassageiros(edicao.showSectionPassageiros ?? true);
     setTratativa((edicao as any).tratativa ?? null);
+    setPrioridade((edicao as any).prioridade ?? "MEDIA");
     setAnalisadoPor((edicao as any).analisadoPor ?? "");
 
     // Prefere os campos canônicos da viagem (tripLineCode/Name/Direction vindos
@@ -487,6 +490,7 @@ export function useNovaOcorrenciaForm({ onSaved, edicao }: NovaOcorrenciaProps) 
         showSectionPassageiros: typeConfig.isGeneric ? showSectionPassageiros : true,
         devolutivaBeforeEvidences: typeConfig.isGeneric ? devolutivaBeforeEvidences : false,
         tratativa: tratativa ?? null,
+        prioridade,
         analisadoPor: analisadoPor.trim() || null,
         analisadoPorUserId,
       });
@@ -607,6 +611,7 @@ export function useNovaOcorrenciaForm({ onSaved, edicao }: NovaOcorrenciaProps) 
     handleDriverCreated,
     // análise e tratativa
     tratativa, setTratativa,
+    prioridade, setPrioridade,
     analisadoPor, setAnalisadoPor,
     // esquema (DESCUMP_OP_PARADA_FORA)
     schemaStatus,

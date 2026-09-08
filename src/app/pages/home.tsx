@@ -42,6 +42,7 @@ import { BatchTratativaModal } from "../components/BatchTratativaModal";
 import { tratativaToTipoMedida } from "../../utils/tratativa";
 import { AgentProgressDock, type AgentJob } from "../components/AgentProgressDock";
 import { buildDriverPdfFileName } from "../../utils/pdfDownload";
+import { makeIsMine, normalizeText } from "../../utils/occurrenceVisibility";
 import { HomeHeader } from "./home/HomeHeader";
 import { ReminderModal } from "./home/ReminderModal";
 import { SkeletonCard } from "./home/SkeletonCard";
@@ -294,15 +295,6 @@ export function Home({
     [allOcorrencias],
   );
 
-  // ── Busca universal ───────────────────────────────────────
-  // Normaliza removendo acentos e caixa, para casar "São Paulo" com "sao paulo".
-  const normalizeText = (s: string) =>
-    s
-      .normalize("NFD")
-      .replace(/[̀-ͯ]/g, "")
-      .toLowerCase()
-      .trim();
-
   // ── Visibilidade por autor ────────────────────────────────
   // Cada analista vê apenas as ocorrências que ele mesmo registrou. Prioriza
   // `analisadoPorUserId` (estável a rename/grafia) quando presente; cai pro
@@ -311,10 +303,7 @@ export function Home({
   // sem esse vínculo (GAS, ou criadas antes da coluna existir). O Admin
   // (PIN) enxerga as ocorrências de todos.
   const isMine = useMemo(
-    () => (o: OccurrenceDTO) =>
-      o.analisadoPorUserId
-        ? o.analisadoPorUserId === user?.id
-        : profileNameAliases.has(normalizeText(o.analisadoPor ?? "")),
+    () => makeIsMine({ userId: user?.id, nameAliases: profileNameAliases }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [user?.id, profileNameAliases],
   );

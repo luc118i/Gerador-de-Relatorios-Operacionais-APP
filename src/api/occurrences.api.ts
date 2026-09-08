@@ -2,6 +2,10 @@ import { request } from "./http";
 import type {
   CreateOccurrenceInput,
   OccurrenceDetailDTO,
+  BoardFilters,
+  OccurrenceHistoryEntry,
+  Prioridade,
+  WorkflowStatus,
 } from "../domain/occurrences";
 import type { OccurrenceDTO } from "../domain/occurrences";
 import { EvidenceUploadInput } from "../app/types";
@@ -35,6 +39,65 @@ export const occurrencesApi = {
       path: "/occurrences",
 
       query: { date },
+    });
+  },
+
+  // ── Central de Ocorrências ──────────────────────────────────────────────
+
+  /** Quadro: range em event_date + filtros. Listas viram CSV; hasReport vira
+   *  "true"/"false". */
+  async listBoard(filters: BoardFilters = {}): Promise<OccurrenceDTO[]> {
+    const query: Record<string, string> = {};
+    if (filters.from) query.from = filters.from;
+    if (filters.to) query.to = filters.to;
+    if (filters.status?.length) query.status = filters.status.join(",");
+    if (filters.prioridade?.length) query.prioridade = filters.prioridade.join(",");
+    if (filters.typeCode?.length) query.typeCode = filters.typeCode.join(",");
+    if (filters.baseCode) query.baseCode = filters.baseCode;
+    if (filters.driverId) query.driverId = filters.driverId;
+    if (filters.vehicleNumber) query.vehicleNumber = filters.vehicleNumber;
+    if (filters.lineLabel) query.lineLabel = filters.lineLabel;
+    if (filters.responsavel) query.responsavel = filters.responsavel;
+    if (filters.hasReport !== undefined) query.hasReport = String(filters.hasReport);
+    if (filters.search) query.search = filters.search;
+
+    const json = await request<ApiData<OccurrenceDTO[]>>({
+      method: "GET",
+      path: "/occurrences/board",
+      query,
+    });
+    return json.data ?? [];
+  },
+
+  async getHistory(id: string): Promise<OccurrenceHistoryEntry[]> {
+    const json = await request<ApiData<OccurrenceHistoryEntry[]>>({
+      method: "GET",
+      path: `/occurrences/${id}/history`,
+    });
+    return json.data ?? [];
+  },
+
+  async patchStatus(
+    id: string,
+    workflowStatus: WorkflowStatus,
+    actor: { actorUserId?: string | null; actorNome?: string | null; note?: string | null } = {},
+  ): Promise<void> {
+    await request<ApiData<{ changed: boolean; from: string | null }>>({
+      method: "PATCH",
+      path: `/occurrences/${id}/status`,
+      body: { workflowStatus, ...actor },
+    });
+  },
+
+  async patchPrioridade(
+    id: string,
+    prioridade: Prioridade,
+    actor: { actorUserId?: string | null; actorNome?: string | null } = {},
+  ): Promise<void> {
+    await request<ApiData<{ changed: boolean; from: string | null }>>({
+      method: "PATCH",
+      path: `/occurrences/${id}/prioridade`,
+      body: { prioridade, ...actor },
     });
   },
 

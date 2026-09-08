@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { X, Route, MapPin, BarChart2, LogOut, UserCircle2, Pencil, Check, Loader2 } from "lucide-react";
+import { X, Route, MapPin, BarChart2, LogOut, UserCircle2, Pencil, Check, Loader2, KanbanSquare } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../context/AuthContext";
+import { useAdminAuth } from "../context/AdminAuthContext";
 
-export type DrawerPage = "analise-viagem" | "esquemas-rota" | "locais";
+export type DrawerPage = "central-ocorrencias" | "analise-viagem" | "esquemas-rota" | "locais";
 
 interface AppDrawerProps {
   open: boolean;
@@ -12,7 +13,23 @@ interface AppDrawerProps {
   onNavigate: (page: DrawerPage) => void;
 }
 
-const ITEMS: { id: DrawerPage; label: string; description: string; icon: React.ReactNode }[] = [
+type DrawerItem = {
+  id: DrawerPage;
+  label: string;
+  description: string;
+  icon: React.ReactNode;
+  /** true = visível para qualquer usuário logado; senão, só admin. */
+  everyone?: boolean;
+};
+
+const ITEMS: DrawerItem[] = [
+  {
+    id: "central-ocorrencias",
+    label: "Central de Ocorrências",
+    description: "Quadro de acompanhamento e tratamento",
+    icon: <KanbanSquare className="w-5 h-5" />,
+    everyone: true,
+  },
   {
     id: "analise-viagem",
     label: "Análise de Viagem",
@@ -35,6 +52,8 @@ const ITEMS: { id: DrawerPage; label: string; description: string; icon: React.R
 
 export function AppDrawer({ open, currentPage, onClose, onNavigate }: AppDrawerProps) {
   const { profileName, user, signOut, updateProfileName } = useAuth();
+  const { isAdmin } = useAdminAuth();
+  const items = isAdmin ? ITEMS : ITEMS.filter((i) => i.everyone);
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
   const [savingName, setSavingName] = useState(false);
@@ -104,7 +123,7 @@ export function AppDrawer({ open, currentPage, onClose, onNavigate }: AppDrawerP
 
         {/* Itens de navegação */}
         <nav className="flex-1 px-3 py-4 flex flex-col gap-1">
-          {ITEMS.map((item) => {
+          {items.map((item) => {
             const active = currentPage === item.id;
             return (
               <button

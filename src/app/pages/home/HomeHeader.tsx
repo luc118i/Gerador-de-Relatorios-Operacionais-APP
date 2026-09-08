@@ -103,11 +103,11 @@ export function HomeHeader({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
         <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3">
           <div className="relative flex items-center gap-3">
-            {isAdmin && (
-              <NavBtn onClick={onOpenDrawer} tooltip="Módulos">
-                <Menu className="w-4 h-4" />
-              </NavBtn>
-            )}
+            {/* Aberto a todos — o AppDrawer decide quais módulos cada perfil vê
+                (não-admin: só a Central de Ocorrências). */}
+            <NavBtn onClick={onOpenDrawer} tooltip="Módulos">
+              <Menu className="w-4 h-4" />
+            </NavBtn>
 
             <div
               className="relative z-10 shrink-0 transition-[width,height,transform] duration-500 ease-out"

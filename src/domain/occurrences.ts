@@ -6,6 +6,47 @@ export type OccurrenceDriverDTO = {
   baseCode: string;
 };
 
+// ── Central de Ocorrências ───────────────────────────────────────────────
+
+/** Estado da ocorrência no quadro da Central (independente de `tratativa` e
+ *  `solucionado`). */
+export type WorkflowStatus =
+  | "PENDENTE"
+  | "EM_TRATAMENTO"
+  | "AGUARDANDO_RETORNO"
+  | "TRATADA"
+  | "CANCELADA"
+  | "ARQUIVADA";
+
+export type Prioridade = "CRITICA" | "ALTA" | "MEDIA" | "BAIXA";
+
+export type OccurrenceHistoryEntry = {
+  id: string;
+  createdAt: string; // ISO
+  actorUserId: string | null;
+  actorNome: string | null;
+  action: "CRIADA" | "STATUS" | "PRIORIDADE" | "TRATATIVA" | "RELATORIO" | "NOTA";
+  fromValue: string | null;
+  toValue: string | null;
+  note: string | null;
+};
+
+/** Filtros do quadro — vira query string em GET /occurrences/board. */
+export type BoardFilters = {
+  from?: string; // YYYY-MM-DD (event_date >=)
+  to?: string; // YYYY-MM-DD (event_date <=)
+  status?: WorkflowStatus[];
+  prioridade?: Prioridade[];
+  typeCode?: string[];
+  baseCode?: string;
+  driverId?: string;
+  vehicleNumber?: string;
+  lineLabel?: string;
+  responsavel?: string;
+  hasReport?: boolean;
+  search?: string;
+};
+
 export type OccurrenceDetailDTO = OccurrenceDTO & {
   reportText: string; // texto do relato completo
 };
@@ -53,6 +94,10 @@ export type CreateOccurrenceInput = {
   drivers: OccurrenceDriverInput[];
 
   tratativa?: "SUSPEICAO" | "ADVERTENCIA" | "VALE" | "REGISTRO" | null;
+  /** Central de Ocorrências. Opcionais no create — o backend deriva o status
+   *  inicial e assume prioridade MÉDIA quando ausentes. */
+  workflowStatus?: WorkflowStatus | null;
+  prioridade?: Prioridade | null;
   analisadoPor?: string | null;
   /**
    * Vínculo best-effort com o usuário logado (auth.user.id) no momento em
@@ -145,6 +190,10 @@ export type OccurrenceDTO = {
   advertencia?: boolean;
   faltaTratativa?: boolean;
   tratativa?: "SUSPEICAO" | "ADVERTENCIA" | "VALE" | "REGISTRO" | null;
+  /** Central de Ocorrências — sempre presente nas listagens (default
+   *  "PENDENTE" / "MEDIA" no backend). */
+  workflowStatus?: WorkflowStatus;
+  prioridade?: Prioridade;
   analisadoPor?: string | null;
   analisadoPorUserId?: string | null;
   justificativaRegistro?: string | null;

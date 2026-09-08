@@ -36,6 +36,7 @@ export function buildOccurrencePayload(args: {
   showSectionPassageiros?: boolean;
   devolutivaBeforeEvidences?: boolean;
   tratativa?: "SUSPEICAO" | "ADVERTENCIA" | "VALE" | "REGISTRO" | null;
+  prioridade?: "CRITICA" | "ALTA" | "MEDIA" | "BAIXA" | null;
   analisadoPor?: string | null;
   analisadoPorUserId?: string | null;
 }): CreateOccurrenceInput {
@@ -92,6 +93,7 @@ export function buildOccurrencePayload(args: {
     showSectionPassageiros: args.showSectionPassageiros ?? true,
     devolutivaBeforeEvidences: args.devolutivaBeforeEvidences ?? false,
     tratativa: args.tratativa ?? null,
+    prioridade: args.prioridade ?? "MEDIA",
     analisadoPor: args.analisadoPor ?? null,
     analisadoPorUserId: args.analisadoPorUserId ?? null,
     drivers,

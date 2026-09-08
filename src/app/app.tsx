@@ -17,6 +17,7 @@ import { ResetPasswordScreen } from "./components/ResetPasswordScreen";
 import { Check } from "lucide-react";
 import { AppDrawer, type DrawerPage } from "./components/AppDrawer";
 import { AnaliseTelemetriaPage } from "./pages/AnaliseTelemetriaPage";
+import { CentralOcorrenciasPage } from "./pages/central-ocorrencias/CentralOcorrenciasPage";
 import { EsquemasRotaPage } from "./pages/EsquemasRotaPage";
 import { LocaisPage } from "./pages/LocaisPage";
 import { useAppUpdateNotifier } from "../hooks/useAppUpdateNotifier";
@@ -53,7 +54,10 @@ function AppShell() {
   };
 
   const drawerPage: DrawerPage | null =
-    currentPage === "analise-viagem" || currentPage === "esquemas-rota" || currentPage === "locais"
+    currentPage === "central-ocorrencias" ||
+    currentPage === "analise-viagem" ||
+    currentPage === "esquemas-rota" ||
+    currentPage === "locais"
       ? currentPage
       : null;
 
@@ -112,6 +116,10 @@ function AppShell() {
 
           {currentPage === "base-responsaveis" && (
             <BaseResponsaveisPage onVoltar={() => setCurrentPage("home")} />
+          )}
+
+          {currentPage === "central-ocorrencias" && (
+            <CentralOcorrenciasPage onVoltar={() => setCurrentPage("home")} />
           )}
 
           {currentPage === "analise-viagem" && (
