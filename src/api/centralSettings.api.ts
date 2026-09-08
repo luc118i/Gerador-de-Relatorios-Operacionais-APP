@@ -2,7 +2,14 @@ import { request } from "./http";
 
 const BASE_URL = import.meta.env.VITE_API_URL as string;
 
-export type CentralCover = { url: string | null; updatedAt: string | null };
+export type CentralCover = {
+  url: string | null;
+  updatedAt: string | null;
+  /** enquadramento vertical (object-position Y, %) */
+  posY: number;
+  /** opacidade da imagem no quadro (0–1) */
+  opacity: number;
+};
 
 export const centralSettingsApi = {
   getCover() {
@@ -22,6 +29,14 @@ export const centralSettingsApi = {
     });
     if (!res.ok) throw new Error(await res.text());
     return (await res.json()).data as CentralCover;
+  },
+
+  patchCover(patch: { posY?: number; opacity?: number }, actorNome?: string) {
+    return request<{ data: CentralCover }>({
+      method: "PATCH",
+      path: "/central/cover",
+      body: { ...patch, ...(actorNome ? { actorNome } : {}) },
+    }).then((r) => r.data);
   },
 
   clearCover(actorNome?: string) {

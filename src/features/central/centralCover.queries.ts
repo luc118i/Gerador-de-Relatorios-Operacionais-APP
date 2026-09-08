@@ -23,6 +23,22 @@ export function useSetCentralCover() {
   });
 }
 
+export function useUpdateCentralCoverSettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      patch,
+      actorNome,
+    }: {
+      patch: { posY?: number; opacity?: number };
+      actorNome?: string;
+    }) => centralSettingsApi.patchCover(patch, actorNome),
+    onSuccess: (data: CentralCover) => {
+      qc.setQueryData(COVER_KEY, data);
+    },
+  });
+}
+
 export function useClearCentralCover() {
   const qc = useQueryClient();
   return useMutation({

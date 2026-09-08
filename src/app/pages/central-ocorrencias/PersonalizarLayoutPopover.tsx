@@ -5,6 +5,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "../../components/ui/pop
 import { RadioGroup, RadioGroupItem } from "../../components/ui/radio-group";
 import { Checkbox } from "../../components/ui/checkbox";
 import { BOARD_COLUMNS, getWorkflowStatusConfig } from "../../config/occurrenceWorkflow";
+import { CoverAdjuster } from "./CoverAdjuster";
 import type {
   CentralDensity,
   CentralShowKey,
@@ -18,9 +19,13 @@ type Props = {
   hiddenColumns: string[];
   /** URL da imagem de fundo compartilhada (ou null) */
   coverUrl: string | null;
+  /** enquadramento vertical atual (%) */
+  coverPosY: number;
+  /** opacidade atual (0–1) */
+  coverOpacity: number;
   /** só admin pode trocar/remover o plano de fundo */
   canEditCover: boolean;
-  /** upload/remoção em andamento */
+  /** upload/remoção/ajuste em andamento */
   coverBusy: boolean;
   onView: (v: CentralView) => void;
   onDensity: (d: CentralDensity) => void;
@@ -28,6 +33,7 @@ type Props = {
   onToggleColumn: (status: string) => void;
   onPickCover: (file: Blob) => void;
   onClearCover: () => void;
+  onSaveCoverSettings: (patch: { posY: number; opacity: number }) => void;
 };
 
 /** Reduz a imagem escolhida (máx. 1600px de largura, JPEG ~0.72) antes de
@@ -80,6 +86,8 @@ export function PersonalizarLayoutPopover({
   show,
   hiddenColumns,
   coverUrl,
+  coverPosY,
+  coverOpacity,
   canEditCover,
   coverBusy,
   onView,
@@ -88,6 +96,7 @@ export function PersonalizarLayoutPopover({
   onToggleColumn,
   onPickCover,
   onClearCover,
+  onSaveCoverSettings,
 }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -216,6 +225,15 @@ export function PersonalizarLayoutPopover({
                 Vale pra todos. Fica bem discreta atrás do título, sem atrapalhar
                 a leitura.
               </p>
+              {coverUrl && (
+                <CoverAdjuster
+                  url={coverUrl}
+                  posY={coverPosY}
+                  opacity={coverOpacity}
+                  busy={coverBusy}
+                  onSave={onSaveCoverSettings}
+                />
+              )}
             </section>
           )}
         </div>

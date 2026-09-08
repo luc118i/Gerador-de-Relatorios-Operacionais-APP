@@ -19,6 +19,7 @@ import {
   useCentralCover,
   useClearCentralCover,
   useSetCentralCover,
+  useUpdateCentralCoverSettings,
 } from "../../../features/central/centralCover.queries";
 import {
   useBoardOccurrences,
@@ -60,7 +61,11 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
   const { data: cover } = useCentralCover();
   const setCover = useSetCentralCover();
   const clearCover = useClearCentralCover();
-  const coverBusy = setCover.isPending || clearCover.isPending;
+  const updateCoverSettings = useUpdateCentralCoverSettings();
+  const coverBusy =
+    setCover.isPending || clearCover.isPending || updateCoverSettings.isPending;
+  const coverPosY = cover?.posY ?? 50;
+  const coverOpacity = cover?.opacity ?? 0.16;
 
   const handlePickCover = useCallback(
     (file: Blob) => {
@@ -83,6 +88,20 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clearCover.mutate, profileName]);
+
+  const handleSaveCoverSettings = useCallback(
+    (patch: { posY: number; opacity: number }) => {
+      updateCoverSettings.mutate(
+        { patch, actorNome: profileName || undefined },
+        {
+          onSuccess: () => toast.success("Capa ajustada."),
+          onError: () => toast.error("Não foi possível salvar o ajuste."),
+        },
+      );
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [updateCoverSettings.mutate, profileName],
+  );
 
   // Tela diária: por padrão carrega só o dia de hoje. O período é ajustável
   // nos filtros (De / Até) pra puxar dias anteriores quando precisar.
@@ -313,6 +332,8 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
             show={layout.show}
             hiddenColumns={layout.hiddenColumns}
             coverUrl={cover?.url ?? null}
+            coverPosY={coverPosY}
+            coverOpacity={coverOpacity}
             canEditCover={isAdmin}
             coverBusy={coverBusy}
             onView={setView}
@@ -321,6 +342,7 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
             onToggleColumn={toggleColumn}
             onPickCover={handlePickCover}
             onClearCover={handleClearCover}
+            onSaveCoverSettings={handleSaveCoverSettings}
           />
           {layout.hiddenColumns.length > 0 && layout.view !== "tabela" && (
             <button
@@ -373,7 +395,11 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
             <img
               src={cover.url}
               alt=""
-              className="h-full w-full object-cover opacity-[0.16] dark:opacity-[0.12]"
+              className="h-full w-full object-cover"
+              style={{
+                objectPosition: `50% ${coverPosY}%`,
+                opacity: coverOpacity,
+              }}
             />
             <div className="absolute inset-0 bg-gradient-to-b from-gray-50/30 via-gray-50/70 to-gray-50 dark:from-gray-950/30 dark:via-gray-950/70 dark:to-gray-950" />
           </div>
