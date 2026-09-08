@@ -7,7 +7,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from "../../components/ui/sheet";
-import { ConfirmActionModal } from "../home/ConfirmActionModal";
 import { OccurrencePreviewModal } from "../occurrences/preview/OccurrencePreviewModal";
 import type {
   OccurrenceDTO,
@@ -358,53 +357,63 @@ export function OccurrenceDetailPanel({ occurrence: o, open, onClose, onEdit, ac
               )}
             </section>
 
-            <div className="flex items-center justify-between gap-2 pt-2">
-              <button
-                onClick={() => onEdit(o.id)}
-                className="inline-flex cursor-pointer items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900 hover:opacity-90"
-              >
-                <Pencil className="w-4 h-4" />
-                Editar ocorrência
-              </button>
-              <button
-                onClick={() => setConfirmDelete(true)}
-                className="inline-flex cursor-pointer items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40 transition-colors"
-              >
-                <Trash2 className="w-4 h-4" />
-                Excluir
-              </button>
+            <div className="pt-2">
+              {confirmDelete ? (
+                <div className="rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-800/60 dark:bg-red-950/30 animate-in fade-in slide-in-from-top-1 duration-150">
+                  <p className="text-sm text-red-800 dark:text-red-300">
+                    Excluir a ocorrência do veículo <strong>{o.vehicleNumber}</strong>{" "}
+                    ({typeTitle})? Esta ação não pode ser desfeita.
+                  </p>
+                  <div className="mt-2.5 flex justify-end gap-2">
+                    <button
+                      type="button"
+                      disabled={del.isPending}
+                      onClick={() => setConfirmDelete(false)}
+                      className="cursor-pointer rounded-md border border-red-300 px-3 py-1.5 text-xs font-medium text-red-800 hover:bg-red-100 disabled:opacity-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/50"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      disabled={del.isPending}
+                      onClick={() =>
+                        del.mutate(o.id, {
+                          onSuccess: () => {
+                            toast.success("Ocorrência excluída.");
+                            setConfirmDelete(false);
+                            onClose();
+                          },
+                          onError: () => toast.error("Não foi possível excluir."),
+                        })
+                      }
+                      className="cursor-pointer rounded-md bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+                    >
+                      {del.isPending ? "Excluindo…" : "Excluir"}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between gap-2">
+                  <button
+                    onClick={() => onEdit(o.id)}
+                    className="inline-flex cursor-pointer items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900 hover:opacity-90"
+                  >
+                    <Pencil className="w-4 h-4" />
+                    Editar ocorrência
+                  </button>
+                  <button
+                    onClick={() => setConfirmDelete(true)}
+                    className="inline-flex cursor-pointer items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Excluir
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </SheetContent>
       </Sheet>
-
-      {confirmDelete && (
-        <ConfirmActionModal
-          icon={<Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />}
-          iconBg="bg-red-50 dark:bg-red-950/40"
-          title="Excluir ocorrência"
-          confirmLabel={del.isPending ? "Excluindo…" : "Excluir"}
-          confirmClassName="bg-red-600 hover:bg-red-700"
-          confirmDisabled={del.isPending}
-          cancelDisabled={del.isPending}
-          onCancel={() => setConfirmDelete(false)}
-          onConfirm={() => {
-            del.mutate(o.id, {
-              onSuccess: () => {
-                toast.success("Ocorrência excluída.");
-                setConfirmDelete(false);
-                onClose();
-              },
-              onError: () => toast.error("Não foi possível excluir."),
-            });
-          }}
-        >
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-            Excluir a ocorrência do veículo <strong>{o.vehicleNumber}</strong> ({typeTitle})?
-            Esta ação não pode ser desfeita.
-          </p>
-        </ConfirmActionModal>
-      )}
 
       <OccurrencePreviewModal
         occurrenceId={showReport ? o.id : null}
