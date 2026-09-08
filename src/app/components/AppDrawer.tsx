@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { X, Route, MapPin, BarChart2, LogOut, UserCircle2, Pencil, Check, Loader2, KanbanSquare } from "lucide-react";
+import { X, Route, MapPin, BarChart2, LogOut, UserCircle2, Pencil, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { CentralOcorrenciasIcon } from "./icons/CentralOcorrenciasIcon";
 import { useAuth } from "../context/AuthContext";
 import { useAdminAuth } from "../context/AdminAuthContext";
 
@@ -27,7 +28,7 @@ const ITEMS: DrawerItem[] = [
     id: "central-ocorrencias",
     label: "Central de Ocorrências",
     description: "Quadro de acompanhamento e tratamento",
-    icon: <KanbanSquare className="w-5 h-5" />,
+    icon: <CentralOcorrenciasIcon className="w-5 h-5" />,
     everyone: true,
   },
   {
