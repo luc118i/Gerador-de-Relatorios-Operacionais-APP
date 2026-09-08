@@ -1,5 +1,5 @@
-import { memo } from "react";
-import { ArrowRight, FileCheck2, GripVertical, MapPin, User } from "lucide-react";
+import { memo, useState } from "react";
+import { ArrowRight, ChevronDown, FileCheck2, GripVertical, MapPin, User } from "lucide-react";
 import type { OccurrenceDTO } from "../../../domain/occurrences";
 import { getOccurrenceFieldVisibility } from "../../config/occurrencePresentation";
 import { getOccurrenceTypeConfig } from "../../config/occurrenceTypes";
@@ -8,6 +8,7 @@ import {
   getWorkflowStatusConfig,
   isRecentlyCreated,
   nextBoardStatus,
+  treatmentProgress,
 } from "../../config/occurrenceWorkflow";
 import { resolveBaseSigla } from "../../../utils/base";
 import { avatarColor, initialsOf } from "../../../utils/avatar";
@@ -55,12 +56,15 @@ export const OccurrenceBoardCard = memo(function OccurrenceBoardCard({
   dragging,
   justMoved,
 }: Props) {
+  const [expanded, setExpanded] = useState(false);
   const vis = getOccurrenceFieldVisibility(o);
   const prio = getPrioridadeConfig(o.prioridade);
   const d1 = firstDriver(o);
   const hasReport = !!o.driveWebViewLink || !!o.rizerRegistered;
   const next = nextBoardStatus(o.workflowStatus);
   const isNew = isRecentlyCreated(o.createdAt);
+  const prog = treatmentProgress(o);
+  const descricao = (o.relatoHtml ?? "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
   // Faixa de prioridade só pras que importam (CRÍTICA/ALTA) — evita cor em todo card.
   const prioCode = o.prioridade ?? "MEDIA";
   const stripe = prioCode === "CRITICA" || prioCode === "ALTA" ? prio.dot : null;
@@ -135,15 +139,68 @@ export const OccurrenceBoardCard = memo(function OccurrenceBoardCard({
             </span>
           )}
         </span>
-        <span className="flex items-center gap-1 text-[11px] text-gray-400 dark:text-gray-500">
-          <span className={`inline-block w-1.5 h-1.5 rounded-full ${prio.dot}`} />
-          {prio.label}
+        <span className="flex items-center gap-1.5 text-[11px] text-gray-400 dark:text-gray-500">
+          <span className="flex items-center gap-1">
+            <span className={`inline-block w-1.5 h-1.5 rounded-full ${prio.dot}`} />
+            {prio.label}
+          </span>
+          {(descricao || prog.done > 0) && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setExpanded((v) => !v);
+              }}
+              aria-label={expanded ? "Recolher" : "Expandir"}
+              className="flex h-4 w-4 items-center justify-center rounded text-gray-300 hover:bg-gray-100 hover:text-gray-500 dark:text-gray-600 dark:hover:bg-gray-800"
+            >
+              <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
+            </button>
+          )}
         </span>
       </div>
 
       <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-gray-100 leading-snug line-clamp-2">
         {occSubject(o)}
       </p>
+
+      {expanded && (
+        <div className="mt-2 space-y-2">
+          {descricao && (
+            <p className="text-[11px] leading-relaxed text-gray-500 dark:text-gray-400">{descricao}</p>
+          )}
+          {prog.done > 0 && (
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-[9px] uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                <span>Tratamento</span>
+                <span className="tabular-nums">
+                  {prog.done}/{prog.total}
+                </span>
+              </div>
+              <div className="h-[3px] overflow-hidden rounded-full bg-gray-200 dark:bg-gray-800">
+                <div
+                  className="h-full rounded-full bg-emerald-500"
+                  style={{ width: `${(prog.done / prog.total) * 100}%` }}
+                />
+              </div>
+              <div className="flex flex-wrap gap-x-2 gap-y-0.5 pt-0.5">
+                {prog.steps.map((s) => (
+                  <span
+                    key={s.label}
+                    className={`text-[10px] ${
+                      s.done
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : "text-gray-300 dark:text-gray-600"
+                    }`}
+                  >
+                    {s.done ? "✓" : "○"} {s.label}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="mt-2 space-y-1 text-xs text-gray-500 dark:text-gray-400">
         {vis.linha && (rota || o.lineLabel) && (
@@ -175,6 +232,11 @@ export const OccurrenceBoardCard = memo(function OccurrenceBoardCard({
               .filter(Boolean)
               .join(" · ")}
           </span>
+          {prog.done > 0 && !expanded && (
+            <span className="shrink-0 rounded bg-gray-100 px-1 text-[9px] font-semibold tabular-nums text-gray-400 dark:bg-gray-800 dark:text-gray-500">
+              {prog.done}/{prog.total}
+            </span>
+          )}
         </span>
         {hasReport && (
           <span className="flex shrink-0 items-center gap-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">

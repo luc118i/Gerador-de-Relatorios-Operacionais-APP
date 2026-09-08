@@ -139,6 +139,29 @@ export function getPrioridadeConfig(code: string | null | undefined): Prioridade
 /** Prioridades tratadas como "alta prioridade" no indicador do topo (§11). */
 export const HIGH_PRIORITIES: Prioridade[] = ["CRITICA", "ALTA"];
 
+// ── Progresso de tratamento ──────────────────────────────────────────────
+
+type TreatmentInput = {
+  analisadoPor?: string | null;
+  tratativa?: string | null;
+  driveWebViewLink?: string | null;
+  rizerRegistered?: boolean;
+  workflowStatus?: string;
+};
+
+/** Passos do tratamento derivados dos campos que já existem — vira uma
+ *  mini-barra "N/4" no card (spec §7). */
+export function treatmentProgress(o: TreatmentInput) {
+  const steps = [
+    { label: "Responsável", done: !!o.analisadoPor?.trim() },
+    { label: "Tratativa", done: !!o.tratativa },
+    { label: "Relatório", done: !!o.driveWebViewLink || !!o.rizerRegistered },
+    { label: "Concluída", done: o.workflowStatus === "TRATADA" },
+  ];
+  const done = steps.filter((s) => s.done).length;
+  return { steps, done, total: steps.length };
+}
+
 // ── "Novo" ───────────────────────────────────────────────────────────────
 
 /** Janela em que uma ocorrência recém-cadastrada ainda mostra a tag "Novo". */
