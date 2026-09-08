@@ -2,7 +2,6 @@ import { Search, X } from "lucide-react";
 import { startOfWeek } from "date-fns";
 import type { Prioridade } from "../../../domain/occurrences";
 import { getLocalDateString } from "../../../utils/dateUtils";
-import { OCCURRENCE_TYPES } from "../../config/occurrenceTypes";
 import { PRIORIDADES } from "../../config/occurrenceWorkflow";
 import { DatePicker } from "../../components/ui/date-picker";
 import { PickSelect } from "./ui/PickSelect";
@@ -25,7 +24,6 @@ function rangePresets() {
 export type BoardUiFilters = {
   from: string;
   to: string;
-  typeCodes: string[];
   prioridades: Prioridade[];
   hasReport: "" | "true" | "false";
   /** Busca única — cobre ocorrência, motorista, prefixo, linha, base,
@@ -37,7 +35,6 @@ export function emptyBoardFilters(from: string, to: string): BoardUiFilters {
   return {
     from,
     to,
-    typeCodes: [],
     prioridades: [],
     hasReport: "",
     search: "",
@@ -66,10 +63,7 @@ export function BoardFilters({ value, onChange, onReset, resultCount }: Props) {
     arr.includes(item) ? arr.filter((x) => x !== item) : [...arr, item];
 
   const dirty =
-    value.typeCodes.length > 0 ||
-    value.prioridades.length > 0 ||
-    !!value.hasReport ||
-    !!value.search;
+    value.prioridades.length > 0 || !!value.hasReport || !!value.search;
 
   return (
     <div className="space-y-3">
@@ -155,23 +149,6 @@ export function BoardFilters({ value, onChange, onReset, resultCount }: Props) {
       </div>
 
       <div className="flex flex-wrap gap-1.5">
-        {OCCURRENCE_TYPES.map((t) => {
-          const on = value.typeCodes.includes(t.code);
-          return (
-            <button
-              key={t.code}
-              onClick={() => set("typeCodes", toggle(value.typeCodes, t.code))}
-              className={`cursor-pointer px-2 py-1 rounded-full text-[11px] font-medium border transition-colors ${
-                on
-                  ? "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950/40 dark:border-blue-800 dark:text-blue-400"
-                  : "bg-white border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              }`}
-            >
-              {t.title}
-            </button>
-          );
-        })}
-        <span className="mx-1 w-px bg-gray-200 dark:bg-gray-700" />
         {PRIORIDADES.map((p) => {
           const on = value.prioridades.includes(p.code);
           return (

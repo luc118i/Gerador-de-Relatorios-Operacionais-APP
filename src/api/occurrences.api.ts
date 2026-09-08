@@ -52,7 +52,6 @@ export const occurrencesApi = {
     if (filters.to) query.to = filters.to;
     if (filters.status?.length) query.status = filters.status.join(",");
     if (filters.prioridade?.length) query.prioridade = filters.prioridade.join(",");
-    if (filters.typeCode?.length) query.typeCode = filters.typeCode.join(",");
     if (filters.baseCode) query.baseCode = filters.baseCode;
     if (filters.driverId) query.driverId = filters.driverId;
     if (filters.vehicleNumber) query.vehicleNumber = filters.vehicleNumber;

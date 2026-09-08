@@ -9,7 +9,6 @@ import { occurrencesApi } from "../../../api/occurrences.api";
 import { getApiErrorMessage } from "../../../api/http";
 import { getLocalDateString } from "../../../utils/dateUtils";
 import { useAuth } from "../../context/AuthContext";
-import { OCCURRENCE_TYPES } from "../../config/occurrenceTypes";
 import { PRIORIDADES } from "../../config/occurrenceWorkflow";
 import { PickSelect } from "./ui/PickSelect";
 import type {
@@ -32,8 +31,6 @@ const START_STATUSES: { value: WorkflowStatus; label: string }[] = [
   { value: "EM_TRATAMENTO", label: "Em tratamento" },
   { value: "AGUARDANDO_RETORNO", label: "Aguardando retorno" },
 ];
-
-const TYPE_OTHER = "__OUTRO__";
 
 const input =
   "w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500";
@@ -65,7 +62,6 @@ export function QuickOccurrenceModal({ open, onClose, onCreated }: Props) {
 
   const [saving, setSaving] = useState<null | "save" | "report">(null);
   const [prefixo, setPrefixo] = useState("");
-  const [tipoSel, setTipoSel] = useState<string>(TYPE_OTHER);
   const [assunto, setAssunto] = useState("");
   const [data, setData] = useState(today);
   const [driverId, setDriverId] = useState<string | null>(null);
@@ -76,12 +72,10 @@ export function QuickOccurrenceModal({ open, onClose, onCreated }: Props) {
   const [detalhes, setDetalhes] = useState("");
 
   const responsavel = (profileName ?? "").trim();
-  const isGeneric = tipoSel === TYPE_OTHER || tipoSel === "GENERICO";
-  const canSave = prefixo.trim().length > 0 && (!isGeneric || assunto.trim().length > 0) && !!data;
+  const canSave = prefixo.trim().length > 0 && assunto.trim().length > 0 && !!data;
 
   function reset() {
     setPrefixo("");
-    setTipoSel(TYPE_OTHER);
     setAssunto("");
     setData(today);
     setDriverId(null);
@@ -96,9 +90,9 @@ export function QuickOccurrenceModal({ open, onClose, onCreated }: Props) {
     if (!canSave || saving) return;
     setSaving(openReport ? "report" : "save");
     try {
-      const typeCode = isGeneric ? "GENERICO" : tipoSel;
       const payload: CreateOccurrenceInput = {
-        typeCode,
+        // A Central trata só ocorrências GENERICO (CCO).
+        typeCode: "GENERICO",
         // "Gerar relatório" transforma numa ocorrência de relatório (aparece na
         // Home); "Registrar ocorrência" fica só na Central.
         origin: openReport ? "REPORT" : "CENTRAL",
@@ -112,8 +106,8 @@ export function QuickOccurrenceModal({ open, onClose, onCreated }: Props) {
         showSectionTripulacao: !!driverId,
         showSectionViagem: false,
         showSectionPassageiros: false,
-        reportTitle: isGeneric ? assunto.trim() : null,
-        occurrenceName: !isGeneric && assunto.trim() ? assunto.trim() : null,
+        reportTitle: assunto.trim(),
+        occurrenceName: null,
         relatoHtml: detalhes.trim() ? `<p>${escapeHtml(detalhes.trim())}</p>` : null,
         prioridade,
         workflowStatus: status,
@@ -166,29 +160,14 @@ export function QuickOccurrenceModal({ open, onClose, onCreated }: Props) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={label}>Tipo</label>
-              <PickSelect
-                size="md"
-                ariaLabel="Tipo"
-                value={tipoSel}
-                onChange={setTipoSel}
-                options={[
-                  { value: TYPE_OTHER, label: "Outro assunto" },
-                  ...OCCURRENCE_TYPES.map((t) => ({ value: t.code, label: t.title })),
-                ]}
-              />
-            </div>
-            <div>
-              <label className={label}>{isGeneric ? "Assunto *" : "Nome da ocorrência"}</label>
-              <input
-                className={input}
-                value={assunto}
-                onChange={(e) => setAssunto(e.target.value)}
-                placeholder={isGeneric ? "Ex.: Pneu, Reclamação SAC…" : "opcional"}
-              />
-            </div>
+          <div>
+            <label className={label}>Assunto *</label>
+            <input
+              className={input}
+              value={assunto}
+              onChange={(e) => setAssunto(e.target.value)}
+              placeholder="Ex.: Pneu, Reclamação SAC, Avaria…"
+            />
           </div>
 
           <div>

@@ -95,11 +95,9 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
   const filtered = useMemo(() => {
     const q = normalizeText(filters.search);
     const terms = q ? q.split(/\s+/).filter(Boolean) : [];
-    const typeSet = new Set(filters.typeCodes);
     const prioSet = new Set<Prioridade>(filters.prioridades);
 
     return visible.filter((o) => {
-      if (typeSet.size && !typeSet.has(o.typeCode)) return false;
       if (prioSet.size && !prioSet.has((o.prioridade ?? "MEDIA") as Prioridade)) return false;
       if (filters.hasReport) {
         const has = !!o.driveWebViewLink || !!o.rizerRegistered;

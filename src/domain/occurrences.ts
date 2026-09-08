@@ -37,7 +37,6 @@ export type BoardFilters = {
   to?: string; // YYYY-MM-DD (event_date <=)
   status?: WorkflowStatus[];
   prioridade?: Prioridade[];
-  typeCode?: string[];
   baseCode?: string;
   driverId?: string;
   vehicleNumber?: string;
