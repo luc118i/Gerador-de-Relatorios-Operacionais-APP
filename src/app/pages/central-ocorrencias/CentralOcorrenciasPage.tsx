@@ -53,6 +53,21 @@ interface Props {
 
 const EMPTY_LIST: OccurrenceDTO[] = [];
 
+// Período (De/Até) persistido no navegador — o quadro reabre no mesmo intervalo.
+const PERIODO_KEY = "central_periodo_v1";
+const isDateStr = (s: unknown): s is string =>
+  typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s);
+function readPeriodo(): { from: string; to: string } | null {
+  try {
+    const p = JSON.parse(localStorage.getItem(PERIODO_KEY) ?? "null");
+    return isDateStr(p?.from) && isDateStr(p?.to)
+      ? { from: p.from, to: p.to }
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 export function CentralOcorrenciasPage({ onVoltar }: Props) {
   const queryClient = useQueryClient();
   const { profileName, user } = useAuth();
@@ -148,12 +163,23 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
     [updateCoverSettings.mutate, profileName],
   );
 
-  // Tela diária: por padrão carrega só o dia de hoje. O período é ajustável
-  // nos filtros (De / Até) pra puxar dias anteriores quando precisar.
+  // Tela diária: abre no período salvo no navegador (ou só hoje, na 1ª vez).
+  // O intervalo De/Até é ajustável nos filtros e fica guardado a cada mudança.
   const [filters, setFilters] = useState<BoardUiFilters>(() => {
     const today = getLocalDateString(new Date());
-    return emptyBoardFilters(today, today);
+    const saved = readPeriodo();
+    return emptyBoardFilters(saved?.from ?? today, saved?.to ?? today);
   });
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        PERIODO_KEY,
+        JSON.stringify({ from: filters.from, to: filters.to }),
+      );
+    } catch {
+      /* storage indisponível — segue sem persistir */
+    }
+  }, [filters.from, filters.to]);
   const [indicator, setIndicator] = useState<IndicatorFilter>({ kind: "all" });
   // Guarda só o id — o objeto do painel é sempre derivado da lista viva, pra
   // refletir na hora mudanças feitas pelo próprio painel (status, prioridade).
