@@ -440,16 +440,30 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
             aria-hidden
             className="pointer-events-none absolute inset-x-0 top-0 z-0 h-[168px] overflow-hidden"
           >
-            <div
-              className="h-full w-full"
-              style={{
-                backgroundImage: `url("${cover.url}")`,
-                backgroundRepeat: "no-repeat",
-                backgroundPosition: `50% ${coverPosY}%`,
-                backgroundSize: coverBgSize,
-                opacity: coverOpacity,
-              }}
-            />
+            <div className="absolute inset-0" style={{ opacity: coverOpacity }}>
+              {/* preenche a largura toda com uma cópia borrada — sem cortar a
+                  imagem quando o zoom está baixo */}
+              <div
+                className="absolute inset-0 scale-[1.2]"
+                style={{
+                  backgroundImage: `url("${cover.url}")`,
+                  backgroundRepeat: "no-repeat",
+                  backgroundPosition: `50% ${coverPosY}%`,
+                  backgroundSize: "cover",
+                  filter: "blur(24px)",
+                }}
+              />
+              {/* imagem "real" enquadrada */}
+              <div
+                className="absolute inset-0"
+                style={{
+                  backgroundImage: `url("${cover.url}")`,
+                  backgroundRepeat: "no-repeat",
+                  backgroundPosition: `50% ${coverPosY}%`,
+                  backgroundSize: coverBgSize,
+                }}
+              />
+            </div>
             <div className="absolute inset-0 bg-gradient-to-b from-gray-50/30 via-gray-50/70 to-gray-50 dark:from-gray-950/30 dark:via-gray-950/70 dark:to-gray-950" />
           </div>
         )}
