@@ -33,6 +33,16 @@ export function useUpdateCentralCoverSettings() {
       patch: { posY?: number; opacity?: number };
       actorNome?: string;
     }) => centralSettingsApi.patchCover(patch, actorNome),
+    // aplica na hora (a capa do quadro reflete o ajuste imediatamente)
+    onMutate: async ({ patch }) => {
+      await qc.cancelQueries({ queryKey: COVER_KEY });
+      const prev = qc.getQueryData<CentralCover>(COVER_KEY);
+      if (prev) qc.setQueryData<CentralCover>(COVER_KEY, { ...prev, ...patch });
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prev) qc.setQueryData(COVER_KEY, ctx.prev);
+    },
     onSuccess: (data: CentralCover) => {
       qc.setQueryData(COVER_KEY, data);
     },

@@ -94,7 +94,12 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
         { patch, actorNome: profileName || undefined },
         {
           onSuccess: () => toast.success("Capa ajustada."),
-          onError: () => toast.error("Não foi possível salvar o ajuste."),
+          onError: (e) =>
+            toast.error(
+              e instanceof Error && e.message
+                ? `Não foi possível salvar o ajuste: ${e.message}`
+                : "Não foi possível salvar o ajuste.",
+            ),
         },
       );
     },
