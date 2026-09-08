@@ -121,7 +121,7 @@ export const OccurrenceBoardCard = memo(function OccurrenceBoardCard({
         onDragEnd={onDragEnd}
         title="Arrastar para outra coluna"
         aria-label="Arrastar ocorrência"
-        className="absolute bottom-0 right-0 top-0 flex w-6 cursor-grab flex-col items-center justify-center gap-1 rounded-r-md text-gray-200 opacity-0 transition-opacity duration-150 group-hover:opacity-100 active:cursor-grabbing dark:text-gray-700"
+        className="absolute bottom-0 right-0 top-0 flex w-6 cursor-grab flex-col items-center justify-center gap-1 rounded-r-md bg-gray-100 text-gray-400 opacity-0 transition-opacity duration-150 group-hover:opacity-100 hover:bg-gray-200 hover:text-gray-600 active:cursor-grabbing dark:bg-gray-800 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-300"
       >
         <GripVertical className="h-4 w-4" />
         {next && (
@@ -134,7 +134,7 @@ export const OccurrenceBoardCard = memo(function OccurrenceBoardCard({
             }}
             title={`Avançar para "${getWorkflowStatusConfig(next).label}"`}
             aria-label={`Avançar para ${getWorkflowStatusConfig(next).label}`}
-            className="flex h-5 w-5 items-center justify-center rounded text-gray-300 hover:bg-black/[0.04] hover:text-gray-600 dark:text-gray-600 dark:hover:bg-white/[0.06] dark:hover:text-gray-300"
+            className="flex h-5 w-5 items-center justify-center rounded text-gray-500 hover:bg-black/[0.08] hover:text-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.10] dark:hover:text-gray-100"
           >
             <ArrowRight className="h-3.5 w-3.5" />
           </button>

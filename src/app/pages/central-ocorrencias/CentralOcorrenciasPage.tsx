@@ -70,6 +70,9 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
   const [drag, setDrag] = useState<{ id: string; from: WorkflowStatus } | null>(null);
   const dragRef = useRef<{ id: string; from: WorkflowStatus } | null>(null);
   dragRef.current = drag;
+  // destino escolhido no `drop` — só é efetivado no `dragend` (uma vez só,
+  // depois que o navegador limpa a imagem-fantasma do arrasto).
+  const pendingDropRef = useRef<{ id: string; to: WorkflowStatus } | null>(null);
   const [overStatus, setOverStatus] = useState<WorkflowStatus | null>(null);
 
   const patchStatus = usePatchStatus();
@@ -196,37 +199,40 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
 
   const onCardDragStart = useCallback((o: OccurrenceDTO) => {
     // começar a arrastar não é "inspecionar" — fecha o painel de detalhe.
+    pendingDropRef.current = null;
     setSelectedId(null);
     setDrag({ id: o.id, from: (o.workflowStatus ?? "PENDENTE") as WorkflowStatus });
   }, []);
 
+  // `dragend` fecha o gesto — dispara exatamente uma vez por arrasto, já depois
+  // do `drop`. É aqui (e não dentro do `drop`) que abrimos a confirmação /
+  // aplicamos o move, pra não competir com a limpeza do arrasto e pra não
+  // arriscar disparo duplo.
   const onCardDragEnd = useCallback(() => {
     setDrag(null);
     setOverStatus(null);
-  }, []);
+    const move = pendingDropRef.current;
+    pendingDropRef.current = null;
+    if (!move) return;
+    if (STATUS_NEEDS_CONFIRM.includes(move.to)) setPendingMove(move);
+    else applyMove(move.id, move.to);
+  }, [applyMove]);
 
   const onHover = useCallback((s: WorkflowStatus | null) => {
     setOverStatus((prev) => (prev === s ? prev : s));
   }, []);
 
-  const onDropHere = useCallback(
-    (to: WorkflowStatus) => {
-      const item = dragRef.current;
-      setOverStatus(null);
-      setDrag(null);
-      if (!item || item.from === to) return;
-      // Adia pro próximo tick: agir ainda dentro do evento `drop` deixa o
-      // navegador sem terminar de limpar a imagem-fantasma do card arrastado,
-      // que fica presa sob o modal / durante a animação.
-      const move = { id: item.id, to };
-      if (STATUS_NEEDS_CONFIRM.includes(to)) {
-        setTimeout(() => setPendingMove(move), 0);
-      } else {
-        setTimeout(() => applyMove(move.id, move.to), 0);
-      }
-    },
-    [applyMove],
-  );
+  const onDropHere = useCallback((to: WorkflowStatus) => {
+    const item = dragRef.current;
+    setOverStatus(null);
+    if (!item || item.from === to) {
+      pendingDropRef.current = null;
+      return;
+    }
+    // só registra o destino — o `dragend` efetiva (uma vez, sem competir com a
+    // limpeza da imagem-fantasma do arrasto).
+    pendingDropRef.current = { id: item.id, to };
+  }, []);
 
   const onCardAdvance = useCallback(
     (o: OccurrenceDTO) => {
