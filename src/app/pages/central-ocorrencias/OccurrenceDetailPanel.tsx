@@ -98,6 +98,9 @@ export function OccurrenceDetailPanel({ occurrence: o, open, onClose, onEdit, ac
   const d1 = o.drivers?.find((d) => d.position === 1);
   const d2 = o.drivers?.find((d) => d.position === 2);
   const hasReport = !!o.driveWebViewLink || !!o.rizerRegistered;
+  // Ocorrência cadastrada só na Central (importação / cadastro rápido) e que
+  // ainda não virou relatório: não existe relatório pra abrir.
+  const semRelatorio = o.origin === "CENTRAL" && !hasReport;
 
   // toasts + rollback otimista ficam nos hooks usePatchStatus/usePatchPrioridade
   const applyStatus = (next: WorkflowStatus) => {
@@ -226,29 +229,44 @@ export function OccurrenceDetailPanel({ occurrence: o, open, onClose, onEdit, ac
               <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
                 Relatório
               </h3>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => setShowReport(true)}
-                  className="inline-flex cursor-pointer items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 dark:border-gray-700 hover:bg-gray-50 hover:border-gray-300 dark:hover:bg-gray-800 dark:hover:border-gray-600 transition-colors"
-                >
-                  <FileText className="w-3.5 h-3.5" />
-                  Abrir relatório
-                </button>
-                {o.driveWebViewLink && (
-                  <a
-                    href={o.driveWebViewLink}
-                    target="_blank"
-                    rel="noreferrer"
+              {semRelatorio ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={() => onEdit(o.id)}
+                    className="inline-flex cursor-pointer items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    Gerar relatório
+                  </button>
+                  <span className="text-xs text-gray-400 dark:text-gray-500">
+                    Nenhum relatório gerado ainda.
+                  </span>
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setShowReport(true)}
                     className="inline-flex cursor-pointer items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 dark:border-gray-700 hover:bg-gray-50 hover:border-gray-300 dark:hover:bg-gray-800 dark:hover:border-gray-600 transition-colors"
                   >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    Abrir no Drive
-                  </a>
-                )}
-                <span className="inline-flex items-center text-xs text-gray-400 dark:text-gray-500">
-                  {hasReport ? "Relatório gerado" : "Ainda sem relatório"}
-                </span>
-              </div>
+                    <FileText className="w-3.5 h-3.5" />
+                    Abrir relatório
+                  </button>
+                  {o.driveWebViewLink && (
+                    <a
+                      href={o.driveWebViewLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex cursor-pointer items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 dark:border-gray-700 hover:bg-gray-50 hover:border-gray-300 dark:hover:bg-gray-800 dark:hover:border-gray-600 transition-colors"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      Abrir no Drive
+                    </a>
+                  )}
+                  <span className="inline-flex items-center text-xs text-gray-400 dark:text-gray-500">
+                    {hasReport ? "Relatório gerado" : "Ainda sem relatório"}
+                  </span>
+                </div>
+              )}
             </section>
 
             {/* Tratamento (read-only na Fase 1) */}
