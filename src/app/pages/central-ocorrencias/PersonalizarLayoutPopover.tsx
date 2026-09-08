@@ -126,7 +126,8 @@ export function PersonalizarLayoutPopover({
       <PopoverContent
         align="start"
         sideOffset={8}
-        className="w-[300px] rounded-lg border border-gray-200 p-3 shadow-sm dark:border-gray-800 animate-in fade-in-0 zoom-in-95 duration-150"
+        collisionPadding={12}
+        className="max-h-[75vh] w-[300px] overflow-y-auto overscroll-contain rounded-lg border border-gray-200 p-3 shadow-sm dark:border-gray-800 animate-in fade-in-0 zoom-in-95 duration-150"
       >
         <div className="space-y-4">
           <section className="space-y-1.5">
