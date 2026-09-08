@@ -14,7 +14,6 @@ import { dtoToOcorrencia } from "../../../utils/occurrenceMapper";
 import { normalizeText } from "../../../utils/occurrenceVisibility";
 import { getLocalDateString } from "../../../utils/dateUtils";
 import { useAuth } from "../../context/AuthContext";
-import { useAdminAuth } from "../../context/AdminAuthContext";
 import {
   useCentralCover,
   useClearCentralCover,
@@ -58,7 +57,6 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
   const { profileName, user } = useAuth();
   const { layout, setView, setDensity, toggleShow, toggleColumn } = useCentralLayout();
 
-  const { isAdmin } = useAdminAuth();
   const { data: cover } = useCentralCover();
   const setCover = useSetCentralCover();
   const clearCover = useClearCentralCover();
@@ -335,7 +333,7 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
             coverUrl={cover?.url ?? null}
             coverPosY={coverPosY}
             coverOpacity={coverOpacity}
-            canEditCover={isAdmin}
+            canEditCover
             coverBusy={coverBusy}
             onView={setView}
             onDensity={setDensity}
