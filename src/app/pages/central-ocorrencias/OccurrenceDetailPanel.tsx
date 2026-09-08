@@ -101,6 +101,14 @@ export function OccurrenceDetailPanel({ occurrence: o, open, onClose, onEdit, ac
   // Ocorrência cadastrada só na Central (importação / cadastro rápido) e que
   // ainda não virou relatório: não existe relatório pra abrir.
   const semRelatorio = o.origin === "CENTRAL" && !hasReport;
+  // Horário só quando é real (import entra com 00:00 placeholder).
+  const hora =
+    o.startTime && o.startTime !== "00:00"
+      ? o.endTime && o.endTime !== o.startTime
+        ? `${o.startTime}–${o.endTime}`
+        : o.startTime
+      : "";
+  const semTratamento = !o.analisadoPor && !o.tratativa && !o.justificativaRegistro;
 
   // toasts + rollback otimista ficam nos hooks usePatchStatus/usePatchPrioridade
   const applyStatus = (next: WorkflowStatus) => {
@@ -207,21 +215,33 @@ export function OccurrenceDetailPanel({ occurrence: o, open, onClose, onEdit, ac
               </div>
             )}
 
-            {/* Dados da ocorrência */}
+            {/* Dados da ocorrência — só os campos com conteúdo real. O resto
+                entra quando o relatório é gerado. */}
             <section className="space-y-3">
               <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
                 Dados da ocorrência
               </h3>
               <div className="grid grid-cols-2 gap-x-4 gap-y-3">
                 <Field label="Data" value={o.eventDate?.split("-").reverse().join("/")} />
-                <Field label="Horário" value={o.startTime && o.endTime ? `${o.startTime}–${o.endTime}` : o.startTime} />
                 <Field label="Prefixo" value={o.vehicleNumber} />
-                <Field label="Base" value={o.baseCode} />
-                <Field label="Linha" value={o.lineLabel || o.tripLineName} />
-                <Field label="Local" value={o.place} />
-                <Field label="Motorista" value={d1 ? `${d1.registry ? d1.registry + " · " : ""}${d1.name}` : "—"} />
-                <Field label="Motorista 2" value={d2 ? `${d2.registry ? d2.registry + " · " : ""}${d2.name}` : "—"} />
+                {o.baseCode && o.baseCode !== "GENERICO" && <Field label="Base" value={o.baseCode} />}
+                {hora && <Field label="Horário" value={hora} />}
+                {(o.lineLabel || o.tripLineName) && (
+                  <Field label="Linha" value={o.lineLabel || o.tripLineName} />
+                )}
+                {o.place && <Field label="Local" value={o.place} />}
+                {d1?.name && (
+                  <Field label="Motorista" value={`${d1.registry ? d1.registry + " · " : ""}${d1.name}`} />
+                )}
+                {d2?.name && (
+                  <Field label="Motorista 2" value={`${d2.registry ? d2.registry + " · " : ""}${d2.name}`} />
+                )}
               </div>
+              {semRelatorio && (
+                <p className="text-[11px] text-gray-400 dark:text-gray-500">
+                  Linha, horário, motorista e tratativa são preenchidos ao gerar o relatório.
+                </p>
+              )}
             </section>
 
             {/* Relatório */}
@@ -274,19 +294,33 @@ export function OccurrenceDetailPanel({ occurrence: o, open, onClose, onEdit, ac
               <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
                 Tratamento
               </h3>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                <Field label="Responsável" value={o.analisadoPor} />
-                <Field
-                  label="Tratativa"
-                  value={o.tratativa ? TRATATIVA_LABEL[o.tratativa] ?? o.tratativa : "—"}
-                />
-                <div className="col-span-2">
-                  <Field label="Observações" value={o.justificativaRegistro} />
-                </div>
-              </div>
-              <p className="text-[11px] text-gray-400 dark:text-gray-500">
-                A edição completa do tratamento chega na próxima fase.
-              </p>
+              {semTratamento ? (
+                <p className="text-xs text-gray-400 dark:text-gray-500">
+                  {semRelatorio
+                    ? "Responsável e tratativa são definidos ao gerar o relatório."
+                    : "Sem tratamento registrado ainda."}
+                </p>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                    {o.analisadoPor && <Field label="Responsável" value={o.analisadoPor} />}
+                    {o.tratativa && (
+                      <Field
+                        label="Tratativa"
+                        value={TRATATIVA_LABEL[o.tratativa] ?? o.tratativa}
+                      />
+                    )}
+                    {o.justificativaRegistro && (
+                      <div className="col-span-2">
+                        <Field label="Observações" value={o.justificativaRegistro} />
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-gray-400 dark:text-gray-500">
+                    A edição completa do tratamento chega na próxima fase.
+                  </p>
+                </>
+              )}
             </section>
 
             {/* Histórico */}

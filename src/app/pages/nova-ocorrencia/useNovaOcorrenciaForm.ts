@@ -228,7 +228,19 @@ export function useNovaOcorrenciaForm({ onSaved, edicao }: NovaOcorrenciaProps) 
     setShowSectionPassageiros(edicao.showSectionPassageiros ?? true);
     setTratativa((edicao as any).tratativa ?? null);
     setPrioridade((edicao as any).prioridade ?? "MEDIA");
-    setAnalisadoPor((edicao as any).analisadoPor ?? "");
+    // Se a ocorrência ainda não tem responsável (ex.: importada da passagem),
+    // assume quem está gerando/editando o relatório agora.
+    {
+      const jaTinha = ((edicao as any).analisadoPor ?? "").trim();
+      if (jaTinha) {
+        setAnalisadoPor(jaTinha);
+      } else if (profileName) {
+        setAnalisadoPor(profileName);
+        autoFilledAnalisadoPorRef.current = profileName;
+      } else {
+        setAnalisadoPor("");
+      }
+    }
 
     // Prefere os campos canônicos da viagem (tripLineCode/Name/Direction vindos
     // do join trips na API); só cai para o parse do label em ocorrências antigas

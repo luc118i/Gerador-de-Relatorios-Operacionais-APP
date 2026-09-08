@@ -152,7 +152,7 @@ export const OccurrenceBoardCard = memo(function OccurrenceBoardCard({
             )}
           </div>
         )}
-        {(vis.linha || rota) && (
+        {vis.linha && (rota || o.lineLabel) && (
           <div className="flex items-center gap-1.5">
             <MapPin className="w-3.5 h-3.5 shrink-0" />
             <span className="truncate">{rota || o.lineLabel}</span>

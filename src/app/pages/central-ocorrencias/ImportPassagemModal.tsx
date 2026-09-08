@@ -1,10 +1,9 @@
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Lock, Trash2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 
 import { AppDialog } from "../../components/ui/app-dialog";
 import { DatePicker } from "../../components/ui/date-picker";
-import { useAuth } from "../../context/AuthContext";
 import { getApiErrorMessage } from "../../../api/http";
 import { getLocalDateString } from "../../../utils/dateUtils";
 import { useImportPassagem } from "../../../features/occurrences/queries/occurrences.queries";
@@ -33,7 +32,6 @@ const label = "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1";
  * (`passagemParser`) → revisa a tabela → cria N ocorrências GENERICO na Central.
  */
 export function ImportPassagemModal({ open, onClose, onImported }: Props) {
-  const { profileName, user } = useAuth();
   const importMut = useImportPassagem();
 
   const [text, setText] = useState("");
@@ -42,7 +40,6 @@ export function ImportPassagemModal({ open, onClose, onImported }: Props) {
   const [eventDate, setEventDate] = useState(getLocalDateString(new Date()));
   const [rows, setRows] = useState<Row[]>([]);
 
-  const responsavel = (profileName ?? "").trim();
   const includedCount = useMemo(() => rows.filter((r) => r.include).length, [rows]);
 
   function reset() {
@@ -79,8 +76,6 @@ export function ImportPassagemModal({ open, onClose, onImported }: Props) {
       const res = await importMut.mutateAsync({
         eventDate,
         operador: operador || null,
-        analisadoPor: responsavel || null,
-        analisadoPorUserId: responsavel ? user?.id ?? null : null,
         rows: toImport.map((r) => ({
           vehicleNumber: r.vehicleNumber.trim(),
           subject: r.subject.trim(),
@@ -144,13 +139,6 @@ export function ImportPassagemModal({ open, onClose, onImported }: Props) {
             <div>
               <label className={label}>Data</label>
               <DatePicker value={eventDate} onChange={setEventDate} className="w-[168px] py-1.5 text-xs" />
-            </div>
-            <div>
-              <label className={label}>Responsável</label>
-              <div className={`${inputCls} flex items-center gap-2 bg-gray-50 dark:bg-gray-800/60 text-gray-500 dark:text-gray-400`}>
-                <Lock className="w-3.5 h-3.5 shrink-0" />
-                <span className="truncate">{responsavel || "—"}</span>
-              </div>
             </div>
             {operador && (
               <div>
