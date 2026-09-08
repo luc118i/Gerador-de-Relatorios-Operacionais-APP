@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { X, Route, MapPin, BarChart2, LogOut, UserCircle2, Pencil, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { CentralOcorrenciasIcon } from "./icons/CentralOcorrenciasIcon";
 import { useAuth } from "../context/AuthContext";
 import { useAdminAuth } from "../context/AdminAuthContext";
 
@@ -28,7 +27,13 @@ const ITEMS: DrawerItem[] = [
     id: "central-ocorrencias",
     label: "Central de Ocorrências",
     description: "Quadro de acompanhamento e tratamento",
-    icon: <CentralOcorrenciasIcon className="w-5 h-5" />,
+    icon: (
+      <img
+        src="/central-ocorrencias-icon.png"
+        alt=""
+        className="h-6 w-6 shrink-0 object-contain [mix-blend-mode:multiply] dark:invert dark:[mix-blend-mode:lighten]"
+      />
+    ),
     everyone: true,
   },
   {
