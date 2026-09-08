@@ -355,7 +355,9 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
                 status={s}
                 occurrences={byStatus.get(s) ?? []}
                 layout={layout}
+                actor={actor}
                 onCardClick={handleCardClick}
+                onCardEdit={handleEditar}
                 onCardDragStart={onCardDragStart}
                 onCardDragEnd={onCardDragEnd}
                 onCardAdvance={onCardAdvance}

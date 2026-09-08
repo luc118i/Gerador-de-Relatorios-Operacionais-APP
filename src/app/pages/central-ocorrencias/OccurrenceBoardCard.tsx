@@ -13,6 +13,7 @@ import {
 import { resolveBaseSigla } from "../../../utils/base";
 import { avatarColor, initialsOf } from "../../../utils/avatar";
 import { DENSITY_CARD_PADDING, type CentralLayout } from "./useCentralLayout";
+import { CardMenu } from "./CardMenu";
 
 /** "YYYY-MM-DD" → "DD/MM". */
 function shortDate(d?: string) {
@@ -35,10 +36,12 @@ type Props = {
   layout: CentralLayout;
   /** Estáveis (do pai) — o card os chama com a própria ocorrência. */
   onSelect: (o: OccurrenceDTO) => void;
+  onEdit: (id: string) => void;
   onDragStart: (o: OccurrenceDTO) => void;
   onDragEnd: () => void;
   /** Avança 1 clique pro próximo status do fluxo. */
   onAdvance: (o: OccurrenceDTO) => void;
+  actor: { actorUserId?: string | null; actorNome?: string | null };
   dragging: boolean;
   /** true logo após o card mudar de coluna — anima a entrada. */
   justMoved: boolean;
@@ -52,9 +55,11 @@ export const OccurrenceBoardCard = memo(function OccurrenceBoardCard({
   occurrence: o,
   layout,
   onSelect,
+  onEdit,
   onDragStart,
   onDragEnd,
   onAdvance,
+  actor,
   dragging,
   justMoved,
 }: Props) {
@@ -167,6 +172,9 @@ export const OccurrenceBoardCard = memo(function OccurrenceBoardCard({
               <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
             </button>
           )}
+          <span className="opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+            <CardMenu occurrence={o} actor={actor} onOpen={onSelect} onEdit={onEdit} />
+          </span>
         </span>
       </div>
 

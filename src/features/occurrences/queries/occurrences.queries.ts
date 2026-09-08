@@ -146,6 +146,16 @@ export function useDeleteOccurrence() {
   });
 }
 
+export function useDuplicateOccurrence() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => occurrencesApi.duplicate(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: occurrencesKeys.all });
+    },
+  });
+}
+
 export function useImportPassagem() {
   const qc = useQueryClient();
   return useMutation({

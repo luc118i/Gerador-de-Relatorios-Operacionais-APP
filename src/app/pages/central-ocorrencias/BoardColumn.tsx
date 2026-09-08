@@ -18,8 +18,10 @@ type Props = {
   status: WorkflowStatus;
   occurrences: OccurrenceDTO[];
   layout: CentralLayout;
+  actor: { actorUserId?: string | null; actorNome?: string | null };
   /** Estáveis (do pai) — necessário pro memo desta coluna e dos cards valer. */
   onCardClick: (o: OccurrenceDTO) => void;
+  onCardEdit: (id: string) => void;
   onCardDragStart: (o: OccurrenceDTO) => void;
   onCardDragEnd: () => void;
   onCardAdvance: (o: OccurrenceDTO) => void;
@@ -43,7 +45,9 @@ export const BoardColumn = memo(function BoardColumn({
   status,
   occurrences,
   layout,
+  actor,
   onCardClick,
+  onCardEdit,
   onCardDragStart,
   onCardDragEnd,
   onCardAdvance,
@@ -117,7 +121,9 @@ export const BoardColumn = memo(function BoardColumn({
             key={o.id}
             occurrence={o}
             layout={layout}
+            actor={actor}
             onSelect={onCardClick}
+            onEdit={onCardEdit}
             onDragStart={onCardDragStart}
             onDragEnd={onCardDragEnd}
             onAdvance={onCardAdvance}

@@ -68,6 +68,14 @@ export const occurrencesApi = {
     return json.data ?? [];
   },
 
+  async duplicate(id: string): Promise<{ id: string }> {
+    const json = await request<ApiData<{ id: string }>>({
+      method: "POST",
+      path: `/occurrences/${id}/duplicate`,
+    });
+    return json.data;
+  },
+
   async getHistory(id: string): Promise<OccurrenceHistoryEntry[]> {
     const json = await request<ApiData<OccurrenceHistoryEntry[]>>({
       method: "GET",
