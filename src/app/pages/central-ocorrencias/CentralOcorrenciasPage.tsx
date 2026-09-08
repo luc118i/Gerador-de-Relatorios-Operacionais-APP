@@ -48,7 +48,7 @@ const EMPTY_LIST: OccurrenceDTO[] = [];
 export function CentralOcorrenciasPage({ onVoltar }: Props) {
   const queryClient = useQueryClient();
   const { profileName, user } = useAuth();
-  const { layout, setView, setDensity, toggleShow } = useCentralLayout();
+  const { layout, setView, setDensity, toggleShow, toggleColumn } = useCentralLayout();
 
   // Tela diária: por padrão carrega só o dia de hoje. O período é ajustável
   // nos filtros (De / Até) pra puxar dias anteriores quando precisar.
@@ -223,12 +223,12 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
 
   const onCardAdvance = useCallback(
     (o: OccurrenceDTO) => {
-      const to = nextBoardStatus(o.workflowStatus);
+      const to = nextBoardStatus(o.workflowStatus, layout.hiddenColumns);
       if (!to) return;
       if (STATUS_NEEDS_CONFIRM.includes(to)) setPendingMove({ id: o.id, to });
       else applyMove(o.id, to);
     },
-    [applyMove],
+    [applyMove, layout.hiddenColumns],
   );
 
   const handleQuickAdd = useCallback((s: WorkflowStatus) => {
@@ -264,10 +264,21 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
             view={layout.view}
             density={layout.density}
             show={layout.show}
+            hiddenColumns={layout.hiddenColumns}
             onView={setView}
             onDensity={setDensity}
             onToggleShow={toggleShow}
+            onToggleColumn={toggleColumn}
           />
+          {layout.hiddenColumns.length > 0 && layout.view !== "tabela" && (
+            <button
+              onClick={() => layout.hiddenColumns.forEach(toggleColumn)}
+              title="Mostrar todas as colunas"
+              className="cursor-pointer rounded px-1.5 py-0.5 text-[11px] text-gray-400 transition-colors hover:bg-black/[0.04] hover:text-gray-600 dark:hover:bg-white/[0.06]"
+            >
+              {layout.hiddenColumns.length} oculta{layout.hiddenColumns.length !== 1 ? "s" : ""}
+            </button>
+          )}
 
           <div className="ml-auto flex items-center gap-1">
             <button
@@ -367,7 +378,7 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
           />
         ) : (
           <div className="flex gap-5 overflow-x-auto pb-4">
-            {BOARD_COLUMNS.map((s) => (
+            {BOARD_COLUMNS.filter((s) => !layout.hiddenColumns.includes(s)).map((s) => (
               <BoardColumn
                 key={s}
                 status={s}
@@ -380,6 +391,7 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
                 onCardDragEnd={onCardDragEnd}
                 onCardAdvance={onCardAdvance}
                 onQuickAdd={handleQuickAdd}
+                onHide={toggleColumn}
                 onHover={onHover}
                 onDropHere={onDropHere}
                 dragFrom={drag?.from ?? null}

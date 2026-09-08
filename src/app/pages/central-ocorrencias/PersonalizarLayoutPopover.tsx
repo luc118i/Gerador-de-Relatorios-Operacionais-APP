@@ -2,6 +2,7 @@ import { SlidersHorizontal } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "../../components/ui/popover";
 import { RadioGroup, RadioGroupItem } from "../../components/ui/radio-group";
 import { Checkbox } from "../../components/ui/checkbox";
+import { BOARD_COLUMNS, getWorkflowStatusConfig } from "../../config/occurrenceWorkflow";
 import type {
   CentralDensity,
   CentralShowKey,
@@ -12,9 +13,11 @@ type Props = {
   view: CentralView;
   density: CentralDensity;
   show: Record<CentralShowKey, boolean>;
+  hiddenColumns: string[];
   onView: (v: CentralView) => void;
   onDensity: (d: CentralDensity) => void;
   onToggleShow: (k: CentralShowKey) => void;
+  onToggleColumn: (status: string) => void;
 };
 
 const VIEWS: { value: CentralView; label: string }[] = [
@@ -41,9 +44,11 @@ export function PersonalizarLayoutPopover({
   view,
   density,
   show,
+  hiddenColumns,
   onView,
   onDensity,
   onToggleShow,
+  onToggleColumn,
 }: Props) {
   return (
     <Popover>
@@ -94,6 +99,23 @@ export function PersonalizarLayoutPopover({
                 {s.label}
               </label>
             ))}
+          </section>
+
+          <section className="space-y-1.5 border-t border-gray-100 pt-3 dark:border-gray-800">
+            <p className={label}>Colunas</p>
+            {BOARD_COLUMNS.map((code) => {
+              const cfg = getWorkflowStatusConfig(code);
+              return (
+                <label key={code} className={`${row} cursor-pointer`}>
+                  <Checkbox
+                    checked={!hiddenColumns.includes(code)}
+                    onCheckedChange={() => onToggleColumn(code)}
+                  />
+                  <span className={`inline-block h-1.5 w-1.5 rounded-full ${cfg.dot}`} />
+                  {cfg.label}
+                </label>
+              );
+            })}
           </section>
         </div>
       </PopoverContent>

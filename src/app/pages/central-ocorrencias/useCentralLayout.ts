@@ -8,6 +8,8 @@ export type CentralLayout = {
   view: CentralView;
   density: CentralDensity;
   show: Record<CentralShowKey, boolean>;
+  /** códigos de status (colunas) ocultos no quadro / na lista */
+  hiddenColumns: string[];
 };
 
 const STORAGE_KEY = "central_layout_v1";
@@ -16,6 +18,7 @@ const DEFAULT_LAYOUT: CentralLayout = {
   view: "kanban",
   density: "confortavel",
   show: { contagem: true, descricao: true, datas: true, prioridade: true },
+  hiddenColumns: [],
 };
 
 function read(): CentralLayout {
@@ -27,6 +30,7 @@ function read(): CentralLayout {
       view: p.view ?? DEFAULT_LAYOUT.view,
       density: p.density ?? DEFAULT_LAYOUT.density,
       show: { ...DEFAULT_LAYOUT.show, ...(p.show ?? {}) },
+      hiddenColumns: Array.isArray(p.hiddenColumns) ? p.hiddenColumns : [],
     };
   } catch {
     return DEFAULT_LAYOUT;
@@ -67,8 +71,18 @@ export function useCentralLayout() {
       update((l) => ({ ...l, show: { ...l.show, [key]: !l.show[key] } })),
     [update],
   );
+  const toggleColumn = useCallback(
+    (status: string) =>
+      update((l) => ({
+        ...l,
+        hiddenColumns: l.hiddenColumns.includes(status)
+          ? l.hiddenColumns.filter((s) => s !== status)
+          : [...l.hiddenColumns, status],
+      })),
+    [update],
+  );
 
-  return { layout, setView, setDensity, toggleShow };
+  return { layout, setView, setDensity, toggleShow, toggleColumn };
 }
 
 // ── Mapas de densidade (classes Tailwind) ────────────────────────────────

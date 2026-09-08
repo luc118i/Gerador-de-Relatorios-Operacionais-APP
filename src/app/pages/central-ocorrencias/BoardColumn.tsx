@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { Plus } from "lucide-react";
+import { EyeOff, Plus } from "lucide-react";
 import type { OccurrenceDTO, WorkflowStatus } from "../../../domain/occurrences";
 import { getWorkflowStatusConfig } from "../../config/occurrenceWorkflow";
 import { OccurrenceBoardCard } from "./OccurrenceBoardCard";
@@ -27,6 +27,8 @@ type Props = {
   onCardAdvance: (o: OccurrenceDTO) => void;
   /** "+" no header da coluna → nova ocorrência já com esse status inicial */
   onQuickAdd: (status: WorkflowStatus) => void;
+  /** ocultar esta coluna do quadro */
+  onHide: (status: WorkflowStatus) => void;
   onHover: (status: WorkflowStatus | null) => void;
   onDropHere: (status: WorkflowStatus) => void;
   /** status de origem do card em arrasto (null quando nada é arrastado) */
@@ -52,6 +54,7 @@ export const BoardColumn = memo(function BoardColumn({
   onCardDragEnd,
   onCardAdvance,
   onQuickAdd,
+  onHide,
   onHover,
   onDropHere,
   dragFrom,
@@ -93,15 +96,26 @@ export const BoardColumn = memo(function BoardColumn({
             {occurrences.length}
           </span>
         </div>
-        <button
-          type="button"
-          onClick={() => onQuickAdd(status)}
-          title={`Nova ocorrência em "${cfg.label}"`}
-          aria-label={`Nova ocorrência em ${cfg.label}`}
-          className="flex h-5 w-5 cursor-pointer items-center justify-center rounded text-gray-300 opacity-0 transition-opacity hover:bg-black/[0.04] hover:text-gray-600 group-hover/col:opacity-100 dark:text-gray-600 dark:hover:bg-white/[0.06] dark:hover:text-gray-300"
-        >
-          <Plus className="h-3.5 w-3.5" />
-        </button>
+        <div className="flex items-center opacity-0 transition-opacity group-hover/col:opacity-100">
+          <button
+            type="button"
+            onClick={() => onHide(status)}
+            title={`Ocultar "${cfg.label}"`}
+            aria-label={`Ocultar ${cfg.label}`}
+            className="flex h-5 w-5 cursor-pointer items-center justify-center rounded text-gray-300 hover:bg-black/[0.04] hover:text-gray-600 dark:text-gray-600 dark:hover:bg-white/[0.06] dark:hover:text-gray-300"
+          >
+            <EyeOff className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => onQuickAdd(status)}
+            title={`Nova ocorrência em "${cfg.label}"`}
+            aria-label={`Nova ocorrência em ${cfg.label}`}
+            className="flex h-5 w-5 cursor-pointer items-center justify-center rounded text-gray-300 hover:bg-black/[0.04] hover:text-gray-600 dark:text-gray-600 dark:hover:bg-white/[0.06] dark:hover:text-gray-300"
+          >
+            <Plus className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
       {layout.show.contagem && (
         <p className="px-1 pb-2 text-[11px] text-gray-400 dark:text-gray-500">

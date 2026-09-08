@@ -28,11 +28,13 @@ type Props = {
 };
 
 export function BoardListView({ occurrences, layout, actor, onOpen, onEdit }: Props) {
-  const groups = BOARD_COLUMNS.map((s) => ({
-    status: s,
-    cfg: getWorkflowStatusConfig(s),
-    items: occurrences.filter((o) => (o.workflowStatus ?? "PENDENTE") === s),
-  })).filter((g) => g.items.length > 0);
+  const groups = BOARD_COLUMNS.filter((s) => !layout.hiddenColumns.includes(s))
+    .map((s) => ({
+      status: s,
+      cfg: getWorkflowStatusConfig(s),
+      items: occurrences.filter((o) => (o.workflowStatus ?? "PENDENTE") === s),
+    }))
+    .filter((g) => g.items.length > 0);
 
   if (groups.length === 0) {
     return <p className="py-16 text-center text-sm text-gray-400">Nenhuma ocorrência.</p>;
@@ -88,7 +90,13 @@ export function BoardListView({ occurrences, layout, actor, onOpen, onEdit }: Pr
                     </span>
                   )}
                   <span className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
-                    <CardMenu occurrence={o} actor={actor} onOpen={onOpen} onEdit={onEdit} />
+                    <CardMenu
+                      occurrence={o}
+                      actor={actor}
+                      hiddenColumns={layout.hiddenColumns}
+                      onOpen={onOpen}
+                      onEdit={onEdit}
+                    />
                   </span>
                 </div>
               );

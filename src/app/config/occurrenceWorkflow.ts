@@ -96,11 +96,17 @@ const ADVANCE_FLOW: WorkflowStatus[] = [
   "TRATADA",
 ];
 
-/** Próximo status no fluxo, ou null quando não há (TRATADA/CANCELADA/ARQUIVADA). */
-export function nextBoardStatus(current: string | null | undefined): WorkflowStatus | null {
+/** Próximo status no fluxo, pulando colunas ocultas. null quando não há mais. */
+export function nextBoardStatus(
+  current: string | null | undefined,
+  hidden: string[] = [],
+): WorkflowStatus | null {
   const i = ADVANCE_FLOW.indexOf((current ?? "PENDENTE") as WorkflowStatus);
-  if (i < 0 || i >= ADVANCE_FLOW.length - 1) return null;
-  return ADVANCE_FLOW[i + 1];
+  if (i < 0) return null;
+  for (let j = i + 1; j < ADVANCE_FLOW.length; j++) {
+    if (!hidden.includes(ADVANCE_FLOW[j])) return ADVANCE_FLOW[j];
+  }
+  return null;
 }
 
 const STATUS_BY_CODE = new Map(WORKFLOW_STATUSES.map((s) => [s.code, s]));

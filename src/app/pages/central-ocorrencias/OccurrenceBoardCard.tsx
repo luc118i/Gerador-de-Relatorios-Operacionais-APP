@@ -69,7 +69,7 @@ export const OccurrenceBoardCard = memo(function OccurrenceBoardCard({
   const prio = getPrioridadeConfig(o.prioridade);
   const d1 = firstDriver(o);
   const hasReport = !!o.driveWebViewLink || !!o.rizerRegistered;
-  const next = nextBoardStatus(o.workflowStatus);
+  const next = nextBoardStatus(o.workflowStatus, layout.hiddenColumns);
   const isNew = isRecentlyCreated(o.createdAt);
   const prog = treatmentProgress(o);
   const descricao = (o.relatoHtml ?? "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
@@ -173,7 +173,13 @@ export const OccurrenceBoardCard = memo(function OccurrenceBoardCard({
             </button>
           )}
           <span className="opacity-0 transition-opacity duration-150 group-hover:opacity-100">
-            <CardMenu occurrence={o} actor={actor} onOpen={onSelect} onEdit={onEdit} />
+            <CardMenu
+              occurrence={o}
+              actor={actor}
+              hiddenColumns={layout.hiddenColumns}
+              onOpen={onSelect}
+              onEdit={onEdit}
+            />
           </span>
         </span>
       </div>

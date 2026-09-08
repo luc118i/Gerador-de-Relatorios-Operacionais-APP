@@ -36,13 +36,22 @@ type Actor = { actorUserId?: string | null; actorNome?: string | null };
 type Props = {
   occurrence: OccurrenceDTO;
   actor: Actor;
+  /** colunas ocultas — não aparecem em "Mover para…" */
+  hiddenColumns?: string[];
   onOpen: (o: OccurrenceDTO) => void;
   onEdit: (id: string) => void;
   /** classe extra no trigger (ex.: posição no card) */
   triggerClassName?: string;
 };
 
-export function CardMenu({ occurrence: o, actor, onOpen, onEdit, triggerClassName }: Props) {
+export function CardMenu({
+  occurrence: o,
+  actor,
+  hiddenColumns = [],
+  onOpen,
+  onEdit,
+  triggerClassName,
+}: Props) {
   const patchStatus = usePatchStatus();
   const dup = useDuplicateOccurrence();
   const del = useDeleteOccurrence();
@@ -91,7 +100,9 @@ export function CardMenu({ occurrence: o, actor, onOpen, onEdit, triggerClassNam
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>Mover para…</DropdownMenuSubTrigger>
             <DropdownMenuSubContent>
-              {WORKFLOW_STATUSES.filter((s) => s.code !== o.workflowStatus).map((s) => (
+              {WORKFLOW_STATUSES.filter(
+                (s) => s.code !== o.workflowStatus && !hiddenColumns.includes(s.code),
+              ).map((s) => (
                 <DropdownMenuItem key={s.code} onSelect={() => moveTo(s.code)}>
                   <span className={`inline-block h-1.5 w-1.5 rounded-full ${s.dot}`} />
                   {s.label}

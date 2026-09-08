@@ -170,7 +170,13 @@ export function BoardTableView({ occurrences, layout, actor, onOpen, onEdit }: P
                   {hasReport && <FileCheck2 className="h-3.5 w-3.5 text-emerald-500" />}
                 </TableCell>
                 <TableCell onClick={(e) => e.stopPropagation()}>
-                  <CardMenu occurrence={o} actor={actor} onOpen={onOpen} onEdit={onEdit} />
+                  <CardMenu
+                    occurrence={o}
+                    actor={actor}
+                    hiddenColumns={layout.hiddenColumns}
+                    onOpen={onOpen}
+                    onEdit={onEdit}
+                  />
                 </TableCell>
               </TableRow>
             );
