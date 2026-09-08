@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ClipboardList, Plus, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
@@ -65,6 +65,23 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
     setCover.isPending || clearCover.isPending || updateCoverSettings.isPending;
   const coverPosY = cover?.posY ?? 50;
   const coverOpacity = cover?.opacity ?? 0.16;
+
+  // Proporção real da faixa da capa — o mini editor usa isso pra mostrar uma
+  // "janela" do tamanho exato do que aparece no cabeçalho.
+  const coverBandRef = useRef<HTMLDivElement>(null);
+  const [coverBandAspect, setCoverBandAspect] = useState(8);
+  useEffect(() => {
+    const el = coverBandRef.current;
+    if (!el) return;
+    const measure = () => {
+      const r = el.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) setCoverBandAspect(r.width / r.height);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [cover?.url]);
 
   const handlePickCover = useCallback(
     (file: Blob) => {
@@ -338,6 +355,7 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
             coverUrl={cover?.url ?? null}
             coverPosY={coverPosY}
             coverOpacity={coverOpacity}
+            coverBandAspect={coverBandAspect}
             canEditCover
             coverBusy={coverBusy}
             onView={setView}
@@ -393,6 +411,7 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
             legibilidade do título por cima. */}
         {cover?.url && (
           <div
+            ref={coverBandRef}
             aria-hidden
             className="pointer-events-none absolute inset-x-0 top-0 z-0 h-[168px] overflow-hidden"
           >

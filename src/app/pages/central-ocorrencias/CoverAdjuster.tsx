@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Loader2, MoveVertical, RotateCcw } from "lucide-react";
+import { Loader2, RotateCcw } from "lucide-react";
 import { Slider } from "../../components/ui/slider";
 
 const DEFAULT_POS_Y = 50;
@@ -12,18 +12,30 @@ type Props = {
   posY: number;
   opacity: number;
   busy: boolean;
+  /** proporção (larg/alt) da faixa real da capa no cabeçalho */
+  bandAspect: number;
   onSave: (patch: { posY: number; opacity: number }) => void;
 };
 
-/** Mini editor da capa do quadro: enquadramento vertical (arrastar) + opacidade.
- *  Não reenvia a imagem — só ajusta como ela aparece. */
-export function CoverAdjuster({ url, posY, opacity, busy, onSave }: Props) {
+const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n));
+
+/** Mini editor da capa: mostra a imagem inteira com uma "janela" do tamanho
+ *  exato do que aparece no cabeçalho — arrastar a janela define o enquadramento
+ *  (object-position Y). Slider separado pra opacidade. */
+export function CoverAdjuster({
+  url,
+  posY,
+  opacity,
+  busy,
+  bandAspect,
+  onSave,
+}: Props) {
   const [y, setY] = useState(posY);
   const [op, setOp] = useState(opacity);
+  const [imgAspect, setImgAspect] = useState<number | null>(null);
   const boxRef = useRef<HTMLDivElement>(null);
-  const drag = useRef<{ startY: number; startPos: number } | null>(null);
+  const drag = useRef<{ startY: number; startWinTop: number } | null>(null);
 
-  // Sincroniza quando o servidor devolve novos valores (e não estamos mexendo).
   useEffect(() => {
     if (!drag.current) setY(posY);
   }, [posY]);
@@ -31,18 +43,32 @@ export function CoverAdjuster({ url, posY, opacity, busy, onSave }: Props) {
     setOp(opacity);
   }, [opacity]);
 
-  const dirty = Math.round(y) !== Math.round(posY) || Math.abs(op - opacity) > 0.001;
+  // fração da altura da imagem que cabe na faixa do cabeçalho
+  const f =
+    imgAspect && bandAspect > 0
+      ? clamp(imgAspect / bandAspect, 0.04, 1)
+      : 1;
+  const canReposition = f < 0.985;
+  // topo da janela como fração [0 .. 1-f]
+  const winTop = (y / 100) * (1 - f);
+
+  const dirty =
+    Math.round(y) !== Math.round(posY) || Math.abs(op - opacity) > 0.001;
 
   const onPointerDown = (e: React.PointerEvent) => {
-    drag.current = { startY: e.clientY, startPos: y };
+    if (!canReposition) return;
+    drag.current = { startY: e.clientY, startWinTop: winTop };
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
   };
   const onPointerMove = (e: React.PointerEvent) => {
     if (!drag.current) return;
-    const h = boxRef.current?.clientHeight || 150;
-    const deltaPct = ((e.clientY - drag.current.startY) / h) * 100 * 1.4;
-    // arrastar a imagem pra baixo revela o topo → diminui Y
-    setY(Math.min(100, Math.max(0, drag.current.startPos - deltaPct)));
+    const h = boxRef.current?.clientHeight || 1;
+    const nextTop = clamp(
+      drag.current.startWinTop + (e.clientY - drag.current.startY) / h,
+      0,
+      1 - f,
+    );
+    setY(1 - f <= 0 ? DEFAULT_POS_Y : (nextTop / (1 - f)) * 100);
   };
   const endDrag = (e: React.PointerEvent) => {
     drag.current = null;
@@ -66,30 +92,50 @@ export function CoverAdjuster({ url, posY, opacity, busy, onSave }: Props) {
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
-        className="relative h-[130px] w-full cursor-grab overflow-hidden rounded bg-gray-100 active:cursor-grabbing dark:bg-gray-900"
-        title="Arraste para enquadrar"
+        className={`relative w-full select-none overflow-hidden rounded bg-gray-100 dark:bg-gray-900 ${
+          canReposition ? "cursor-grab active:cursor-grabbing" : ""
+        }`}
       >
         <img
           src={url}
           alt=""
           draggable={false}
-          className="pointer-events-none h-full w-full select-none object-cover"
-          style={{ objectPosition: `50% ${y}%` }}
+          onLoad={(e) => {
+            const el = e.currentTarget;
+            if (el.naturalWidth && el.naturalHeight) {
+              setImgAspect(el.naturalWidth / el.naturalHeight);
+            }
+          }}
+          className="pointer-events-none block w-full"
         />
-        <span className="pointer-events-none absolute bottom-1 right-1 flex items-center gap-1 rounded bg-black/45 px-1.5 py-0.5 text-[10px] font-medium text-white">
-          <MoveVertical className="h-3 w-3" />
-          {Math.round(y)}%
-        </span>
-        {/* prévia real da opacidade, faixa fina embaixo */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-6 border-t border-white/20 bg-gray-50 dark:bg-gray-950">
-          <img
-            src={url}
-            alt=""
-            className="h-full w-full object-cover"
-            style={{ objectPosition: `50% ${y}%`, opacity: op }}
-          />
-        </div>
+
+        {canReposition && (
+          <>
+            <div
+              className="pointer-events-none absolute inset-x-0 top-0 bg-black/55"
+              style={{ height: `${winTop * 100}%` }}
+            />
+            <div
+              className="pointer-events-none absolute inset-x-0 bottom-0 bg-black/55"
+              style={{ height: `${(1 - winTop - f) * 100}%` }}
+            />
+            <div
+              className="pointer-events-none absolute inset-x-0 border-y-2 border-white/85"
+              style={{ top: `${winTop * 100}%`, height: `${f * 100}%` }}
+            >
+              <span className="absolute left-1 top-1 rounded bg-black/50 px-1 text-[9px] font-medium uppercase tracking-wide text-white">
+                cabeçalho
+              </span>
+            </div>
+          </>
+        )}
       </div>
+
+      <p className="text-[11px] leading-snug text-gray-400 dark:text-gray-500">
+        {canReposition
+          ? "Arraste a faixa clara para escolher o trecho que aparece no cabeçalho."
+          : "A imagem já cabe inteira no cabeçalho — nada a reenquadrar."}
+      </p>
 
       <div className="flex items-center gap-2">
         <span className="w-16 shrink-0 text-[11px] text-gray-400 dark:text-gray-500">
@@ -111,7 +157,9 @@ export function CoverAdjuster({ url, posY, opacity, busy, onSave }: Props) {
       <div className="flex items-center gap-2">
         <button
           type="button"
-          onClick={() => onSave({ posY: Math.round(y), opacity: Number(op.toFixed(2)) })}
+          onClick={() =>
+            onSave({ posY: Math.round(y), opacity: Number(op.toFixed(2)) })
+          }
           disabled={busy || !dirty}
           className="inline-flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-md bg-blue-600 px-2 py-1.5 text-[13px] font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-default disabled:opacity-40"
         >

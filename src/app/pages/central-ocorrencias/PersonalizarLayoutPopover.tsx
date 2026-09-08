@@ -23,6 +23,8 @@ type Props = {
   coverPosY: number;
   /** opacidade atual (0–1) */
   coverOpacity: number;
+  /** proporção (larg/alt) da faixa real da capa */
+  coverBandAspect: number;
   /** só admin pode trocar/remover o plano de fundo */
   canEditCover: boolean;
   /** upload/remoção/ajuste em andamento */
@@ -87,6 +89,7 @@ export function PersonalizarLayoutPopover({
   coverUrl,
   coverPosY,
   coverOpacity,
+  coverBandAspect,
   canEditCover,
   coverBusy,
   onView,
@@ -230,6 +233,7 @@ export function PersonalizarLayoutPopover({
                   url={coverUrl}
                   posY={coverPosY}
                   opacity={coverOpacity}
+                  bandAspect={coverBandAspect}
                   busy={coverBusy}
                   onSave={onSaveCoverSettings}
                 />
