@@ -136,6 +136,16 @@ export function usePatchStatus() {
   });
 }
 
+export function useDeleteOccurrence() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => occurrencesApi.deleteOccurrence(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: occurrencesKeys.all });
+    },
+  });
+}
+
 export function useImportPassagem() {
   const qc = useQueryClient();
   return useMutation({

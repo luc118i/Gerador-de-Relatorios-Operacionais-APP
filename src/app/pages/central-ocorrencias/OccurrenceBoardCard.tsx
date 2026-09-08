@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { ArrowRight, Bus, FileCheck2, GripVertical, MapPin, User } from "lucide-react";
+import { ArrowRight, FileCheck2, GripVertical, MapPin, User } from "lucide-react";
 import type { OccurrenceDTO } from "../../../domain/occurrences";
 import { getOccurrenceFieldVisibility } from "../../config/occurrencePresentation";
 import { getOccurrenceTypeConfig } from "../../config/occurrenceTypes";
@@ -16,11 +16,6 @@ function shortDate(d?: string) {
   if (!d) return "";
   const [, m, day] = d.split("-");
   return m && day ? `${day}/${m}` : d;
-}
-
-/** Sufixo curto do UUID como "#id" legível no card (§3). */
-function shortId(id: string) {
-  return `#${id.slice(0, 8)}`;
 }
 
 function occSubject(o: OccurrenceDTO): string {
@@ -124,7 +119,7 @@ export const OccurrenceBoardCard = memo(function OccurrenceBoardCard({
 
       <div className="flex items-start justify-between gap-2">
         <span className="flex items-center gap-1.5">
-          <span className="text-[11px] font-mono text-gray-400 dark:text-gray-500">{shortId(o.id)}</span>
+          <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{o.vehicleNumber}</span>
           {isNew && (
             <span className="rounded-full bg-blue-100 px-1.5 py-px text-[9px] font-bold uppercase tracking-wide text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
               Novo
@@ -142,16 +137,6 @@ export const OccurrenceBoardCard = memo(function OccurrenceBoardCard({
       </p>
 
       <div className="mt-2 space-y-1 text-xs text-gray-500 dark:text-gray-400">
-        {vis.prefixo && (
-          <div className="flex items-center gap-1.5">
-            <Bus className="w-3.5 h-3.5 shrink-0" />
-            <span className="text-gray-700 dark:text-gray-300">{o.vehicleNumber}</span>
-            {baseSigla && <span className="text-gray-400 dark:text-gray-500">· {baseSigla}</span>}
-            {vis.horario && o.startTime && (
-              <span className="text-gray-400 dark:text-gray-500">· {o.startTime}</span>
-            )}
-          </div>
-        )}
         {vis.linha && (rota || o.lineLabel) && (
           <div className="flex items-center gap-1.5">
             <MapPin className="w-3.5 h-3.5 shrink-0" />
@@ -167,7 +152,11 @@ export const OccurrenceBoardCard = memo(function OccurrenceBoardCard({
       </div>
 
       <div className="mt-2.5 flex items-center justify-between">
-        <span className="text-[11px] text-gray-400 dark:text-gray-500">{shortDate(o.eventDate)}</span>
+        <span className="text-[11px] text-gray-400 dark:text-gray-500">
+          {[shortDate(o.eventDate), baseSigla, vis.horario && o.startTime ? o.startTime : ""]
+            .filter(Boolean)
+            .join(" · ")}
+        </span>
         {hasReport && (
           <span className="flex items-center gap-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
             <FileCheck2 className="w-3.5 h-3.5" />

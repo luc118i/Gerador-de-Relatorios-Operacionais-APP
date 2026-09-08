@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { ExternalLink, FileText, History, Pencil } from "lucide-react";
+import { toast } from "sonner";
+import { ExternalLink, FileText, History, Pencil, Trash2 } from "lucide-react";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
 } from "../../components/ui/sheet";
+import { ConfirmActionModal } from "../home/ConfirmActionModal";
 import { OccurrencePreviewModal } from "../occurrences/preview/OccurrencePreviewModal";
 import type {
   OccurrenceDTO,
@@ -23,6 +25,7 @@ import {
 } from "../../config/occurrenceWorkflow";
 import { getOccurrenceTypeConfig } from "../../config/occurrenceTypes";
 import {
+  useDeleteOccurrence,
   useOccurrenceHistory,
   usePatchPrioridade,
   usePatchStatus,
@@ -84,6 +87,8 @@ type Props = {
 export function OccurrenceDetailPanel({ occurrence: o, open, onClose, onEdit, actor }: Props) {
   const [showReport, setShowReport] = useState(false);
   const [pendingStatus, setPendingStatus] = useState<WorkflowStatus | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const del = useDeleteOccurrence();
 
   const history = useOccurrenceHistory(open && o ? o.id : null);
   const patchStatus = usePatchStatus();
@@ -139,7 +144,9 @@ export function OccurrenceDetailPanel({ occurrence: o, open, onClose, onEdit, ac
         <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
           <SheetHeader className="border-b border-gray-100 dark:border-gray-800">
             <div className="flex items-center gap-2">
-              <span className="font-mono text-xs text-gray-400">#{o.id.slice(0, 8)}</span>
+              <span className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                {o.vehicleNumber}
+              </span>
               {isRecentlyCreated(o.createdAt) && (
                 <span className="rounded-full bg-blue-100 px-1.5 py-px text-[9px] font-bold uppercase tracking-wide text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
                   Novo
@@ -223,7 +230,6 @@ export function OccurrenceDetailPanel({ occurrence: o, open, onClose, onEdit, ac
               </h3>
               <div className="grid grid-cols-2 gap-x-4 gap-y-3">
                 <Field label="Data" value={o.eventDate?.split("-").reverse().join("/")} />
-                <Field label="Prefixo" value={o.vehicleNumber} />
                 {o.baseCode && o.baseCode !== "GENERICO" && <Field label="Base" value={o.baseCode} />}
                 {hora && <Field label="Horário" value={hora} />}
                 {(o.lineLabel || o.tripLineName) && (
@@ -352,7 +358,7 @@ export function OccurrenceDetailPanel({ occurrence: o, open, onClose, onEdit, ac
               )}
             </section>
 
-            <div className="pt-2">
+            <div className="flex items-center justify-between gap-2 pt-2">
               <button
                 onClick={() => onEdit(o.id)}
                 className="inline-flex cursor-pointer items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900 hover:opacity-90"
@@ -360,10 +366,45 @@ export function OccurrenceDetailPanel({ occurrence: o, open, onClose, onEdit, ac
                 <Pencil className="w-4 h-4" />
                 Editar ocorrência
               </button>
+              <button
+                onClick={() => setConfirmDelete(true)}
+                className="inline-flex cursor-pointer items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40 transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+                Excluir
+              </button>
             </div>
           </div>
         </SheetContent>
       </Sheet>
+
+      {confirmDelete && (
+        <ConfirmActionModal
+          icon={<Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />}
+          iconBg="bg-red-50 dark:bg-red-950/40"
+          title="Excluir ocorrência"
+          confirmLabel={del.isPending ? "Excluindo…" : "Excluir"}
+          confirmClassName="bg-red-600 hover:bg-red-700"
+          confirmDisabled={del.isPending}
+          cancelDisabled={del.isPending}
+          onCancel={() => setConfirmDelete(false)}
+          onConfirm={() => {
+            del.mutate(o.id, {
+              onSuccess: () => {
+                toast.success("Ocorrência excluída.");
+                setConfirmDelete(false);
+                onClose();
+              },
+              onError: () => toast.error("Não foi possível excluir."),
+            });
+          }}
+        >
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            Excluir a ocorrência do veículo <strong>{o.vehicleNumber}</strong> ({typeTitle})?
+            Esta ação não pode ser desfeita.
+          </p>
+        </ConfirmActionModal>
+      )}
 
       <OccurrencePreviewModal
         occurrenceId={showReport ? o.id : null}
