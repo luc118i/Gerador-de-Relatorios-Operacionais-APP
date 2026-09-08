@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, ClipboardList, Plus, RefreshCw } from "lucide-react";
+import { ChevronLeft, ClipboardList, Plus, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 import type {
@@ -34,6 +34,8 @@ import { BoardColumn } from "./BoardColumn";
 import { BoardFilters as BoardFiltersBar, emptyBoardFilters, type BoardUiFilters } from "./BoardFilters";
 import { BoardIndicators, type IndicatorFilter } from "./BoardIndicators";
 import { OccurrenceDetailPanel } from "./OccurrenceDetailPanel";
+import { PersonalizarLayoutPopover } from "./PersonalizarLayoutPopover";
+import { useCentralLayout } from "./useCentralLayout";
 
 interface Props {
   onVoltar: () => void;
@@ -44,6 +46,7 @@ const EMPTY_LIST: OccurrenceDTO[] = [];
 export function CentralOcorrenciasPage({ onVoltar }: Props) {
   const queryClient = useQueryClient();
   const { profileName, user } = useAuth();
+  const { layout, setView, setDensity, toggleShow } = useCentralLayout();
 
   // Tela diária: por padrão carrega só o dia de hoje. O período é ajustável
   // nos filtros (De / Até) pra puxar dias anteriores quando precisar.
@@ -243,33 +246,41 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      <div className="sticky top-0 z-20 border-b border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-gray-950/90 backdrop-blur">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-3 flex items-center gap-3">
+      {/* Faixa de controles — baixa, integrada à página */}
+      <div className="sticky top-0 z-20 border-b border-gray-100 bg-gray-50/95 dark:border-gray-900 dark:bg-gray-950/95 backdrop-blur">
+        <div className="mx-auto flex h-11 max-w-[1600px] items-center gap-1 px-3 sm:px-5">
           <button
             onClick={onVoltar}
-            className="cursor-pointer p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+            title="Voltar"
             aria-label="Voltar"
+            className="flex h-7 w-7 cursor-pointer items-center justify-center rounded text-gray-400 transition-colors hover:bg-black/[0.04] hover:text-gray-600 dark:hover:bg-white/[0.06] dark:hover:text-gray-300"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ChevronLeft className="h-4 w-4" />
           </button>
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center">
-            <img src="/logo.png" alt="" className="h-full w-full object-contain dark:hidden" />
-            <img src="/favicon-dark.png" alt="" className="hidden h-full w-full object-contain dark:block" />
-          </span>
-          <h1 className="text-base font-semibold text-gray-900 dark:text-gray-100">Central de Ocorrências</h1>
-          <div className="ml-auto flex items-center gap-2">
+          <span className="mx-1 h-4 w-px bg-gray-200 dark:bg-gray-800" />
+          <PersonalizarLayoutPopover
+            view={layout.view}
+            density={layout.density}
+            show={layout.show}
+            onView={setView}
+            onDensity={setDensity}
+            onToggleShow={toggleShow}
+          />
+
+          <div className="ml-auto flex items-center gap-1">
             <button
               onClick={() => refetch()}
-              className="inline-flex cursor-pointer items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-gray-200 dark:border-gray-700 hover:bg-gray-50 hover:border-gray-300 dark:hover:bg-gray-800 dark:hover:border-gray-600 transition-colors"
+              title="Atualizar"
+              aria-label="Atualizar"
+              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded text-gray-400 transition-colors hover:bg-black/[0.04] hover:text-gray-600 dark:hover:bg-white/[0.06] dark:hover:text-gray-300"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? "animate-spin" : ""}`} />
-              Atualizar
+              <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} />
             </button>
             <button
               onClick={() => setImportOpen(true)}
-              className="inline-flex cursor-pointer items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-gray-200 dark:border-gray-700 hover:bg-gray-50 hover:border-gray-300 dark:hover:bg-gray-800 dark:hover:border-gray-600 transition-colors"
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded px-2 py-1 text-[13px] text-gray-500 transition-colors hover:bg-black/[0.04] hover:text-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.06] dark:hover:text-gray-100"
             >
-              <ClipboardList className="w-3.5 h-3.5" />
+              <ClipboardList className="h-3.5 w-3.5" />
               Importar passagem
             </button>
             <button
@@ -277,26 +288,50 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
                 setQuickInitialStatus(undefined);
                 setQuickOpen(true);
               }}
-              className="inline-flex cursor-pointer items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-blue-700"
             >
-              <Plus className="w-3.5 h-3.5" />
+              <Plus className="h-3.5 w-3.5" />
               Nova ocorrência
             </button>
           </div>
         </div>
       </div>
 
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-4 space-y-4">
+      <div className="mx-auto max-w-[1600px] px-4 sm:px-6">
+        {/* Bloco de identidade — tratamento de título de página */}
+        <div className="pb-3 pt-6">
+          <div className="flex items-center gap-2">
+            <img src="/logo.png" alt="" className="h-[18px] w-[18px] object-contain dark:hidden" />
+            <img
+              src="/favicon-dark.png"
+              alt=""
+              className="hidden h-[18px] w-[18px] object-contain dark:block"
+            />
+            <span className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">
+              Quadro
+            </span>
+          </div>
+          <h1 className="mt-1.5 text-[1.9rem] font-semibold leading-tight tracking-tight text-gray-900 dark:text-gray-50">
+            Central de Ocorrências
+          </h1>
+          <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
+            Central de acompanhamento e tratamento de ocorrências
+          </p>
+        </div>
+
         <BoardIndicators occurrences={visible} active={indicator} onPick={setIndicator} />
-        <BoardFiltersBar
-          value={filters}
-          onChange={setFilters}
-          onReset={() => {
-            setFilters(emptyBoardFilters(filters.from, filters.to));
-            setIndicator({ kind: "all" });
-          }}
-          resultCount={filtered.length}
-        />
+        <div className="mt-3">
+          <BoardFiltersBar
+            value={filters}
+            onChange={setFilters}
+            onReset={() => {
+              setFilters(emptyBoardFilters(filters.from, filters.to));
+              setIndicator({ kind: "all" });
+            }}
+            resultCount={filtered.length}
+          />
+        </div>
+        <div className="pb-4 pt-4">
 
         {isError ? (
           <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-12 text-center">
@@ -313,12 +348,13 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
         ) : isLoading ? (
           <p className="text-sm text-gray-500 dark:text-gray-400">Carregando quadro…</p>
         ) : (
-          <div className="flex gap-3 overflow-x-auto pb-4">
+          <div className="flex gap-5 overflow-x-auto pb-4">
             {BOARD_COLUMNS.map((s) => (
               <BoardColumn
                 key={s}
                 status={s}
                 occurrences={byStatus.get(s) ?? []}
+                layout={layout}
                 onCardClick={handleCardClick}
                 onCardDragStart={onCardDragStart}
                 onCardDragEnd={onCardDragEnd}
@@ -334,6 +370,7 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
             ))}
           </div>
         )}
+        </div>
       </div>
 
       <QuickOccurrenceModal

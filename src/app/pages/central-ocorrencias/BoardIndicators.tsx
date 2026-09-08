@@ -29,16 +29,28 @@ function Tile({
     <button
       type="button"
       onClick={onClick}
-      className={`flex min-w-[104px] cursor-pointer flex-col items-start rounded-lg border px-3 py-2 transition-colors ${
+      className={`flex min-w-[92px] cursor-pointer flex-col items-start rounded-md px-2.5 py-1.5 transition-colors ${
         active
-          ? "border-blue-300 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/40"
-          : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-gray-700 dark:hover:bg-gray-800/50"
+          ? "bg-black/[0.04] dark:bg-white/[0.06]"
+          : "hover:bg-black/[0.03] dark:hover:bg-white/[0.04]"
       }`}
     >
-      <span className={`text-lg font-bold tabular-nums ${accent ?? "text-gray-900 dark:text-gray-100"}`}>
+      <span
+        className={`text-[17px] font-semibold tabular-nums ${
+          accent ?? "text-gray-900 dark:text-gray-100"
+        }`}
+      >
         {value}
       </span>
-      <span className="text-[11px] uppercase tracking-wide text-gray-400 dark:text-gray-500">{label}</span>
+      <span
+        className={`text-[11px] tracking-wide ${
+          active
+            ? "font-medium text-blue-600 dark:text-blue-400"
+            : "text-gray-400 dark:text-gray-500"
+        }`}
+      >
+        {label}
+      </span>
     </button>
   );
 }

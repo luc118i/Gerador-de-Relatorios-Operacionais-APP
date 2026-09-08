@@ -12,6 +12,7 @@ import {
 } from "../../config/occurrenceWorkflow";
 import { resolveBaseSigla } from "../../../utils/base";
 import { avatarColor, initialsOf } from "../../../utils/avatar";
+import { DENSITY_CARD_PADDING, type CentralLayout } from "./useCentralLayout";
 
 /** "YYYY-MM-DD" → "DD/MM". */
 function shortDate(d?: string) {
@@ -31,6 +32,7 @@ function firstDriver(o: OccurrenceDTO) {
 
 type Props = {
   occurrence: OccurrenceDTO;
+  layout: CentralLayout;
   /** Estáveis (do pai) — o card os chama com a própria ocorrência. */
   onSelect: (o: OccurrenceDTO) => void;
   onDragStart: (o: OccurrenceDTO) => void;
@@ -43,12 +45,12 @@ type Props = {
 };
 
 /**
- * Card do quadro. Arrasto via HTML5 drag nativo — só a alça (aparece no hover)
- * é `draggable`, pra não disparar arrasto acidental ao tentar clicar. Sem
- * react-dnd (custo de N assinaturas de monitor por evento com dezenas de cards).
+ * Card do quadro — "bloco de informação editorial": borda fina, sem sombra,
+ * cor só na faixa de prioridade CRÍTICA/ALTA. Arrasto via HTML5 nativo pela alça.
  */
 export const OccurrenceBoardCard = memo(function OccurrenceBoardCard({
   occurrence: o,
+  layout,
   onSelect,
   onDragStart,
   onDragEnd,
@@ -57,6 +59,7 @@ export const OccurrenceBoardCard = memo(function OccurrenceBoardCard({
   justMoved,
 }: Props) {
   const [expanded, setExpanded] = useState(false);
+  const { show } = layout;
   const vis = getOccurrenceFieldVisibility(o);
   const prio = getPrioridadeConfig(o.prioridade);
   const d1 = firstDriver(o);
@@ -65,13 +68,20 @@ export const OccurrenceBoardCard = memo(function OccurrenceBoardCard({
   const isNew = isRecentlyCreated(o.createdAt);
   const prog = treatmentProgress(o);
   const descricao = (o.relatoHtml ?? "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-  // Faixa de prioridade só pras que importam (CRÍTICA/ALTA) — evita cor em todo card.
   const prioCode = o.prioridade ?? "MEDIA";
-  const stripe = prioCode === "CRITICA" || prioCode === "ALTA" ? prio.dot : null;
+  const stripe =
+    show.prioridade && (prioCode === "CRITICA" || prioCode === "ALTA") ? prio.dot : null;
+  const showDesc = descricao && (show.descricao || expanded);
 
   const rota =
     o.tripLineName || (o.lineLabel ?? "").split(" - ").slice(1).join(" - ") || o.lineLabel || "";
   const baseSigla = d1?.baseCode ? resolveBaseSigla(d1.baseCode) : resolveBaseSigla(o.baseCode ?? "");
+
+  const meta = [
+    show.datas ? shortDate(o.eventDate) : "",
+    baseSigla,
+    show.datas && vis.horario && o.startTime ? o.startTime : "",
+  ].filter(Boolean);
 
   return (
     <div
@@ -84,21 +94,17 @@ export const OccurrenceBoardCard = memo(function OccurrenceBoardCard({
           onSelect(o);
         }
       }}
-      className={`group relative w-full cursor-pointer text-left rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-3 pr-8 hover:border-gray-300 dark:hover:border-gray-700 hover:shadow-sm transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-400/50 ${
-        dragging ? "opacity-40" : ""
-      } ${
-        justMoved
-          ? "animate-in fade-in slide-in-from-left-6 duration-300 ease-out ring-2 ring-blue-400/40"
-          : ""
+      className={`group relative w-full cursor-pointer rounded-md border border-gray-200/70 bg-white pr-7 text-left transition-[transform,border-color,opacity,box-shadow] duration-150 hover:-translate-y-px hover:border-gray-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-gray-700 ${
+        DENSITY_CARD_PADDING[layout.density]
+      } ${dragging ? "opacity-40" : ""} ${
+        justMoved ? "animate-in fade-in slide-in-from-left-6 duration-300 ease-out" : ""
       }`}
     >
-      {/* Faixa de prioridade (só CRÍTICA/ALTA) no topo do card */}
       {stripe && (
-        <span className={`absolute inset-x-0 top-0 h-[3px] rounded-t-lg ${stripe}`} />
+        <span className={`absolute inset-x-0 top-0 h-[3px] rounded-t-md ${stripe}`} />
       )}
 
-      {/* Faixa de arrasto — ocupa toda a borda direita do card. Só ela é
-          `draggable`; o resto do card é zona de clique (abrir detalhe). */}
+      {/* Alça de arrasto — borda direita do card. Só ela é `draggable`. */}
       <div
         draggable
         onClick={(e) => e.stopPropagation()}
@@ -110,7 +116,7 @@ export const OccurrenceBoardCard = memo(function OccurrenceBoardCard({
         onDragEnd={onDragEnd}
         title="Arrastar para outra coluna"
         aria-label="Arrastar ocorrência"
-        className="absolute right-0 top-0 bottom-0 flex w-6 cursor-grab flex-col items-center justify-center gap-1 rounded-r-lg border-l border-gray-100 bg-gray-50/80 text-gray-300 transition-colors group-hover:bg-gray-100 group-hover:text-gray-400 active:cursor-grabbing dark:border-gray-800 dark:bg-gray-800/40 dark:text-gray-600 dark:group-hover:bg-gray-800 dark:group-hover:text-gray-500"
+        className="absolute bottom-0 right-0 top-0 flex w-6 cursor-grab flex-col items-center justify-center gap-1 rounded-r-md text-gray-200 opacity-0 transition-opacity duration-150 group-hover:opacity-100 active:cursor-grabbing dark:text-gray-700"
       >
         <GripVertical className="h-4 w-4" />
         {next && (
@@ -123,7 +129,7 @@ export const OccurrenceBoardCard = memo(function OccurrenceBoardCard({
             }}
             title={`Avançar para "${getWorkflowStatusConfig(next).label}"`}
             aria-label={`Avançar para ${getWorkflowStatusConfig(next).label}`}
-            className="flex h-5 w-5 cursor-pointer items-center justify-center rounded text-gray-300 opacity-0 transition-opacity hover:bg-white hover:text-gray-700 group-hover:opacity-100 dark:text-gray-600 dark:hover:bg-gray-900 dark:hover:text-gray-200"
+            className="flex h-5 w-5 items-center justify-center rounded text-gray-300 hover:bg-black/[0.04] hover:text-gray-600 dark:text-gray-600 dark:hover:bg-white/[0.06] dark:hover:text-gray-300"
           >
             <ArrowRight className="h-3.5 w-3.5" />
           </button>
@@ -132,18 +138,22 @@ export const OccurrenceBoardCard = memo(function OccurrenceBoardCard({
 
       <div className="flex items-start justify-between gap-2">
         <span className="flex items-center gap-1.5">
-          <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{o.vehicleNumber}</span>
+          <span className="text-[14px] font-semibold text-gray-900 dark:text-gray-100">
+            {o.vehicleNumber}
+          </span>
           {isNew && (
-            <span className="rounded-full bg-blue-100 px-1.5 py-px text-[9px] font-bold uppercase tracking-wide text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
+            <span className="rounded bg-blue-50 px-1 py-px text-[9px] font-bold uppercase tracking-wide text-blue-600 dark:bg-blue-950/60 dark:text-blue-300">
               Novo
             </span>
           )}
         </span>
-        <span className="flex items-center gap-1.5 text-[11px] text-gray-400 dark:text-gray-500">
-          <span className="flex items-center gap-1">
-            <span className={`inline-block w-1.5 h-1.5 rounded-full ${prio.dot}`} />
-            {prio.label}
-          </span>
+        <span className="flex items-center gap-1 text-[11px] text-gray-400 dark:text-gray-500">
+          {show.prioridade && (
+            <span className="flex items-center gap-1">
+              <span className={`inline-block h-1.5 w-1.5 rounded-full ${prio.dot}`} />
+              {prio.label}
+            </span>
+          )}
           {(descricao || prog.done > 0) && (
             <button
               type="button"
@@ -152,7 +162,7 @@ export const OccurrenceBoardCard = memo(function OccurrenceBoardCard({
                 setExpanded((v) => !v);
               }}
               aria-label={expanded ? "Recolher" : "Expandir"}
-              className="flex h-4 w-4 items-center justify-center rounded text-gray-300 hover:bg-gray-100 hover:text-gray-500 dark:text-gray-600 dark:hover:bg-gray-800"
+              className="flex h-4 w-4 items-center justify-center rounded text-gray-300 hover:bg-black/[0.04] hover:text-gray-500 dark:text-gray-600 dark:hover:bg-white/[0.06]"
             >
               <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
             </button>
@@ -160,64 +170,61 @@ export const OccurrenceBoardCard = memo(function OccurrenceBoardCard({
         </span>
       </div>
 
-      <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-gray-100 leading-snug line-clamp-2">
+      <p className="mt-1 text-[14px] font-semibold leading-snug text-gray-900 line-clamp-2 dark:text-gray-100">
         {occSubject(o)}
       </p>
 
-      {expanded && (
-        <div className="mt-2 space-y-2">
-          {descricao && (
-            <p className="text-[11px] leading-relaxed text-gray-500 dark:text-gray-400">{descricao}</p>
-          )}
-          {prog.done > 0 && (
-            <div className="space-y-1">
-              <div className="flex items-center justify-between text-[9px] uppercase tracking-wide text-gray-400 dark:text-gray-500">
-                <span>Tratamento</span>
-                <span className="tabular-nums">
-                  {prog.done}/{prog.total}
-                </span>
-              </div>
-              <div className="h-[3px] overflow-hidden rounded-full bg-gray-200 dark:bg-gray-800">
-                <div
-                  className="h-full rounded-full bg-emerald-500"
-                  style={{ width: `${(prog.done / prog.total) * 100}%` }}
-                />
-              </div>
-              <div className="flex flex-wrap gap-x-2 gap-y-0.5 pt-0.5">
-                {prog.steps.map((s) => (
-                  <span
-                    key={s.label}
-                    className={`text-[10px] ${
-                      s.done
-                        ? "text-emerald-600 dark:text-emerald-400"
-                        : "text-gray-300 dark:text-gray-600"
-                    }`}
-                  >
-                    {s.done ? "✓" : "○"} {s.label}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
+      {showDesc && (
+        <p className="mt-1.5 text-[12px] leading-relaxed text-gray-500 line-clamp-3 dark:text-gray-400">
+          {descricao}
+        </p>
+      )}
+
+      {expanded && prog.done > 0 && (
+        <div className="mt-2 space-y-1">
+          <div className="flex items-center justify-between text-[9px] uppercase tracking-wide text-gray-400 dark:text-gray-500">
+            <span>Tratamento</span>
+            <span className="tabular-nums">
+              {prog.done}/{prog.total}
+            </span>
+          </div>
+          <div className="h-[3px] overflow-hidden rounded-full bg-gray-200 dark:bg-gray-800">
+            <div
+              className="h-full rounded-full bg-emerald-500"
+              style={{ width: `${(prog.done / prog.total) * 100}%` }}
+            />
+          </div>
+          <div className="flex flex-wrap gap-x-2 gap-y-0.5 pt-0.5">
+            {prog.steps.map((s) => (
+              <span
+                key={s.label}
+                className={`text-[10px] ${
+                  s.done ? "text-emerald-600 dark:text-emerald-400" : "text-gray-300 dark:text-gray-600"
+                }`}
+              >
+                {s.done ? "✓" : "○"} {s.label}
+              </span>
+            ))}
+          </div>
         </div>
       )}
 
       <div className="mt-2 space-y-1 text-xs text-gray-500 dark:text-gray-400">
         {vis.linha && (rota || o.lineLabel) && (
           <div className="flex items-center gap-1.5">
-            <MapPin className="w-3.5 h-3.5 shrink-0" />
+            <MapPin className="h-3.5 w-3.5 shrink-0 text-gray-300 dark:text-gray-600" />
             <span className="truncate">{rota || o.lineLabel}</span>
           </div>
         )}
         {vis.motorista && d1?.name && (
           <div className="flex items-center gap-1.5">
-            <User className="w-3.5 h-3.5 shrink-0" />
+            <User className="h-3.5 w-3.5 shrink-0 text-gray-300 dark:text-gray-600" />
             <span className="truncate">{d1.name}</span>
           </div>
         )}
       </div>
 
-      <div className="mt-2.5 flex items-center justify-between gap-2">
+      <div className="mt-2 flex items-center justify-between gap-2">
         <span className="flex min-w-0 items-center gap-1.5">
           {o.analisadoPor && (
             <span
@@ -227,11 +234,11 @@ export const OccurrenceBoardCard = memo(function OccurrenceBoardCard({
               {initialsOf(o.analisadoPor)}
             </span>
           )}
-          <span className="truncate text-[11px] text-gray-400 dark:text-gray-500">
-            {[shortDate(o.eventDate), baseSigla, vis.horario && o.startTime ? o.startTime : ""]
-              .filter(Boolean)
-              .join(" · ")}
-          </span>
+          {meta.length > 0 && (
+            <span className="truncate text-[11px] text-gray-400 dark:text-gray-500">
+              {meta.join(" · ")}
+            </span>
+          )}
           {prog.done > 0 && !expanded && (
             <span className="shrink-0 rounded bg-gray-100 px-1 text-[9px] font-semibold tabular-nums text-gray-400 dark:bg-gray-800 dark:text-gray-500">
               {prog.done}/{prog.total}
@@ -240,7 +247,7 @@ export const OccurrenceBoardCard = memo(function OccurrenceBoardCard({
         </span>
         {hasReport && (
           <span className="flex shrink-0 items-center gap-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
-            <FileCheck2 className="w-3.5 h-3.5" />
+            <FileCheck2 className="h-3.5 w-3.5" />
             Relatório
           </span>
         )}
