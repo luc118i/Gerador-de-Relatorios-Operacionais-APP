@@ -42,6 +42,7 @@ import { BoardFilters as BoardFiltersBar, emptyBoardFilters, type BoardUiFilters
 import { BoardIndicators, type IndicatorFilter } from "./BoardIndicators";
 import { OccurrenceDetailPanel } from "./OccurrenceDetailPanel";
 import { PersonalizarLayoutPopover } from "./PersonalizarLayoutPopover";
+import { ViewSwitcher } from "./ViewSwitcher";
 import { BoardListView } from "./BoardListView";
 import { BoardTableView } from "./BoardTableView";
 import { useCentralLayout } from "./useCentralLayout";
@@ -414,9 +415,7 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
               alt=""
               className="hidden h-[18px] w-[18px] object-contain dark:block"
             />
-            <span className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">
-              Quadro
-            </span>
+            <ViewSwitcher view={layout.view} onChange={setView} />
           </div>
           <h1 className="mt-1.5 text-[1.9rem] font-semibold leading-tight tracking-tight text-gray-900 dark:text-gray-50">
             Central de Ocorrências
