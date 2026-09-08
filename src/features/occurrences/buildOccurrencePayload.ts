@@ -94,6 +94,10 @@ export function buildOccurrencePayload(args: {
     devolutivaBeforeEvidences: args.devolutivaBeforeEvidences ?? false,
     tratativa: args.tratativa ?? null,
     prioridade: args.prioridade ?? "MEDIA",
+    // Esse payload vem sempre do Gerador de Relatórios (NovaOcorrencia) — cria
+    // ou edita uma ocorrência de relatório. Editar por aqui uma ocorrência que
+    // era só da Central promove ela a "REPORT" (passa a aparecer na Home).
+    origin: "REPORT",
     analisadoPor: args.analisadoPor ?? null,
     analisadoPorUserId: args.analisadoPorUserId ?? null,
     drivers,

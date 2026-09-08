@@ -77,6 +77,24 @@ export const occurrencesApi = {
     return json.data ?? [];
   },
 
+  /** Importa em lote a passagem de serviço (WhatsApp) — 1 ocorrência por linha. */
+  async importPassagem(payload: {
+    eventDate: string;
+    analisadoPor?: string | null;
+    analisadoPorUserId?: string | null;
+    operador?: string | null;
+    rows: Array<{ vehicleNumber: string; subject: string; detalhes: string }>;
+  }): Promise<{ created: string[]; failed: Array<{ index: number; error: string }> }> {
+    const json = await request<
+      ApiData<{ created: string[]; failed: Array<{ index: number; error: string }> }>
+    >({
+      method: "POST",
+      path: "/occurrences/import",
+      body: payload,
+    });
+    return json.data;
+  },
+
   async patchStatus(
     id: string,
     workflowStatus: WorkflowStatus,

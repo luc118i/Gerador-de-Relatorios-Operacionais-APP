@@ -136,6 +136,17 @@ export function usePatchStatus() {
   });
 }
 
+export function useImportPassagem() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: Parameters<typeof occurrencesApi.importPassagem>[0]) =>
+      occurrencesApi.importPassagem(payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: occurrencesKeys.all });
+    },
+  });
+}
+
 export function usePatchPrioridade() {
   const qc = useQueryClient();
   return useMutation({

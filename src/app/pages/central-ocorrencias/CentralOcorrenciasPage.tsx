@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Plus, RefreshCw } from "lucide-react";
+import { ArrowLeft, ClipboardList, Plus, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 import type {
@@ -29,6 +29,7 @@ import type { Ocorrencia } from "../../types";
 import { NovaOcorrencia } from "../nova-ocorrencia";
 import { ConfirmActionModal } from "../home/ConfirmActionModal";
 import { QuickOccurrenceModal } from "./QuickOccurrenceModal";
+import { ImportPassagemModal } from "./ImportPassagemModal";
 import { BoardColumn } from "./BoardColumn";
 import { BoardFilters as BoardFiltersBar, emptyBoardFilters, type BoardUiFilters } from "./BoardFilters";
 import { BoardIndicators, type IndicatorFilter } from "./BoardIndicators";
@@ -56,6 +57,7 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editando, setEditando] = useState<Ocorrencia | null>(null);
   const [quickOpen, setQuickOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [pendingMove, setPendingMove] = useState<{ id: string; to: WorkflowStatus } | null>(null);
 
   // ── Drag-and-drop nativo (HTML5) — sem react-dnd ─────────────────────────
@@ -260,6 +262,13 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
               Atualizar
             </button>
             <button
+              onClick={() => setImportOpen(true)}
+              className="inline-flex cursor-pointer items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-gray-200 dark:border-gray-700 hover:bg-gray-50 hover:border-gray-300 dark:hover:bg-gray-800 dark:hover:border-gray-600 transition-colors"
+            >
+              <ClipboardList className="w-3.5 h-3.5" />
+              Importar passagem
+            </button>
+            <button
               onClick={() => setQuickOpen(true)}
               className="inline-flex cursor-pointer items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors"
             >
@@ -325,6 +334,17 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
         onCreated={(id, opts) => {
           queryClient.invalidateQueries({ queryKey: occurrencesKeys.all });
           if (opts?.openReport) handleEditar(id);
+        }}
+      />
+
+      <ImportPassagemModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onImported={(eventDate) => {
+          queryClient.invalidateQueries({ queryKey: occurrencesKeys.all });
+          // pula o filtro pra data importada, senão os cards ficam fora da janela
+          setFilters((f) => ({ ...f, from: eventDate, to: eventDate }));
+          setIndicator({ kind: "all" });
         }}
       />
 

@@ -98,6 +98,9 @@ export type CreateOccurrenceInput = {
    *  inicial e assume prioridade MÉDIA quando ausentes. */
   workflowStatus?: WorkflowStatus | null;
   prioridade?: Prioridade | null;
+  /** "CENTRAL" = cadastro direto na Central (não aparece na Home). Ausente
+   *  no create = "REPORT" (fluxo do Gerador de Relatórios). */
+  origin?: "REPORT" | "CENTRAL";
   analisadoPor?: string | null;
   /**
    * Vínculo best-effort com o usuário logado (auth.user.id) no momento em
@@ -191,9 +194,10 @@ export type OccurrenceDTO = {
   faltaTratativa?: boolean;
   tratativa?: "SUSPEICAO" | "ADVERTENCIA" | "VALE" | "REGISTRO" | null;
   /** Central de Ocorrências — sempre presente nas listagens (default
-   *  "PENDENTE" / "MEDIA" no backend). */
+   *  "PENDENTE" / "MEDIA" / "REPORT" no backend). */
   workflowStatus?: WorkflowStatus;
   prioridade?: Prioridade;
+  origin?: "REPORT" | "CENTRAL";
   analisadoPor?: string | null;
   analisadoPorUserId?: string | null;
   justificativaRegistro?: string | null;

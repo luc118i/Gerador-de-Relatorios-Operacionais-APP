@@ -99,6 +99,9 @@ export function QuickOccurrenceModal({ open, onClose, onCreated }: Props) {
       const typeCode = isGeneric ? "GENERICO" : tipoSel;
       const payload: CreateOccurrenceInput = {
         typeCode,
+        // "Gerar relatório" transforma numa ocorrência de relatório (aparece na
+        // Home); "Registrar ocorrência" fica só na Central.
+        origin: openReport ? "REPORT" : "CENTRAL",
         eventDate: data,
         tripDate: data,
         startTime: "00:00",
