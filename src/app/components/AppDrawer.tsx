@@ -31,7 +31,7 @@ const ITEMS: DrawerItem[] = [
       <img
         src="/central-ocorrencias-icon.png"
         alt=""
-        className="h-6 w-6 shrink-0 object-contain [mix-blend-mode:multiply] dark:invert dark:[mix-blend-mode:lighten]"
+        className="h-9 w-9 shrink-0 object-contain dark:invert"
       />
     ),
     everyone: true,
