@@ -35,6 +35,8 @@ import { BoardFilters as BoardFiltersBar, emptyBoardFilters, type BoardUiFilters
 import { BoardIndicators, type IndicatorFilter } from "./BoardIndicators";
 import { OccurrenceDetailPanel } from "./OccurrenceDetailPanel";
 import { PersonalizarLayoutPopover } from "./PersonalizarLayoutPopover";
+import { BoardListView } from "./BoardListView";
+import { BoardTableView } from "./BoardTableView";
 import { useCentralLayout } from "./useCentralLayout";
 
 interface Props {
@@ -347,6 +349,22 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
           </div>
         ) : isLoading ? (
           <p className="text-sm text-gray-500 dark:text-gray-400">Carregando quadro…</p>
+        ) : layout.view === "lista" ? (
+          <BoardListView
+            occurrences={filtered}
+            layout={layout}
+            actor={actor}
+            onOpen={handleCardClick}
+            onEdit={handleEditar}
+          />
+        ) : layout.view === "tabela" ? (
+          <BoardTableView
+            occurrences={filtered}
+            layout={layout}
+            actor={actor}
+            onOpen={handleCardClick}
+            onEdit={handleEditar}
+          />
         ) : (
           <div className="flex gap-5 overflow-x-auto pb-4">
             {BOARD_COLUMNS.map((s) => (
