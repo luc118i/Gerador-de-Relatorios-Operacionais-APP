@@ -30,7 +30,7 @@ export function useUpdateCentralCoverSettings() {
       patch,
       actorNome,
     }: {
-      patch: { posY?: number; opacity?: number };
+      patch: { posY?: number; opacity?: number; zoom?: number };
       actorNome?: string;
     }) => centralSettingsApi.patchCover(patch, actorNome),
     // aplica na hora (a capa do quadro reflete o ajuste imediatamente)

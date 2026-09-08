@@ -23,6 +23,8 @@ type Props = {
   coverPosY: number;
   /** opacidade atual (0–1) */
   coverOpacity: number;
+  /** zoom atual (0–1) */
+  coverZoom: number;
   /** proporção (larg/alt) da faixa real da capa */
   coverBandAspect: number;
   /** só admin pode trocar/remover o plano de fundo */
@@ -35,7 +37,11 @@ type Props = {
   onToggleColumn: (status: string) => void;
   onPickCover: (file: Blob) => void;
   onClearCover: () => void;
-  onSaveCoverSettings: (patch: { posY: number; opacity: number }) => void;
+  onSaveCoverSettings: (patch: {
+    posY: number;
+    opacity: number;
+    zoom: number;
+  }) => void;
 };
 
 /** Reduz a imagem escolhida (máx. 1600px de largura, JPEG ~0.72) antes de
@@ -89,6 +95,7 @@ export function PersonalizarLayoutPopover({
   coverUrl,
   coverPosY,
   coverOpacity,
+  coverZoom,
   coverBandAspect,
   canEditCover,
   coverBusy,
@@ -233,6 +240,7 @@ export function PersonalizarLayoutPopover({
                   url={coverUrl}
                   posY={coverPosY}
                   opacity={coverOpacity}
+                  zoom={coverZoom}
                   bandAspect={coverBandAspect}
                   busy={coverBusy}
                   onSave={onSaveCoverSettings}

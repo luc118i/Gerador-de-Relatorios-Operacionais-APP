@@ -9,6 +9,8 @@ export type CentralCover = {
   posY: number;
   /** opacidade da imagem no quadro (0–1) */
   opacity: number;
+  /** zoom: 1 = preenche a faixa, 0 = imagem inteira */
+  zoom: number;
 };
 
 export const centralSettingsApi = {
@@ -31,7 +33,10 @@ export const centralSettingsApi = {
     return (await res.json()).data as CentralCover;
   },
 
-  patchCover(patch: { posY?: number; opacity?: number }, actorNome?: string) {
+  patchCover(
+    patch: { posY?: number; opacity?: number; zoom?: number },
+    actorNome?: string,
+  ) {
     return request<{ data: CentralCover }>({
       method: "PATCH",
       path: "/central/cover",

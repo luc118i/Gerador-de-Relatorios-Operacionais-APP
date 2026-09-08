@@ -42,6 +42,7 @@ import { BoardIndicators, type IndicatorFilter } from "./BoardIndicators";
 import { OccurrenceDetailPanel } from "./OccurrenceDetailPanel";
 import { PersonalizarLayoutPopover } from "./PersonalizarLayoutPopover";
 import { ViewSwitcher } from "./ViewSwitcher";
+import { coverWidthFraction } from "./coverGeom";
 import { BoardListView } from "./BoardListView";
 import { BoardTableView } from "./BoardTableView";
 import { useCentralLayout } from "./useCentralLayout";
@@ -65,6 +66,7 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
     setCover.isPending || clearCover.isPending || updateCoverSettings.isPending;
   const coverPosY = cover?.posY ?? 50;
   const coverOpacity = cover?.opacity ?? 0.16;
+  const coverZoom = cover?.zoom ?? 1;
 
   // Proporção real da faixa da capa — o mini editor usa isso pra mostrar uma
   // "janela" do tamanho exato do que aparece no cabeçalho.
@@ -82,6 +84,28 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
     ro.observe(el);
     return () => ro.disconnect();
   }, [cover?.url]);
+
+  // Proporção natural da imagem de fundo — pra calcular o "zoom" (quanto ela
+  // preenche a faixa) sem depender só de object-fit.
+  const [coverImgAspect, setCoverImgAspect] = useState<number | null>(null);
+  useEffect(() => {
+    if (!cover?.url) {
+      setCoverImgAspect(null);
+      return;
+    }
+    const im = new Image();
+    im.onload = () =>
+      setCoverImgAspect(
+        im.naturalWidth && im.naturalHeight
+          ? im.naturalWidth / im.naturalHeight
+          : null,
+      );
+    im.src = cover.url;
+  }, [cover?.url]);
+
+  const coverBgSize = coverImgAspect
+    ? `${coverWidthFraction(coverImgAspect / coverBandAspect, coverZoom) * 100}% auto`
+    : "cover";
 
   const handlePickCover = useCallback(
     (file: Blob) => {
@@ -106,7 +130,7 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
   }, [clearCover.mutate, profileName]);
 
   const handleSaveCoverSettings = useCallback(
-    (patch: { posY: number; opacity: number }) => {
+    (patch: { posY: number; opacity: number; zoom: number }) => {
       updateCoverSettings.mutate(
         { patch, actorNome: profileName || undefined },
         {
@@ -355,6 +379,7 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
             coverUrl={cover?.url ?? null}
             coverPosY={coverPosY}
             coverOpacity={coverOpacity}
+            coverZoom={coverZoom}
             coverBandAspect={coverBandAspect}
             canEditCover
             coverBusy={coverBusy}
@@ -415,12 +440,13 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
             aria-hidden
             className="pointer-events-none absolute inset-x-0 top-0 z-0 h-[168px] overflow-hidden"
           >
-            <img
-              src={cover.url}
-              alt=""
-              className="h-full w-full object-cover"
+            <div
+              className="h-full w-full"
               style={{
-                objectPosition: `50% ${coverPosY}%`,
+                backgroundImage: `url("${cover.url}")`,
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: `50% ${coverPosY}%`,
+                backgroundSize: coverBgSize,
                 opacity: coverOpacity,
               }}
             />
