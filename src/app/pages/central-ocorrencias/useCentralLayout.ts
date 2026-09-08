@@ -10,8 +10,6 @@ export type CentralLayout = {
   show: Record<CentralShowKey, boolean>;
   /** códigos de status (colunas) ocultos no quadro / na lista */
   hiddenColumns: string[];
-  /** imagem de fundo do cabeçalho (data URL) — renderizada bem discreta */
-  coverImage: string | null;
 };
 
 const STORAGE_KEY = "central_layout_v1";
@@ -21,7 +19,6 @@ const DEFAULT_LAYOUT: CentralLayout = {
   density: "confortavel",
   show: { contagem: true, descricao: true, datas: true, prioridade: true },
   hiddenColumns: [],
-  coverImage: null,
 };
 
 function read(): CentralLayout {
@@ -34,7 +31,6 @@ function read(): CentralLayout {
       density: p.density ?? DEFAULT_LAYOUT.density,
       show: { ...DEFAULT_LAYOUT.show, ...(p.show ?? {}) },
       hiddenColumns: Array.isArray(p.hiddenColumns) ? p.hiddenColumns : [],
-      coverImage: typeof p.coverImage === "string" ? p.coverImage : null,
     };
   } catch {
     return DEFAULT_LAYOUT;
@@ -85,12 +81,7 @@ export function useCentralLayout() {
       })),
     [update],
   );
-  const setCoverImage = useCallback(
-    (coverImage: string | null) => update((l) => ({ ...l, coverImage })),
-    [update],
-  );
-
-  return { layout, setView, setDensity, toggleShow, toggleColumn, setCoverImage };
+  return { layout, setView, setDensity, toggleShow, toggleColumn };
 }
 
 // ── Mapas de densidade (classes Tailwind) ────────────────────────────────

@@ -14,6 +14,12 @@ import { dtoToOcorrencia } from "../../../utils/occurrenceMapper";
 import { normalizeText } from "../../../utils/occurrenceVisibility";
 import { getLocalDateString } from "../../../utils/dateUtils";
 import { useAuth } from "../../context/AuthContext";
+import { useAdminAuth } from "../../context/AdminAuthContext";
+import {
+  useCentralCover,
+  useClearCentralCover,
+  useSetCentralCover,
+} from "../../../features/central/centralCover.queries";
 import {
   useBoardOccurrences,
   usePatchStatus,
@@ -48,8 +54,35 @@ const EMPTY_LIST: OccurrenceDTO[] = [];
 export function CentralOcorrenciasPage({ onVoltar }: Props) {
   const queryClient = useQueryClient();
   const { profileName, user } = useAuth();
-  const { layout, setView, setDensity, toggleShow, toggleColumn, setCoverImage } =
-    useCentralLayout();
+  const { layout, setView, setDensity, toggleShow, toggleColumn } = useCentralLayout();
+
+  const { isAdmin } = useAdminAuth();
+  const { data: cover } = useCentralCover();
+  const setCover = useSetCentralCover();
+  const clearCover = useClearCentralCover();
+  const coverBusy = setCover.isPending || clearCover.isPending;
+
+  const handlePickCover = useCallback(
+    (file: Blob) => {
+      setCover.mutate(
+        { file, actorNome: profileName || undefined },
+        {
+          onSuccess: () => toast.success("Plano de fundo atualizado."),
+          onError: () => toast.error("Não foi possível salvar a imagem."),
+        },
+      );
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [setCover.mutate, profileName],
+  );
+
+  const handleClearCover = useCallback(() => {
+    clearCover.mutate(profileName || undefined, {
+      onSuccess: () => toast.success("Plano de fundo removido."),
+      onError: () => toast.error("Não foi possível remover a imagem."),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clearCover.mutate, profileName]);
 
   // Tela diária: por padrão carrega só o dia de hoje. O período é ajustável
   // nos filtros (De / Até) pra puxar dias anteriores quando precisar.
@@ -279,12 +312,15 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
             density={layout.density}
             show={layout.show}
             hiddenColumns={layout.hiddenColumns}
-            coverImage={layout.coverImage}
+            coverUrl={cover?.url ?? null}
+            canEditCover={isAdmin}
+            coverBusy={coverBusy}
             onView={setView}
             onDensity={setDensity}
             onToggleShow={toggleShow}
             onToggleColumn={toggleColumn}
-            onSetCover={setCoverImage}
+            onPickCover={handlePickCover}
+            onClearCover={handleClearCover}
           />
           {layout.hiddenColumns.length > 0 && layout.view !== "tabela" && (
             <button
@@ -329,13 +365,13 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
       <div className="relative mx-auto max-w-[1600px] px-4 sm:px-6">
         {/* Plano de fundo do cabeçalho — bem discreto, com véu que garante a
             legibilidade do título por cima. */}
-        {layout.coverImage && (
+        {cover?.url && (
           <div
             aria-hidden
             className="pointer-events-none absolute inset-x-0 top-0 z-0 h-[168px] overflow-hidden"
           >
             <img
-              src={layout.coverImage}
+              src={cover.url}
               alt=""
               className="h-full w-full object-cover opacity-[0.16] dark:opacity-[0.12]"
             />
