@@ -1,4 +1,5 @@
 import { memo } from "react";
+import { Plus } from "lucide-react";
 import type { OccurrenceDTO, WorkflowStatus } from "../../../domain/occurrences";
 import { getWorkflowStatusConfig } from "../../config/occurrenceWorkflow";
 import { OccurrenceBoardCard } from "./OccurrenceBoardCard";
@@ -11,6 +12,8 @@ type Props = {
   onCardDragStart: (o: OccurrenceDTO) => void;
   onCardDragEnd: () => void;
   onCardAdvance: (o: OccurrenceDTO) => void;
+  /** "+" no header da coluna → nova ocorrência já com esse status inicial */
+  onQuickAdd: (status: WorkflowStatus) => void;
   onHover: (status: WorkflowStatus | null) => void;
   onDropHere: (status: WorkflowStatus) => void;
   /** status de origem do card em arrasto (null quando nada é arrastado) */
@@ -31,6 +34,7 @@ export const BoardColumn = memo(function BoardColumn({
   onCardDragStart,
   onCardDragEnd,
   onCardAdvance,
+  onQuickAdd,
   onHover,
   onDropHere,
   dragFrom,
@@ -71,32 +75,46 @@ export const BoardColumn = memo(function BoardColumn({
           <span className={`inline-block h-2 w-2 rounded-full ${cfg.dot}`} />
           <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">{cfg.label}</span>
         </div>
-        <span className="rounded-full bg-gray-200 dark:bg-gray-800 px-2 py-0.5 text-[11px] font-semibold text-gray-500 dark:text-gray-400 tabular-nums">
-          {occurrences.length}
-        </span>
+        <div className="flex items-center gap-1">
+          <span className="rounded-full bg-gray-200 dark:bg-gray-800 px-2 py-0.5 text-[11px] font-semibold text-gray-500 dark:text-gray-400 tabular-nums">
+            {occurrences.length}
+          </span>
+          <button
+            type="button"
+            onClick={() => onQuickAdd(status)}
+            title={`Nova ocorrência em "${cfg.label}"`}
+            aria-label={`Nova ocorrência em ${cfg.label}`}
+            className="flex h-5 w-5 cursor-pointer items-center justify-center rounded text-gray-400 hover:bg-gray-200 hover:text-gray-700 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+          >
+            <Plus className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
 
       <div
         className="board-col-scroll flex-1 space-y-2 overflow-y-auto p-2"
         style={{ maxHeight: "calc(100vh - 320px)" }}
       >
-        {occurrences.length === 0 ? (
-          <p className="px-2 py-8 text-center text-xs text-gray-400 dark:text-gray-600">
-            {highlight ? "Solte aqui" : "Nada aqui"}
-          </p>
-        ) : (
-          occurrences.map((o) => (
-            <OccurrenceBoardCard
-              key={o.id}
-              occurrence={o}
-              onSelect={onCardClick}
-              onDragStart={onCardDragStart}
-              onDragEnd={onCardDragEnd}
-              onAdvance={onCardAdvance}
-              dragging={draggingId === o.id}
-              justMoved={justMovedId === o.id}
-            />
-          ))
+        {occurrences.length === 0 && !highlight && (
+          <p className="px-2 py-8 text-center text-xs text-gray-400 dark:text-gray-600">Nada aqui</p>
+        )}
+        {occurrences.map((o) => (
+          <OccurrenceBoardCard
+            key={o.id}
+            occurrence={o}
+            onSelect={onCardClick}
+            onDragStart={onCardDragStart}
+            onDragEnd={onCardDragEnd}
+            onAdvance={onCardAdvance}
+            dragging={draggingId === o.id}
+            justMoved={justMovedId === o.id}
+          />
+        ))}
+        {/* Placeholder do drop — mostra onde o card vai cair */}
+        {highlight && (
+          <div className="flex h-14 items-center justify-center rounded-lg border-2 border-dashed border-blue-300 text-[11px] font-medium text-blue-500 dark:border-blue-700 dark:text-blue-400">
+            Solte aqui
+          </div>
         )}
       </div>
     </div>

@@ -57,6 +57,7 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editando, setEditando] = useState<Ocorrencia | null>(null);
   const [quickOpen, setQuickOpen] = useState(false);
+  const [quickInitialStatus, setQuickInitialStatus] = useState<WorkflowStatus | undefined>(undefined);
   const [importOpen, setImportOpen] = useState(false);
   const [pendingMove, setPendingMove] = useState<{ id: string; to: WorkflowStatus } | null>(null);
 
@@ -225,6 +226,11 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
     [applyMove],
   );
 
+  const handleQuickAdd = useCallback((s: WorkflowStatus) => {
+    setQuickInitialStatus(s);
+    setQuickOpen(true);
+  }, []);
+
   if (editando) {
     return (
       <NovaOcorrencia
@@ -267,7 +273,10 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
               Importar passagem
             </button>
             <button
-              onClick={() => setQuickOpen(true)}
+              onClick={() => {
+                setQuickInitialStatus(undefined);
+                setQuickOpen(true);
+              }}
               className="inline-flex cursor-pointer items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -314,6 +323,7 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
                 onCardDragStart={onCardDragStart}
                 onCardDragEnd={onCardDragEnd}
                 onCardAdvance={onCardAdvance}
+                onQuickAdd={handleQuickAdd}
                 onHover={onHover}
                 onDropHere={onDropHere}
                 dragFrom={drag?.from ?? null}
@@ -328,6 +338,7 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
 
       <QuickOccurrenceModal
         open={quickOpen}
+        initialStatus={quickInitialStatus}
         onClose={() => setQuickOpen(false)}
         onCreated={(id, opts) => {
           queryClient.invalidateQueries({ queryKey: occurrencesKeys.all });

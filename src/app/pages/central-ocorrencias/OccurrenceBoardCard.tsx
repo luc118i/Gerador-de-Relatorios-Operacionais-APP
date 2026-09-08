@@ -10,6 +10,7 @@ import {
   nextBoardStatus,
 } from "../../config/occurrenceWorkflow";
 import { resolveBaseSigla } from "../../../utils/base";
+import { avatarColor, initialsOf } from "../../../utils/avatar";
 
 /** "YYYY-MM-DD" → "DD/MM". */
 function shortDate(d?: string) {
@@ -60,6 +61,9 @@ export const OccurrenceBoardCard = memo(function OccurrenceBoardCard({
   const hasReport = !!o.driveWebViewLink || !!o.rizerRegistered;
   const next = nextBoardStatus(o.workflowStatus);
   const isNew = isRecentlyCreated(o.createdAt);
+  // Faixa de prioridade só pras que importam (CRÍTICA/ALTA) — evita cor em todo card.
+  const prioCode = o.prioridade ?? "MEDIA";
+  const stripe = prioCode === "CRITICA" || prioCode === "ALTA" ? prio.dot : null;
 
   const rota =
     o.tripLineName || (o.lineLabel ?? "").split(" - ").slice(1).join(" - ") || o.lineLabel || "";
@@ -84,6 +88,11 @@ export const OccurrenceBoardCard = memo(function OccurrenceBoardCard({
           : ""
       }`}
     >
+      {/* Faixa de prioridade (só CRÍTICA/ALTA) no topo do card */}
+      {stripe && (
+        <span className={`absolute inset-x-0 top-0 h-[3px] rounded-t-lg ${stripe}`} />
+      )}
+
       {/* Faixa de arrasto — ocupa toda a borda direita do card. Só ela é
           `draggable`; o resto do card é zona de clique (abrir detalhe). */}
       <div
@@ -151,14 +160,24 @@ export const OccurrenceBoardCard = memo(function OccurrenceBoardCard({
         )}
       </div>
 
-      <div className="mt-2.5 flex items-center justify-between">
-        <span className="text-[11px] text-gray-400 dark:text-gray-500">
-          {[shortDate(o.eventDate), baseSigla, vis.horario && o.startTime ? o.startTime : ""]
-            .filter(Boolean)
-            .join(" · ")}
+      <div className="mt-2.5 flex items-center justify-between gap-2">
+        <span className="flex min-w-0 items-center gap-1.5">
+          {o.analisadoPor && (
+            <span
+              title={o.analisadoPor}
+              className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold ${avatarColor(o.analisadoPor)}`}
+            >
+              {initialsOf(o.analisadoPor)}
+            </span>
+          )}
+          <span className="truncate text-[11px] text-gray-400 dark:text-gray-500">
+            {[shortDate(o.eventDate), baseSigla, vis.horario && o.startTime ? o.startTime : ""]
+              .filter(Boolean)
+              .join(" · ")}
+          </span>
         </span>
         {hasReport && (
-          <span className="flex items-center gap-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+          <span className="flex shrink-0 items-center gap-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
             <FileCheck2 className="w-3.5 h-3.5" />
             Relatório
           </span>

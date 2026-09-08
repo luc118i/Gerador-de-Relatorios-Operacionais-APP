@@ -51,11 +51,16 @@ export function BoardIndicators({ occurrences, active, onPick }: Props) {
 
   const isActive = (f: IndicatorFilter) => JSON.stringify(f) === JSON.stringify(active);
 
+  const total = occurrences.length;
+  const tratadas = by("TRATADA");
+  const pct = total ? Math.round((tratadas / total) * 100) : 0;
+
   return (
+    <div className="space-y-2">
     <div className="flex flex-wrap gap-2">
       <Tile
         label="Total"
-        value={occurrences.length}
+        value={total}
         active={isActive({ kind: "all" })}
         onClick={() => onPick({ kind: "all" })}
       />
@@ -90,6 +95,20 @@ export function BoardIndicators({ occurrences, active, onPick }: Props) {
         active={isActive({ kind: "priority", priorities: HIGH_PRIORITIES })}
         onClick={() => onPick({ kind: "priority", priorities: HIGH_PRIORITIES })}
       />
+    </div>
+
+      {/* Progresso: tratadas / total no período */}
+      <div className="flex items-center gap-2">
+        <div className="h-1 flex-1 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-800">
+          <div
+            className="h-full rounded-full bg-emerald-500 transition-all"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+        <span className="shrink-0 text-[11px] tabular-nums text-gray-400 dark:text-gray-500">
+          {tratadas}/{total} tratadas
+        </span>
+      </div>
     </div>
   );
 }

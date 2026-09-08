@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { FileText, Loader2, Lock } from "lucide-react";
 
@@ -46,6 +46,8 @@ function escapeHtml(s: string) {
 type Props = {
   open: boolean;
   onClose: () => void;
+  /** Status inicial pré-selecionado (ex.: aberto pelo "+" de uma coluna). */
+  initialStatus?: WorkflowStatus;
   /** Chamado após criar. `openReport` = seguir para o Gerador de Relatórios
    *  com a ocorrência recém-criada já carregada. */
   onCreated: (id: string, opts?: { openReport?: boolean }) => void;
@@ -56,7 +58,7 @@ type Props = {
  * (equivalente ao "New" do Notion). O relatório completo pode ser feito
  * depois pelo botão "Editar ocorrência" no painel de detalhe.
  */
-export function QuickOccurrenceModal({ open, onClose, onCreated }: Props) {
+export function QuickOccurrenceModal({ open, onClose, initialStatus, onCreated }: Props) {
   const { profileName, user } = useAuth();
   const today = getLocalDateString(new Date());
 
@@ -68,6 +70,11 @@ export function QuickOccurrenceModal({ open, onClose, onCreated }: Props) {
   const [base, setBase] = useState<string | null>(null);
   const [prioridade, setPrioridade] = useState<Prioridade>("MEDIA");
   const [status, setStatus] = useState<WorkflowStatus>("PENDENTE");
+
+  // Cada abertura sincroniza o status inicial (ex.: "+" da coluna Aguardando).
+  useEffect(() => {
+    if (open) setStatus(initialStatus ?? "PENDENTE");
+  }, [open, initialStatus]);
   const [tratativa, setTratativa] = useState<Tratativa | "">("");
   const [detalhes, setDetalhes] = useState("");
 
