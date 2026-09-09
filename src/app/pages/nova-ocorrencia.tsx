@@ -502,8 +502,6 @@ export function NovaOcorrencia({ onVoltar, onSaved, edicao }: NovaOcorrenciaProp
                 <SecaoTratativa
                   tratativa={form.tratativa}
                   onTratativaChange={form.setTratativa}
-                  prioridade={form.prioridade}
-                  onPrioridadeChange={form.setPrioridade}
                   analisadoPor={form.analisadoPor}
                   onAnalisadoPorChange={form.setAnalisadoPor}
                 />

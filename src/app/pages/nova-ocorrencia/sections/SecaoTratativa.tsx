@@ -6,8 +6,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../../components/ui/select";
-import { PRIORIDADES } from "../../../config/occurrenceWorkflow";
-import type { Prioridade } from "../../../../domain/occurrences";
 
 export type TratativaValue = "SUSPEICAO" | "ADVERTENCIA" | "VALE" | "REGISTRO";
 
@@ -51,8 +49,6 @@ const TRATATIVA_OPTIONS: {
 interface SecaoTratativaProps {
   tratativa: TratativaValue | null;
   onTratativaChange: (v: TratativaValue | null) => void;
-  prioridade: Prioridade;
-  onPrioridadeChange: (v: Prioridade) => void;
   analisadoPor: string;
   onAnalisadoPorChange: (v: string) => void;
 }
@@ -60,42 +56,15 @@ interface SecaoTratativaProps {
 export function SecaoTratativa({
   tratativa,
   onTratativaChange,
-  prioridade,
-  onPrioridadeChange,
   analisadoPor,
   onAnalisadoPorChange,
 }: SecaoTratativaProps) {
   const selected = TRATATIVA_OPTIONS.find((o) => o.value === tratativa) ?? null;
-  const selectedPrio = PRIORIDADES.find((p) => p.code === prioridade) ?? PRIORIDADES[2];
   const inputBase =
     "w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500";
 
   return (
     <section className="animate-in fade-in slide-in-from-top-2 duration-300 space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Prioridade
-        </label>
-        <Select value={prioridade} onValueChange={(v) => onPrioridadeChange(v as Prioridade)}>
-          <SelectTrigger className="w-full sm:w-1/2">
-            <span className="flex items-center gap-2">
-              <span className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${selectedPrio.dot}`} />
-              {selectedPrio.label}
-            </span>
-          </SelectTrigger>
-          <SelectContent>
-            {PRIORIDADES.map((p) => (
-              <SelectItem key={p.code} value={p.code}>
-                <span className="flex items-center gap-2">
-                  <span className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${p.dot}`} />
-                  {p.label}
-                </span>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
       <div className="grid grid-cols-2 gap-4">
         {/* Dropdown de tratativa */}
         <div>
