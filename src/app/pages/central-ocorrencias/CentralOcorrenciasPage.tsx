@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, ClipboardList, Plus, RefreshCw } from "lucide-react";
+import { ChevronLeft, ClipboardList, HelpCircle, Plus, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 import type {
@@ -33,6 +33,7 @@ import {
 import { ConfirmActionModal } from "../home/ConfirmActionModal";
 import { QuickOccurrenceModal } from "./QuickOccurrenceModal";
 import { ImportPassagemModal } from "./ImportPassagemModal";
+import { CentralTutorial, hasSeenCentralTutorial } from "./CentralTutorial";
 import { OccurrenceDetailPanel } from "./OccurrenceDetailPanel";
 import { BoardColumn } from "./BoardColumn";
 import { BoardFilters as BoardFiltersBar, emptyBoardFilters, type BoardUiFilters } from "./BoardFilters";
@@ -193,6 +194,7 @@ export function CentralOcorrenciasPage({
   const [quickOpen, setQuickOpen] = useState(false);
   const [quickInitialStatus, setQuickInitialStatus] = useState<WorkflowStatus | undefined>(undefined);
   const [importOpen, setImportOpen] = useState(false);
+  const [tutorialOpen, setTutorialOpen] = useState(false);
   const [pendingMove, setPendingMove] = useState<{ id: string; to: WorkflowStatus } | null>(null);
 
   // ── Drag-and-drop nativo (HTML5) — sem react-dnd ─────────────────────────
@@ -391,6 +393,11 @@ export function CentralOcorrenciasPage({
     setQuickOpen(true);
   }, []);
 
+  // Mini tutorial na primeira visita à Central.
+  useEffect(() => {
+    if (!hasSeenCentralTutorial()) setTutorialOpen(true);
+  }, []);
+
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
@@ -438,6 +445,14 @@ export function CentralOcorrenciasPage({
           )}
 
           <div className="ml-auto flex items-center gap-1">
+            <button
+              onClick={() => setTutorialOpen(true)}
+              title="Como usar a Central"
+              aria-label="Como usar a Central"
+              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded text-gray-400 transition-colors hover:bg-black/[0.04] hover:text-gray-600 dark:hover:bg-white/[0.06] dark:hover:text-gray-300"
+            >
+              <HelpCircle className="h-4 w-4" />
+            </button>
             <button
               onClick={() => refetch()}
               title="Atualizar"
@@ -619,6 +634,8 @@ export function CentralOcorrenciasPage({
           setIndicator({ kind: "all" });
         }}
       />
+
+      <CentralTutorial open={tutorialOpen} onClose={() => setTutorialOpen(false)} />
 
       <OccurrenceDetailPanel
         occurrence={selected}
