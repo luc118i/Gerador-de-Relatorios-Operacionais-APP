@@ -48,7 +48,7 @@ export function useNovaOcorrenciaForm({ onSaved, edicao, reportForId }: NovaOcor
   const [passengerConnection, setPassengerConnection] = useState("");
   const [relatoHtml, setRelatoHtml] = useState("");
   const [devolutivaHtml, setDevolutivaHtml] = useState("");
-  const [devolutivaStatus, setDevolutivaStatus] = useState<string>("EM_ANDAMENTO");
+  const [devolutivaStatus, setDevolutivaStatus] = useState<string>("RESOLVIDO");
   const [devolutivaBeforeEvidences, setDevolutivaBeforeEvidences] = useState(false);
 
   // ── Seções GENERICO ──────────────────────────────────────────────────────
@@ -223,7 +223,7 @@ export function useNovaOcorrenciaForm({ onSaved, edicao, reportForId }: NovaOcor
     setPassengerConnection(edicao.passengerConnection ?? "");
     setRelatoHtml(edicao.relatoHtml ?? "");
     setDevolutivaHtml(edicao.devolutivaHtml ?? "");
-    setDevolutivaStatus(edicao.devolutivaStatus ?? "EM_ANDAMENTO");
+    setDevolutivaStatus(edicao.devolutivaStatus ?? "RESOLVIDO");
     setDevolutivaBeforeEvidences(edicao.devolutivaBeforeEvidences ?? false);
     setShowSectionViagem(edicao.showSectionViagem ?? true);
     setShowSectionIdentificacao(edicao.showSectionIdentificacao ?? true);
@@ -388,7 +388,7 @@ export function useNovaOcorrenciaForm({ onSaved, edicao, reportForId }: NovaOcor
     setPassengerConnection("");
     setRelatoHtml("");
     setDevolutivaHtml("");
-    setDevolutivaStatus("EM_ANDAMENTO");
+    setDevolutivaStatus("RESOLVIDO");
     setDevolutivaBeforeEvidences(false);
     setShowSectionViagem(true);
     setShowSectionIdentificacao(true);

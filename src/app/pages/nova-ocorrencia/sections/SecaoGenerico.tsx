@@ -165,8 +165,8 @@ export function SecaoGenerico({
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
             <select value={devolutivaStatus} onChange={(e) => onDevolutivaStatusChange(e.target.value)} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900">
-              <option value="EM_ANDAMENTO">⚠️ Em Andamento</option>
               <option value="RESOLVIDO">✅ Resolvido</option>
+              <option value="EM_ANDAMENTO">⚠️ Em Andamento</option>
             </select>
           </div>
           <ExpandableRichTextEditor

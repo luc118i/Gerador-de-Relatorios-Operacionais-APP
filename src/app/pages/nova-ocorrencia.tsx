@@ -35,6 +35,9 @@ export function NovaOcorrencia({ onVoltar, onSaved, edicao, reportForId }: NovaO
   const [topBase, setTopBase] = useState(73);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [stuckId, setStuckId] = useState<string | null>(null);
+  const [confirmSave, setConfirmSave] = useState(false);
+
+  const devolutivaResolvida = form.devolutivaStatus === "RESOLVIDO";
 
   useLayoutEffect(() => {
     function measure() {
@@ -514,7 +517,10 @@ export function NovaOcorrencia({ onVoltar, onSaved, edicao, reportForId }: NovaO
             <section className="pt-4 border-t border-gray-200 dark:border-gray-800">
               <div className="flex items-start justify-between gap-4">
                 <button
-                  onClick={form.handleSalvar}
+                  onClick={() => {
+                    if (typeConfig.isGeneric) setConfirmSave(true);
+                    else form.handleSalvar();
+                  }}
                   disabled={validationErrors.length > 0 || form.saveStatus !== "idle"}
                   className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 ${
                     validationErrors.length === 0 && form.saveStatus === "idle"
@@ -605,6 +611,67 @@ export function NovaOcorrencia({ onVoltar, onSaved, edicao, reportForId }: NovaO
               <p className="text-sm text-green-600 dark:text-green-400 font-medium">
                 ✓ Texto copiado para a área de transferência
               </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmação — chama atenção para o status da devolutiva antes de salvar */}
+      {confirmSave && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setConfirmSave(false)}
+        >
+          <div
+            className="w-full max-w-sm rounded-xl border border-gray-200 bg-white p-5 shadow-xl dark:border-gray-800 dark:bg-gray-900"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-3">
+              {devolutivaResolvida ? (
+                <CheckCircle2 className="mt-0.5 h-6 w-6 flex-shrink-0 text-emerald-500" />
+              ) : (
+                <AlertTriangle className="mt-0.5 h-6 w-6 flex-shrink-0 text-amber-500" />
+              )}
+              <div>
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  Confira o status da devolutiva
+                </p>
+                <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+                  Este relatório vai ser salvo com a devolutiva marcada como{" "}
+                  <strong
+                    className={
+                      devolutivaResolvida
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : "text-amber-600 dark:text-amber-400"
+                    }
+                  >
+                    {devolutivaResolvida ? "✅ Resolvido" : "⚠️ Em Andamento"}
+                  </strong>
+                  .
+                </p>
+                {!devolutivaResolvida && (
+                  <p className="mt-1.5 text-xs text-amber-600 dark:text-amber-400">
+                    Se a tratativa já foi concluída, altere para “Resolvido” antes de salvar.
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                onClick={() => setConfirmSave(false)}
+                className="cursor-pointer rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
+              >
+                Revisar
+              </button>
+              <button
+                onClick={() => {
+                  setConfirmSave(false);
+                  form.handleSalvar();
+                }}
+                className="cursor-pointer rounded-md bg-blue-600 px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+              >
+                Salvar assim mesmo
+              </button>
             </div>
           </div>
         </div>
