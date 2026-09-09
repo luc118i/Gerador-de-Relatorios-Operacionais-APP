@@ -29,6 +29,7 @@ export type PublicOccurrence = {
   eventDate: string | null;
   hora: string;
   geradoEm: string;
+  relatorioUrl: string | null;
   resumo?: { local: string | null; situacao: string | null; operadorCco: string | null };
   viagem?: {
     linha: string | null;

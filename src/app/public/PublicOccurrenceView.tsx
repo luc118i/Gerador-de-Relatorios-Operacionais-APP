@@ -1,6 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Check, FileWarning, RotateCw } from "lucide-react";
+import { Check, FileText, FileWarning, Moon, RotateCw, Sun } from "lucide-react";
 import { occurrenceSharesApi, type PublicOccurrence } from "../../api/occurrenceShares.api";
 import { ApiError } from "../../api/http";
 import {
@@ -12,22 +12,24 @@ import { fmtDateBR, fmtDateTime } from "../pages/central-ocorrencias/ficha/ficha
 import { FichaEvidencias } from "../pages/central-ocorrencias/ficha/FichaEvidencias";
 import { FichaTimeline } from "../pages/central-ocorrencias/ficha/FichaTimeline";
 
-const H2 = "text-[12px] font-semibold uppercase tracking-[0.08em] text-gray-400";
-const LABEL = "text-[11px] uppercase tracking-wide text-gray-400";
+const H2 = "text-[12px] font-semibold uppercase tracking-[0.08em] text-gray-400 dark:text-gray-500";
+const LABEL = "text-[11px] uppercase tracking-wide text-gray-400 dark:text-gray-500";
+const PANEL =
+  "rounded-lg border border-gray-200/80 bg-white p-4 dark:border-gray-800 dark:bg-gray-900/40";
 
 function Cell({ label, value, className }: { label: string; value: React.ReactNode; className?: string }) {
   if (value === null || value === undefined || value === "") return null;
   return (
     <div className={className}>
       <p className={LABEL}>{label}</p>
-      <p className="mt-0.5 text-sm font-medium text-gray-900">{value}</p>
+      <p className="mt-0.5 text-sm font-medium text-gray-900 dark:text-gray-100">{value}</p>
     </div>
   );
 }
 
 function Sec({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="border-t border-gray-200/70 pt-8 first:border-t-0 first:pt-0">
+    <section className="border-t border-gray-200/70 pt-8 first:border-t-0 first:pt-0 dark:border-gray-800">
       <h2 className={H2}>{title}</h2>
       <div className="mt-3.5">{children}</div>
     </section>
@@ -36,7 +38,20 @@ function Sec({ title, children }: { title: string; children: React.ReactNode }) 
 
 const isRevoked = (err: unknown) => err instanceof ApiError && err.status === 404;
 
+type Theme = "light" | "dark";
+const THEME_KEY = "pub-doc-theme";
+
+function readTheme(): Theme {
+  try {
+    return localStorage.getItem(THEME_KEY) === "dark" ? "dark" : "light";
+  } catch {
+    return "light";
+  }
+}
+
 export function PublicOccurrenceView({ token }: { token: string }) {
+  const [theme, setTheme] = useState<Theme>(readTheme);
+
   const q = useQuery({
     queryKey: ["public-occurrence", token],
     queryFn: () => occurrenceSharesApi.getPublic(token),
@@ -44,23 +59,62 @@ export function PublicOccurrenceView({ token }: { token: string }) {
     retryDelay: (attempt) => Math.min(1500 * 2 ** attempt, 8000),
   });
 
-  // Documento público é sempre claro — neutraliza o dark mode do visitante.
+  const toggleTheme = () =>
+    setTheme((t) => {
+      const next: Theme = t === "dark" ? "light" : "dark";
+      try {
+        localStorage.setItem(THEME_KEY, next);
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+
+  // Aplica o tema escolhido no <html> e restaura o estado original ao sair.
   useEffect(() => {
     const el = document.documentElement;
-    const hadDark = el.classList.contains("dark");
-    el.classList.remove("dark");
-    el.setAttribute("data-theme", "light");
+    const prevDark = el.classList.contains("dark");
+    const prevTheme = el.getAttribute("data-theme");
+    el.classList.toggle("dark", theme === "dark");
+    el.setAttribute("data-theme", theme);
     return () => {
-      if (hadDark) el.classList.add("dark");
+      el.classList.toggle("dark", prevDark);
+      if (prevTheme === null) el.removeAttribute("data-theme");
+      else el.setAttribute("data-theme", prevTheme);
     };
-  }, []);
+  }, [theme]);
+
+  const relatorioUrl = q.data?.relatorioUrl ?? null;
 
   return (
     <div
-      className="min-h-screen bg-[#f4f5f7] py-4 text-gray-900 sm:py-10"
-      style={{ colorScheme: "light" }}
+      className="min-h-screen bg-[#f4f5f7] py-4 text-gray-900 sm:py-10 dark:bg-gray-950 dark:text-gray-100"
+      style={{ colorScheme: theme }}
     >
       <div className="mx-auto max-w-6xl px-3 sm:px-6">
+        <div className="mb-3 flex items-center justify-end gap-2">
+          {relatorioUrl && (
+            <a
+              href={relatorioUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800"
+            >
+              <FileText className="h-3.5 w-3.5" />
+              Abrir relatório (PDF)
+            </a>
+          )}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label={theme === "dark" ? "Usar tema claro" : "Usar tema escuro"}
+            title={theme === "dark" ? "Tema claro" : "Tema escuro"}
+            className="inline-flex h-[30px] w-[30px] items-center justify-center rounded-md border border-gray-200 bg-white text-gray-500 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800"
+          >
+            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
+        </div>
+
         {q.isLoading || q.isFetching ? (
           <p className="py-24 text-center text-sm text-gray-400">Carregando documento…</p>
         ) : q.isError && isRevoked(q.error) ? (
@@ -84,14 +138,14 @@ export function PublicOccurrenceView({ token }: { token: string }) {
 
 function Fallback({ title, sub, onRetry }: { title: string; sub: string; onRetry?: () => void }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-10 text-center shadow-sm">
-      <FileWarning className="mx-auto h-8 w-8 text-gray-300" />
-      <p className="mt-3 text-sm font-medium text-gray-700">{title}</p>
-      <p className="mt-1 text-xs text-gray-400">{sub}</p>
+    <div className="rounded-xl border border-gray-200 bg-white p-10 text-center shadow-sm dark:border-gray-800 dark:bg-gray-900">
+      <FileWarning className="mx-auto h-8 w-8 text-gray-300 dark:text-gray-600" />
+      <p className="mt-3 text-sm font-medium text-gray-700 dark:text-gray-200">{title}</p>
+      <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{sub}</p>
       {onRetry && (
         <button
           onClick={onRetry}
-          className="mx-auto mt-4 inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-gray-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-gray-800"
+          className="mx-auto mt-4 inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-gray-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900"
         >
           <RotateCw className="h-3.5 w-3.5" />
           Tentar novamente
@@ -122,43 +176,43 @@ function Doc({ data: d }: { data: PublicOccurrence }) {
   })) as unknown as OccurrenceHistoryEntry[] | undefined;
 
   return (
-    <article className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+    <article className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
       {/* faixa de identificação do documento */}
-      <div className="flex items-center gap-2 border-b border-gray-200 bg-gray-50/70 px-5 py-3.5 sm:px-8">
+      <div className="flex items-center gap-2 border-b border-gray-200 bg-gray-50/70 px-5 py-3.5 dark:border-gray-800 dark:bg-gray-900/60 sm:px-8">
         <img src="/logo.png" alt="" className="h-4 w-4 object-contain" />
-        <span className="text-[11px] font-semibold uppercase tracking-widest text-gray-400">
+        <span className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">
           Ficha de Ocorrência
         </span>
       </div>
 
       <div className="px-5 py-6 sm:px-8 sm:py-8">
         {/* Cabeçalho da ocorrência */}
-        <header className="border-b border-gray-200/70 pb-6">
-          <h1 className="text-[1.6rem] font-semibold leading-[1.15] tracking-tight text-gray-900 sm:text-[1.95rem]">
+        <header className="border-b border-gray-200/70 pb-6 dark:border-gray-800">
+          <h1 className="text-[1.6rem] font-semibold leading-[1.15] tracking-tight text-gray-900 dark:text-gray-50 sm:text-[1.95rem]">
             {d.titulo}
           </h1>
           <div className="mt-2.5 flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-[13px]">
             <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${statusCfg.badge}`}>
               {d.status.label}
             </span>
-            <span className="text-gray-300">·</span>
-            <span className="inline-flex items-center gap-1.5 text-gray-600">
+            <span className="text-gray-300 dark:text-gray-700">·</span>
+            <span className="inline-flex items-center gap-1.5 text-gray-600 dark:text-gray-400">
               <span className={`inline-block h-1.5 w-1.5 rounded-full ${prioCfg.dot}`} />
               Gravidade {d.prioridade.label.toLowerCase()}
             </span>
-            <span className="text-gray-300">·</span>
-            <span className="tabular-nums text-gray-500">
+            <span className="text-gray-300 dark:text-gray-700">·</span>
+            <span className="tabular-nums text-gray-500 dark:text-gray-400">
               {fmtDateBR(d.eventDate)}
               {d.hora ? ` · ${d.hora}` : ""}
             </span>
             {d.tipo && (
               <>
-                <span className="text-gray-300">·</span>
-                <span className="text-gray-500">{d.tipo}</span>
+                <span className="text-gray-300 dark:text-gray-700">·</span>
+                <span className="text-gray-500 dark:text-gray-400">{d.tipo}</span>
               </>
             )}
           </div>
-          <p className="mt-2 font-mono text-[11px] text-gray-400">#{d.code}</p>
+          <p className="mt-2 font-mono text-[11px] text-gray-400 dark:text-gray-600">#{d.code}</p>
         </header>
 
         {/* main + sidebar */}
@@ -209,18 +263,18 @@ function Doc({ data: d }: { data: PublicOccurrence }) {
               <Sec title="Relato">
                 {d.relato.relatoHtml && (
                   <div
-                    className="prose prose-sm max-w-none text-[15px] leading-[1.75] text-gray-800 [&_p]:my-3"
+                    className="prose prose-sm max-w-none text-[15px] leading-[1.75] text-gray-800 [&_p]:my-3 dark:prose-invert dark:text-gray-200"
                     dangerouslySetInnerHTML={{ __html: d.relato.relatoHtml }}
                   />
                 )}
                 {d.relato.devolutivaHtml && (
-                  <div className="mt-5 rounded-lg border border-gray-200/80 bg-white p-4">
+                  <div className={`mt-5 ${PANEL}`}>
                     <p className={LABEL}>
                       Devolutiva
                       {d.relato.devolutivaStatus ? ` · ${d.relato.devolutivaStatus}` : ""}
                     </p>
                     <div
-                      className="prose prose-sm mt-2 max-w-none text-gray-700 [&_p]:my-2.5"
+                      className="prose prose-sm mt-2 max-w-none text-gray-700 [&_p]:my-2.5 dark:prose-invert dark:text-gray-300"
                       dangerouslySetInnerHTML={{ __html: d.relato.devolutivaHtml }}
                     />
                   </div>
@@ -229,7 +283,7 @@ function Doc({ data: d }: { data: PublicOccurrence }) {
             )}
 
             {d.evidencias && d.evidencias.length > 0 && (
-              <div className="border-t border-gray-200/70 pt-8 first:border-t-0 first:pt-0">
+              <div className="border-t border-gray-200/70 pt-8 first:border-t-0 first:pt-0 dark:border-gray-800">
                 <FichaEvidencias
                   loading={false}
                   evidences={d.evidencias.map((e, i) => ({
@@ -245,9 +299,9 @@ function Doc({ data: d }: { data: PublicOccurrence }) {
 
             {d.tratativa &&
               (d.tratativa.responsavel || d.tratativa.tipo || d.tratativa.encerrada) && (
-                <section className="border-t border-gray-200/70 pt-8 first:border-t-0 first:pt-0">
+                <section className="border-t border-gray-200/70 pt-8 first:border-t-0 first:pt-0 dark:border-gray-800">
                   <h2 className={H2}>Tratativa</h2>
-                  <div className="mt-3.5 rounded-lg border border-gray-200/80 bg-white p-4">
+                  <div className={`mt-3.5 ${PANEL}`}>
                     <div className="grid grid-cols-2 gap-x-8 gap-y-4 sm:grid-cols-3">
                       <Cell
                         label="Situação atual"
@@ -269,7 +323,7 @@ function Doc({ data: d }: { data: PublicOccurrence }) {
               )}
 
             {timelineEntries && timelineEntries.length > 0 && (
-              <section className="border-t border-gray-200/70 pt-8 first:border-t-0 first:pt-0">
+              <section className="border-t border-gray-200/70 pt-8 first:border-t-0 first:pt-0 dark:border-gray-800">
                 <h2 className={H2}>Histórico da ocorrência</h2>
                 <div className="mt-3.5">
                   <FichaTimeline bare entries={timelineEntries} loading={false} />
@@ -279,7 +333,7 @@ function Doc({ data: d }: { data: PublicOccurrence }) {
           </div>
 
           {/* Sidebar — consulta rápida */}
-          <aside className="order-last lg:order-2 lg:sticky lg:top-6 lg:self-start lg:border-l lg:border-gray-200/70 lg:pl-6">
+          <aside className="order-last lg:order-2 lg:sticky lg:top-6 lg:self-start lg:border-l lg:border-gray-200/70 lg:pl-6 dark:lg:border-gray-800">
             <h2 className={H2}>Resumo da ocorrência</h2>
             <dl className="mt-3.5 flex flex-wrap gap-x-8 gap-y-4 lg:flex-col lg:gap-y-5">
               <div>
@@ -293,7 +347,7 @@ function Doc({ data: d }: { data: PublicOccurrence }) {
               </div>
               <div>
                 <p className={LABEL}>Gravidade</p>
-                <p className="mt-0.5 flex items-center gap-1.5 text-sm font-medium text-gray-900">
+                <p className="mt-0.5 flex items-center gap-1.5 text-sm font-medium text-gray-900 dark:text-gray-100">
                   <span className={`inline-block h-2 w-2 rounded-full ${prioCfg.dot}`} />
                   {d.prioridade.label}
                 </p>
@@ -306,7 +360,7 @@ function Doc({ data: d }: { data: PublicOccurrence }) {
         </div>
       </div>
 
-      <div className="border-t border-gray-200 bg-gray-50/70 px-5 py-4 text-center text-[11px] text-gray-400 sm:px-8">
+      <div className="border-t border-gray-200 bg-gray-50/70 px-5 py-4 text-center text-[11px] text-gray-400 dark:border-gray-800 dark:bg-gray-900/60 dark:text-gray-500 sm:px-8">
         Documento gerado em {fmtDateTime(d.geradoEm)} · válido enquanto o link estiver ativo.
       </div>
     </article>
