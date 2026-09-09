@@ -19,6 +19,7 @@ import { AppDrawer, type DrawerPage } from "./components/AppDrawer";
 import { AnaliseTelemetriaPage } from "./pages/AnaliseTelemetriaPage";
 import { CentralOcorrenciasPage } from "./pages/central-ocorrencias/CentralOcorrenciasPage";
 import { FichaOcorrenciaPage } from "./pages/central-ocorrencias/ficha/FichaOcorrenciaPage";
+import { PublicOccurrenceView } from "./public/PublicOccurrenceView";
 import { occurrencesApi } from "../api/occurrences.api";
 import { dtoToOcorrencia } from "../utils/occurrenceMapper";
 import { EsquemasRotaPage } from "./pages/EsquemasRotaPage";
@@ -438,6 +439,16 @@ function AuthGate() {
 
 export default function App() {
   useAppUpdateNotifier();
+
+  // Rota pública da Ficha — /ocorrencia/visualizar/<token> — abre sem login,
+  // fora do AuthProvider.
+  const publicToken =
+    typeof window !== "undefined"
+      ? window.location.pathname.match(
+          /^\/ocorrencia\/visualizar\/([A-Za-z0-9_-]{8,})\/?$/,
+        )?.[1]
+      : undefined;
+  if (publicToken) return <PublicOccurrenceView token={publicToken} />;
 
   return (
     <AuthProvider>

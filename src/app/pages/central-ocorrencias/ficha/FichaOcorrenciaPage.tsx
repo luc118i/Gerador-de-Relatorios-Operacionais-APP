@@ -8,6 +8,7 @@ import {
   MapPin,
   MoreHorizontal,
   Pencil,
+  Share2,
   Trash2,
   User,
 } from "lucide-react";
@@ -51,6 +52,7 @@ import { OccurrencePreviewModal } from "../../occurrences/preview/OccurrencePrev
 import { PickSelect } from "../ui/PickSelect";
 import { FichaTimeline } from "./FichaTimeline";
 import { FichaEvidencias } from "./FichaEvidencias";
+import { CompartilharDialog } from "./CompartilharDialog";
 import { TRATATIVA_LABEL, Field, fmtDateBR } from "./fichaHelpers";
 
 type Props = {
@@ -95,6 +97,7 @@ export function FichaOcorrenciaPage({
   const [pendingStatus, setPendingStatus] = useState<WorkflowStatus | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showReport, setShowReport] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   const o = q.data as unknown as OccurrenceDetailDTO | undefined;
 
@@ -199,6 +202,14 @@ export function FichaOcorrenciaPage({
         >
           <Pencil className="h-3.5 w-3.5" />
           Editar
+        </button>
+
+        <button
+          onClick={() => setShareOpen(true)}
+          className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50 hover:border-gray-300 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+        >
+          <Share2 className="h-3.5 w-3.5" />
+          Compartilhar
         </button>
 
         <DropdownMenu>
@@ -516,6 +527,12 @@ export function FichaOcorrenciaPage({
         occurrenceId={showReport ? o.id : null}
         open={showReport}
         onClose={() => setShowReport(false)}
+      />
+
+      <CompartilharDialog
+        occurrenceId={o.id}
+        open={shareOpen}
+        onOpenChange={setShareOpen}
       />
     </Shell>
   );
