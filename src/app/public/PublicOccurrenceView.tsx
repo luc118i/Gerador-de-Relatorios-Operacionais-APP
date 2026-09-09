@@ -1,7 +1,8 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { FileWarning } from "lucide-react";
+import { FileWarning, RotateCw } from "lucide-react";
 import { occurrenceSharesApi, type PublicOccurrence } from "../../api/occurrenceShares.api";
+import { ApiError } from "../../api/http";
 import {
   getPrioridadeConfig,
   getWorkflowStatusConfig,
@@ -29,11 +30,16 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+const isRevoked = (err: unknown) => err instanceof ApiError && err.status === 404;
+
 export function PublicOccurrenceView({ token }: { token: string }) {
   const q = useQuery({
     queryKey: ["public-occurrence", token],
     queryFn: () => occurrenceSharesApi.getPublic(token),
-    retry: false,
+    // 404 = link mesmo revogado → não insiste. Qualquer outra falha (rede,
+    // servidor "acordando" no Koyeb) → tenta de novo antes de desistir.
+    retry: (count, err) => !isRevoked(err) && count < 4,
+    retryDelay: (attempt) => Math.min(1500 * 2 ** attempt, 8000),
   });
 
   // Documento público é sempre claro — neutraliza o dark mode do visitante.
@@ -53,15 +59,32 @@ export function PublicOccurrenceView({ token }: { token: string }) {
       style={{ colorScheme: "light" }}
     >
       <div className="mx-auto max-w-4xl px-3 sm:px-6">
-        {q.isLoading ? (
+        {q.isLoading || q.isFetching ? (
           <p className="py-24 text-center text-sm text-gray-400">Carregando documento…</p>
-        ) : q.isError || !q.data ? (
+        ) : q.isError && isRevoked(q.error) ? (
           <div className="rounded-xl border border-gray-200 bg-white p-10 text-center shadow-sm">
             <FileWarning className="mx-auto h-8 w-8 text-gray-300" />
             <p className="mt-3 text-sm font-medium text-gray-700">Link inválido ou revogado</p>
             <p className="mt-1 text-xs text-gray-400">
               Este link de compartilhamento não está mais ativo.
             </p>
+          </div>
+        ) : q.isError || !q.data ? (
+          <div className="rounded-xl border border-gray-200 bg-white p-10 text-center shadow-sm">
+            <FileWarning className="mx-auto h-8 w-8 text-gray-300" />
+            <p className="mt-3 text-sm font-medium text-gray-700">
+              Não foi possível carregar o documento
+            </p>
+            <p className="mt-1 text-xs text-gray-400">
+              Verifique sua conexão e tente novamente.
+            </p>
+            <button
+              onClick={() => q.refetch()}
+              className="mx-auto mt-4 inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-gray-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-gray-800"
+            >
+              <RotateCw className="h-3.5 w-3.5" />
+              Tentar novamente
+            </button>
           </div>
         ) : (
           <Doc data={q.data} />
