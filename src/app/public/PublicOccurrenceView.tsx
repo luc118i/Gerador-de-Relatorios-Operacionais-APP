@@ -209,7 +209,7 @@ function Doc({ data: d }: { data: PublicOccurrence }) {
               <Sec title="Relato">
                 {d.relato.relatoHtml && (
                   <div
-                    className="prose prose-sm max-w-[70ch] text-[15px] leading-[1.75] text-gray-800 [&_p]:my-3"
+                    className="prose prose-sm max-w-none text-[15px] leading-[1.75] text-gray-800 [&_p]:my-3"
                     dangerouslySetInnerHTML={{ __html: d.relato.relatoHtml }}
                   />
                 )}
@@ -220,7 +220,7 @@ function Doc({ data: d }: { data: PublicOccurrence }) {
                       {d.relato.devolutivaStatus ? ` · ${d.relato.devolutivaStatus}` : ""}
                     </p>
                     <div
-                      className="prose prose-sm mt-2 max-w-[70ch] text-gray-700 [&_p]:my-2.5"
+                      className="prose prose-sm mt-2 max-w-none text-gray-700 [&_p]:my-2.5"
                       dangerouslySetInnerHTML={{ __html: d.relato.devolutivaHtml }}
                     />
                   </div>
