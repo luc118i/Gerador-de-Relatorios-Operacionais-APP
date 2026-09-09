@@ -1,4 +1,4 @@
-import { memo, useState } from "react";
+import { memo, useRef, useState } from "react";
 import { ArrowRight, ChevronDown, FileCheck2, GripVertical, MapPin, User } from "lucide-react";
 import type { OccurrenceDTO } from "../../../domain/occurrences";
 import { getOccurrenceFieldVisibility } from "../../config/occurrencePresentation";
@@ -90,8 +90,11 @@ export const OccurrenceBoardCard = memo(function OccurrenceBoardCard({
     show.datas && vis.horario && o.startTime ? o.startTime : "",
   ].filter(Boolean);
 
+  const rootRef = useRef<HTMLDivElement>(null);
+
   return (
     <div
+      ref={rootRef}
       role="button"
       tabIndex={0}
       onClick={() => onSelect(o)}
@@ -118,6 +121,13 @@ export const OccurrenceBoardCard = memo(function OccurrenceBoardCard({
         onDragStart={(e) => {
           e.dataTransfer.effectAllowed = "move";
           e.dataTransfer.setData("text/plain", o.id);
+          // imagem-fantasma = o card inteiro (não só a alça), pega no ponto
+          // onde o cursor está.
+          const el = rootRef.current;
+          if (el) {
+            const r = el.getBoundingClientRect();
+            e.dataTransfer.setDragImage(el, e.clientX - r.left, e.clientY - r.top);
+          }
           onDragStart(o);
         }}
         onDragEnd={onDragEnd}
