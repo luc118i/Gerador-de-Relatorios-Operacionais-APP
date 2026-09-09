@@ -78,7 +78,7 @@ export function FichaEvidencias({ evidences, loading, driveWebViewLink }: Props)
   return (
     <section>
       <div className="flex items-baseline justify-between">
-        <h2 className="text-[13px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+        <h2 className="text-[12px] font-semibold uppercase tracking-[0.08em] text-gray-400 dark:text-gray-500">
           Evidências
         </h2>
         {many && (

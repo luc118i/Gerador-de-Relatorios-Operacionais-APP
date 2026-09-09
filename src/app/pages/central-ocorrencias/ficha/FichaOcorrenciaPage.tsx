@@ -2,10 +2,10 @@ import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
+  Check,
   ChevronLeft,
   Copy,
   FileText,
-  MapPin,
   MoreHorizontal,
   Pencil,
   Share2,
@@ -28,7 +28,6 @@ import {
 } from "../../../config/occurrenceWorkflow";
 import { getOccurrenceTypeConfig } from "../../../config/occurrenceTypes";
 import { resolveBaseSigla } from "../../../../utils/base";
-import { avatarColor, initialsOf } from "../../../../utils/avatar";
 import { useAuth } from "../../../context/AuthContext";
 import {
   useDeleteOccurrence,
@@ -62,8 +61,9 @@ type Props = {
 };
 
 const htmlText = (h?: string | null) => (h ?? "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-const LABEL = "text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500";
-const H2 = "text-[13px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400";
+
+const H2 = "text-[12px] font-semibold uppercase tracking-[0.08em] text-gray-400 dark:text-gray-500";
+const LABEL = "text-[11px] uppercase tracking-wide text-gray-400 dark:text-gray-500";
 const BTN =
   "inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800";
 
@@ -72,8 +72,17 @@ function Cell({ label, value, className }: { label: string; value: React.ReactNo
   return (
     <div className={className}>
       <p className={LABEL}>{label}</p>
-      <p className="mt-0.5 text-sm text-gray-800 dark:text-gray-200">{value}</p>
+      <p className="mt-0.5 text-sm font-medium text-gray-900 dark:text-gray-100">{value}</p>
     </div>
+  );
+}
+
+function Sec({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="border-t border-gray-200/70 pt-8 first:border-t-0 first:pt-0 dark:border-gray-800">
+      <h2 className={H2}>{title}</h2>
+      <div className="mt-3.5">{children}</div>
+    </section>
   );
 }
 
@@ -159,6 +168,7 @@ export function FichaOcorrenciaPage({ occurrenceId, onVoltar, onEditar, onGerarR
   const statusCfg = getWorkflowStatusConfig(o.workflowStatus);
   const prioCfg = getPrioridadeConfig(o.prioridade);
   const relatoLongo = d.relato.length > 1100;
+  const tratada = o.workflowStatus === "TRATADA";
 
   const applyStatus = (next: WorkflowStatus) =>
     patchStatus.mutate({ id: o.id, status: next, actor }, { onSuccess: refreshFicha });
@@ -181,7 +191,7 @@ export function FichaOcorrenciaPage({ occurrenceId, onVoltar, onEditar, onGerarR
       ) : (
         <button onClick={() => setShowReport(true)} className={BTN}>
           <FileText className="h-3.5 w-3.5" />
-          Abrir relatório
+          <span className="hidden sm:inline">Abrir relatório</span>
         </button>
       )}
       <button onClick={() => onEditar(o.id)} className={BTN}>
@@ -245,8 +255,6 @@ export function FichaOcorrenciaPage({ occurrenceId, onVoltar, onEditar, onGerarR
     </div>
   );
 
-  const drivers = [d.d1, d.d2].filter(Boolean) as NonNullable<typeof d.d1>[];
-
   return (
     <Shell onVoltar={onVoltar} right={actions}>
       {pendingStatus && (
@@ -309,15 +317,24 @@ export function FichaOcorrenciaPage({ occurrenceId, onVoltar, onEditar, onGerarR
         </Callout>
       )}
 
-      {/* ── Cabeçalho: identificação da ocorrência ─────────────────── */}
-      <header className="mb-6 border-b border-gray-200/80 pb-6 dark:border-gray-800">
-        <div className="flex flex-wrap items-center gap-2">
+      {/* ── Cabeçalho ─────────────────────────────────────────────── */}
+      <header className="pb-8">
+        <h1 className="text-[2rem] font-semibold leading-[1.15] tracking-tight text-gray-900 dark:text-gray-50">
+          {d.titulo}
+        </h1>
+        <div className="mt-2.5 flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-[13px]">
           <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${statusCfg.badge}`}>
             {statusCfg.label}
           </span>
-          <span className="flex items-center gap-1 text-[11px] text-gray-500 dark:text-gray-400">
+          <span className="text-gray-300 dark:text-gray-700">·</span>
+          <span className="inline-flex items-center gap-1.5 text-gray-600 dark:text-gray-400">
             <span className={`inline-block h-1.5 w-1.5 rounded-full ${prioCfg.dot}`} />
             Gravidade {prioCfg.label.toLowerCase()}
+          </span>
+          <span className="text-gray-300 dark:text-gray-700">·</span>
+          <span className="tabular-nums text-gray-500 dark:text-gray-400">
+            {fmtDateBR(o.eventDate)}
+            {d.hora ? ` · ${d.hora}` : ""}
           </span>
           {isRecentlyCreated(o.createdAt) && (
             <span className="rounded bg-blue-50 px-1.5 py-px text-[10px] font-bold uppercase tracking-wide text-blue-600 dark:bg-blue-950/60 dark:text-blue-300">
@@ -325,174 +342,18 @@ export function FichaOcorrenciaPage({ occurrenceId, onVoltar, onEditar, onGerarR
             </span>
           )}
         </div>
-
-        <h1 className="mt-3 text-[1.7rem] font-semibold leading-tight tracking-tight text-gray-900 dark:text-gray-50">
-          {d.titulo}
-        </h1>
-
-        <dl className="mt-4 grid grid-cols-2 gap-x-8 gap-y-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-          <Cell label="Prefixo" value={o.vehicleNumber} />
-          <Cell
-            label="Data / hora"
-            value={`${fmtDateBR(o.eventDate)}${d.hora ? ` — ${d.hora}` : ""}`}
-          />
-          <Cell label="Linha / viagem" value={d.linha} className="col-span-2 lg:col-span-2" />
-          <Cell label="Local" value={o.place} />
-          <Cell label="Base" value={d.base} />
-        </dl>
-
-        {drivers.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {drivers.map((dr) => (
-              <span
-                key={dr.position}
-                className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 py-0.5 pl-0.5 pr-2.5 text-xs text-gray-700 dark:border-gray-700 dark:text-gray-300"
-              >
-                <span
-                  className={`flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-bold ${avatarColor(dr.name)}`}
-                >
-                  {initialsOf(dr.name)}
-                </span>
-                {dr.registry ? `${dr.registry} · ` : ""}
-                {dr.name}
-              </span>
-            ))}
-          </div>
-        )}
+        <p className="mt-2 font-mono text-[11px] text-gray-400 dark:text-gray-600">#{o.id.slice(0, 8)}</p>
       </header>
 
-      {/* ── Corpo: 3 colunas ─────────────────────────────────────── */}
-      <div className="overflow-hidden rounded-xl border border-gray-200/80 bg-white dark:border-gray-800 dark:bg-gray-900">
-        <div className="grid grid-cols-1 divide-y divide-gray-200/70 lg:grid-cols-[236px_minmax(0,1fr)_300px] lg:divide-x lg:divide-y-0 dark:divide-gray-800">
-          {/* Esquerda — Resumo / metadados */}
-          <aside className="p-5 lg:p-6">
-            <h2 className={H2}>Resumo</h2>
-            <div className="mt-4 space-y-4">
-              <Cell label="O que aconteceu" value={d.titulo} />
-              <Cell
-                label="Quando"
-                value={`${fmtDateBR(o.eventDate)}${d.hora ? ` — ${d.hora}` : ""}`}
-              />
-              <Cell label="Onde" value={o.place || d.linha} />
-              <Cell label="Quem" value={drivers.map((x) => x.name).join(" · ")} />
-              <Cell
-                label="Veículo"
-                value={`${o.vehicleNumber}${o.vehicleKm ? ` · ${o.vehicleKm} km` : ""}`}
-              />
-              <Cell label="Linha / viagem" value={d.linha} />
-              <Cell label="Operador CCO" value={o.ccoOperator} />
-              <Cell label="Situação atual" value={statusCfg.label} />
-            </div>
-            {d.semRelatorio && (
-              <p className="mt-4 text-xs text-gray-400 dark:text-gray-500">
-                Linha, horário, motorista e tratativa são preenchidos ao gerar o relatório.
-              </p>
-            )}
-          </aside>
-
-          {/* Centro — relato + evidências + tratativa */}
-          <div className="min-w-0 space-y-8 p-5 lg:p-7">
-            <section>
-              <h2 className={H2}>Relato completo</h2>
-              {d.relato ? (
-                <>
-                  <div
-                    className={`relative mt-3 ${
-                      relatoLongo && !relatoOpen ? "max-h-[360px] overflow-hidden" : ""
-                    }`}
-                  >
-                    <div
-                      className="prose prose-sm max-w-[74ch] text-[15px] leading-relaxed text-gray-800 dark:prose-invert dark:text-gray-200"
-                      dangerouslySetInnerHTML={{ __html: o.relatoHtml ?? "" }}
-                    />
-                    {relatoLongo && !relatoOpen && (
-                      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-white to-transparent dark:from-gray-900" />
-                    )}
-                  </div>
-                  {relatoLongo && (
-                    <button
-                      onClick={() => setRelatoOpen((v) => !v)}
-                      className="mt-2 cursor-pointer text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400"
-                    >
-                      {relatoOpen ? "Recolher" : "Ler mais"}
-                    </button>
-                  )}
-                </>
-              ) : (
-                <p className="mt-2 text-sm text-gray-400 dark:text-gray-500">
-                  O relato detalhado é preenchido no relatório.
-                </p>
-              )}
-
-              {d.devolutiva && (
-                <div className="mt-5 rounded-lg border border-gray-200 bg-gray-50/60 p-4 dark:border-gray-800 dark:bg-gray-900/40">
-                  <p className={LABEL}>
-                    Devolutiva / complementos
-                    {o.devolutivaStatus ? ` · ${o.devolutivaStatus}` : ""}
-                  </p>
-                  <div
-                    className="prose prose-sm mt-2 max-w-[74ch] text-gray-700 dark:prose-invert dark:text-gray-300"
-                    dangerouslySetInnerHTML={{ __html: o.devolutivaHtml ?? "" }}
-                  />
-                </div>
-              )}
-            </section>
-
-            <FichaEvidencias
-              evidences={ev.data ?? []}
-              loading={ev.isLoading}
-              driveWebViewLink={o.driveWebViewLink}
-            />
-
-            <section>
-              <h2 className={H2}>Tratativa</h2>
-              {d.semTratativa ? (
-                <p className="mt-2 text-sm text-gray-400 dark:text-gray-500">
-                  {d.semRelatorio
-                    ? "Responsável e tratativa são definidos ao gerar o relatório."
-                    : "Sem tratamento registrado ainda."}
-                </p>
-              ) : (
-                <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3">
-                  <Cell label="Responsável" value={o.analisadoPor} />
-                  <Cell label="Aberta em" value={fmtDateBR(o.createdAt?.slice(0, 10))} />
-                  {o.tratativa && (
-                    <Cell label="Tratativa" value={TRATATIVA_LABEL[o.tratativa] ?? o.tratativa} />
-                  )}
-                  {o.tratativa === "SUSPEICAO" && o.suspensao && (
-                    <Cell
-                      label="Suspensão"
-                      value={`${o.suspensao.dias} dia(s) · a partir de ${fmtDateBR(o.suspensao.dataInicio)}`}
-                    />
-                  )}
-                  {o.tratativa === "ADVERTENCIA" && <Cell label="Advertência" value="Aplicada" />}
-                  {(o as any).justificativaRegistro && (
-                    <Cell
-                      label="Observações"
-                      className="col-span-2 sm:col-span-3"
-                      value={(o as any).justificativaRegistro}
-                    />
-                  )}
-                  <Cell
-                    label="Situação"
-                    value={o.workflowStatus === "TRATADA" ? "Encerrada" : "Em acompanhamento"}
-                  />
-                  {o.rizerRegistered && (
-                    <Cell label="RIZER" value={o.solucionado ? "Solucionado" : "Registrado"} />
-                  )}
-                </div>
-              )}
-              <p className="mt-3 text-[11px] text-gray-400 dark:text-gray-500">
-                A edição da tratativa é feita em “Editar ocorrência”.
-              </p>
-            </section>
-          </div>
-
-          {/* Direita — informações complementares */}
-          <aside className="space-y-5 bg-gray-50/60 p-5 dark:bg-gray-900/40 lg:p-6">
-            <div>
+      {/* ── Conteúdo + sidebar ───────────────────────────────────── */}
+      <div className="grid grid-cols-1 gap-x-10 gap-y-8 lg:grid-cols-[minmax(0,1fr)_272px]">
+        {/* Sidebar — consulta rápida (abaixo no mobile, sticky no desktop) */}
+        <aside className="order-last lg:order-2 lg:sticky lg:top-[68px] lg:self-start lg:border-l lg:border-gray-200/70 lg:pl-6 dark:lg:border-gray-800">
+          <h2 className={`${H2} lg:mb-0`}>Resumo da ocorrência</h2>
+          <dl className="mt-3.5 flex flex-wrap gap-x-8 gap-y-4 lg:flex-col lg:gap-y-5">
+            <div className="lg:w-full">
               <p className={LABEL}>Status</p>
-              <div className="mt-1.5">
+              <div className="mt-1.5 max-w-[220px]">
                 <PickSelect
                   size="sm"
                   ariaLabel="Alterar status"
@@ -503,43 +364,173 @@ export function FichaOcorrenciaPage({ occurrenceId, onVoltar, onEditar, onGerarR
                 />
               </div>
             </div>
-
-            <div className="border-t border-gray-200/70 pt-4 dark:border-gray-800">
-              <p className={LABEL}>Classificação</p>
-              <p className="mt-1 flex items-center gap-1.5 text-sm text-gray-800 dark:text-gray-200">
+            <div>
+              <p className={LABEL}>Gravidade</p>
+              <p className="mt-0.5 flex items-center gap-1.5 text-sm font-medium text-gray-900 dark:text-gray-100">
                 <span className={`inline-block h-2 w-2 rounded-full ${prioCfg.dot}`} />
                 {prioCfg.label}
               </p>
             </div>
+            <Cell label="Prefixo" value={o.vehicleNumber} />
+            <Cell label="Motorista" value={d.d1?.name || "—"} />
+            <Cell label="Operador" value={o.ccoOperator || "—"} />
+            <Cell label="ID" value={<span className="font-mono">#{o.id.slice(0, 8)}</span>} />
+          </dl>
+        </aside>
 
-            <div className="border-t border-gray-200/70 pt-4 dark:border-gray-800">
-              <Cell label="Responsável" value={o.analisadoPor || "—"} />
+        {/* Coluna principal */}
+        <div className="order-first min-w-0 space-y-8 lg:order-1">
+          <Sec title="Resumo">
+            <div className="grid grid-cols-2 gap-x-8 gap-y-4 sm:grid-cols-3">
+              <Cell
+                label="Situação"
+                value={
+                  <span className="inline-flex items-center gap-1.5">
+                    {tratada && <Check className="h-3.5 w-3.5 text-emerald-600" />}
+                    {statusCfg.label}
+                  </span>
+                }
+              />
+              <Cell label="Local" value={o.place || d.linha} />
+              <Cell label="Operador CCO" value={o.ccoOperator} />
+              <Cell
+                label="Quando"
+                value={`${fmtDateBR(o.eventDate)}${d.hora ? ` · ${d.hora}` : ""}`}
+              />
             </div>
+            {d.semRelatorio && (
+              <p className="mt-4 text-xs text-gray-400 dark:text-gray-500">
+                Linha, horário, motorista e tratativa são preenchidos ao gerar o relatório.
+              </p>
+            )}
+          </Sec>
 
-            <div className="border-t border-gray-200/70 pt-4 dark:border-gray-800">
-              <p className={LABEL}>Identificação</p>
-              <dl className="mt-1.5 space-y-1.5 text-sm">
-                <div className="flex justify-between gap-2">
-                  <dt className="text-gray-400">ID</dt>
-                  <dd className="tabular-nums text-gray-700 dark:text-gray-300">#{o.id.slice(0, 8)}</dd>
-                </div>
-                <div className="flex justify-between gap-2">
-                  <dt className="text-gray-400">Prefixo</dt>
-                  <dd className="text-gray-700 dark:text-gray-300">{o.vehicleNumber}</dd>
-                </div>
-                {d.linha && (
-                  <div className="flex justify-between gap-2">
-                    <dt className="shrink-0 text-gray-400">Linha</dt>
-                    <dd className="truncate text-right text-gray-700 dark:text-gray-300">{d.linha}</dd>
-                  </div>
+          {(d.linha || d.d1 || o.vehicleNumber) && (
+            <Sec title="Dados da viagem">
+              <div className="grid grid-cols-2 gap-x-8 gap-y-4 sm:grid-cols-3 lg:grid-cols-4">
+                <Cell label="Linha" value={d.linha} className="col-span-2 sm:col-span-2 lg:col-span-2" />
+                <Cell label="Sentido" value={o.tripDirection} />
+                <Cell label="Prefixo" value={o.vehicleNumber} />
+                <Cell
+                  label="Motorista"
+                  value={d.d1 ? `${d.d1.registry ? d.d1.registry + " · " : ""}${d.d1.name}` : ""}
+                />
+                {d.d2 && (
+                  <Cell
+                    label="Motorista 2"
+                    value={`${d.d2.registry ? d.d2.registry + " · " : ""}${d.d2.name}`}
+                  />
                 )}
-              </dl>
-            </div>
+                {o.vehicleKm ? <Cell label="KM" value={`${o.vehicleKm} km`} /> : null}
+                <Cell label="Base" value={d.base} />
+              </div>
+            </Sec>
+          )}
 
-            <div className="border-t border-gray-200/70 pt-4 dark:border-gray-800">
-              <FichaTimeline entries={history.data} loading={history.isLoading} />
+          <Sec title="Relato">
+            {d.relato ? (
+              <>
+                <div
+                  className={`relative ${
+                    relatoLongo && !relatoOpen ? "max-h-[420px] overflow-hidden" : ""
+                  }`}
+                >
+                  <div
+                    className="prose prose-sm max-w-[70ch] text-[15px] leading-[1.75] text-gray-800 [&_p]:my-3 dark:prose-invert dark:text-gray-200"
+                    dangerouslySetInnerHTML={{ __html: o.relatoHtml ?? "" }}
+                  />
+                  {relatoLongo && !relatoOpen && (
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-gray-50 to-transparent dark:from-gray-950" />
+                  )}
+                </div>
+                {relatoLongo && (
+                  <button
+                    onClick={() => setRelatoOpen((v) => !v)}
+                    className="mt-2 cursor-pointer text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                  >
+                    {relatoOpen ? "Recolher" : "Ler mais"}
+                  </button>
+                )}
+              </>
+            ) : (
+              <p className="text-sm text-gray-400 dark:text-gray-500">
+                O relato detalhado é preenchido no relatório.
+              </p>
+            )}
+
+            {d.devolutiva && (
+              <div className="mt-5 rounded-lg border border-gray-200/80 bg-white p-4 dark:border-gray-800 dark:bg-gray-900/40">
+                <p className={LABEL}>
+                  Devolutiva / complementos
+                  {o.devolutivaStatus ? ` · ${o.devolutivaStatus}` : ""}
+                </p>
+                <div
+                  className="prose prose-sm mt-2 max-w-[70ch] text-gray-700 [&_p]:my-2.5 dark:prose-invert dark:text-gray-300"
+                  dangerouslySetInnerHTML={{ __html: o.devolutivaHtml ?? "" }}
+                />
+              </div>
+            )}
+          </Sec>
+
+          <div className="border-t border-gray-200/70 pt-8 dark:border-gray-800">
+            <FichaEvidencias
+              evidences={ev.data ?? []}
+              loading={ev.isLoading}
+              driveWebViewLink={o.driveWebViewLink}
+            />
+          </div>
+
+          <section className="border-t border-gray-200/70 pt-8 dark:border-gray-800">
+            <h2 className={H2}>Tratativa</h2>
+            {d.semTratativa ? (
+              <p className="mt-3 text-sm text-gray-400 dark:text-gray-500">
+                {d.semRelatorio
+                  ? "Responsável e tratativa são definidos ao gerar o relatório."
+                  : "Sem tratamento registrado ainda."}
+              </p>
+            ) : (
+              <div className="mt-3.5 rounded-lg border border-gray-200/80 bg-white p-4 dark:border-gray-800 dark:bg-gray-900/40">
+                <div className="grid grid-cols-2 gap-x-8 gap-y-4 sm:grid-cols-3">
+                  <Cell
+                    label="Situação atual"
+                    value={tratada ? "Encerrada" : "Em acompanhamento"}
+                  />
+                  <Cell label="Responsável" value={o.analisadoPor} />
+                  <Cell label="Aberta em" value={fmtDateBR(o.createdAt?.slice(0, 10))} />
+                  {o.tratativa && (
+                    <Cell label="Ação" value={TRATATIVA_LABEL[o.tratativa] ?? o.tratativa} />
+                  )}
+                  {o.tratativa === "SUSPEICAO" && o.suspensao && (
+                    <Cell
+                      label="Suspensão"
+                      value={`${o.suspensao.dias} dia(s) · a partir de ${fmtDateBR(o.suspensao.dataInicio)}`}
+                    />
+                  )}
+                  {o.tratativa === "ADVERTENCIA" && <Cell label="Advertência" value="Aplicada" />}
+                  {o.rizerRegistered && (
+                    <Cell label="RIZER" value={o.solucionado ? "Solucionado" : "Registrado"} />
+                  )}
+                  {(o as any).justificativaRegistro && (
+                    <Cell
+                      label="Observações"
+                      className="col-span-2 sm:col-span-3"
+                      value={(o as any).justificativaRegistro}
+                    />
+                  )}
+                </div>
+              </div>
+            )}
+            <p className="mt-2.5 text-[11px] text-gray-400 dark:text-gray-500">
+              A edição da tratativa é feita em “Editar ocorrência”.
+            </p>
+          </section>
+
+          <section className="border-t border-gray-200/70 pt-8 dark:border-gray-800">
+            <h2 className={H2}>Histórico da ocorrência</h2>
+            <div className="mt-3.5">
+              <FichaTimeline bare entries={history.data} loading={history.isLoading} />
             </div>
-          </aside>
+          </section>
         </div>
       </div>
 
@@ -572,8 +563,8 @@ function Shell({
 }) {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      <div className="sticky top-0 z-20 border-b border-gray-100 bg-gray-50/95 backdrop-blur dark:border-gray-900 dark:bg-gray-950/95">
-        <div className="mx-auto flex h-12 max-w-[1400px] items-center gap-3 px-4 sm:px-6 lg:px-8">
+      <div className="sticky top-0 z-20 border-b border-gray-200/70 bg-gray-50/95 backdrop-blur dark:border-gray-800 dark:bg-gray-950/95">
+        <div className="mx-auto flex h-12 max-w-[1280px] items-center gap-3 px-4 sm:px-6 lg:px-8">
           <button
             onClick={onVoltar}
             className="inline-flex h-7 cursor-pointer items-center gap-1 rounded-md border border-gray-200 pl-1.5 pr-2.5 text-[13px] font-medium text-gray-600 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:text-gray-900 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800"
@@ -581,14 +572,13 @@ function Shell({
             <ChevronLeft className="h-4 w-4" />
             Voltar
           </button>
-          <span className="hidden items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 sm:flex">
-            <MapPin className="h-3.5 w-3.5" />
+          <span className="hidden text-[11px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 sm:block">
             Ficha de ocorrência
           </span>
           {right && <div className="ml-auto">{right}</div>}
         </div>
       </div>
-      <div className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">{children}</div>
+      <div className="mx-auto max-w-[1280px] px-4 py-7 sm:px-6 lg:px-8 lg:py-9">{children}</div>
     </div>
   );
 }
