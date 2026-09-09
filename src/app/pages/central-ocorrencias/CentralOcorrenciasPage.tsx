@@ -9,8 +9,6 @@ import type {
   Prioridade,
   WorkflowStatus,
 } from "../../../domain/occurrences";
-import { occurrencesApi } from "../../../api/occurrences.api";
-import { dtoToOcorrencia } from "../../../utils/occurrenceMapper";
 import { normalizeText } from "../../../utils/occurrenceVisibility";
 import { getLocalDateString } from "../../../utils/dateUtils";
 import { useAuth } from "../../context/AuthContext";
@@ -32,8 +30,6 @@ import {
   nextBoardStatus,
   prevBoardStatus,
 } from "../../config/occurrenceWorkflow";
-import type { Ocorrencia } from "../../types";
-import { NovaOcorrencia } from "../nova-ocorrencia";
 import { ConfirmActionModal } from "../home/ConfirmActionModal";
 import { QuickOccurrenceModal } from "./QuickOccurrenceModal";
 import { ImportPassagemModal } from "./ImportPassagemModal";
@@ -50,6 +46,9 @@ import { useCentralLayout } from "./useCentralLayout";
 
 interface Props {
   onVoltar: () => void;
+  /** Abre a ocorrência no fluxo completo (edição → preview → relatório), fora
+   *  da Central — mesmo caminho de quem cria pela Home. */
+  onEditar: (id: string) => void;
 }
 
 const EMPTY_LIST: OccurrenceDTO[] = [];
@@ -69,7 +68,7 @@ function readPeriodo(): { from: string; to: string } | null {
   }
 }
 
-export function CentralOcorrenciasPage({ onVoltar }: Props) {
+export function CentralOcorrenciasPage({ onVoltar, onEditar }: Props) {
   const queryClient = useQueryClient();
   const { profileName, user } = useAuth();
   const { layout, setView, setDensity, toggleShow, toggleColumn } = useCentralLayout();
@@ -185,7 +184,6 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
   // Guarda só o id — o objeto do painel é sempre derivado da lista viva, pra
   // refletir na hora mudanças feitas pelo próprio painel (status, prioridade).
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [editando, setEditando] = useState<Ocorrencia | null>(null);
   const [quickOpen, setQuickOpen] = useState(false);
   const [quickInitialStatus, setQuickInitialStatus] = useState<WorkflowStatus | undefined>(undefined);
   const [importOpen, setImportOpen] = useState(false);
@@ -277,24 +275,15 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
     return map;
   }, [filtered]);
 
-  async function handleEditar(id: string) {
-    try {
-      const [full, signed] = await Promise.all([
-        occurrencesApi.getOccurrenceById(id),
-        occurrencesApi.getEvidenceSignedUrls(id).catch(() => []),
-      ]);
+  const handleEditar = useCallback(
+    (id: string) => {
       setSelectedId(null);
-      setEditando(dtoToOcorrencia(full as any, signed));
-    } catch {
-      toast.error("Erro ao carregar ocorrência.");
-    }
-  }
-
-  function afterSave() {
-    setEditando(null);
-    queryClient.invalidateQueries({ queryKey: occurrencesKeys.all });
-    toast.success("Ocorrência salva.");
-  }
+      // Sai da Central e entra no fluxo completo (edição → preview → relatório),
+      // o mesmo de quem cria pela Home — daí vem o preview, o envio e a contagem.
+      onEditar(id);
+    },
+    [onEditar],
+  );
 
   // id da última ocorrência movida — dispara a animação de entrada no card
   // quando ele remonta na coluna nova.
@@ -384,15 +373,6 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
     setQuickOpen(true);
   }, []);
 
-  if (editando) {
-    return (
-      <NovaOcorrencia
-        edicao={editando}
-        onVoltar={() => setEditando(null)}
-        onSaved={afterSave}
-      />
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">

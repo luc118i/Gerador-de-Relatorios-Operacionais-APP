@@ -18,6 +18,8 @@ import { Check } from "lucide-react";
 import { AppDrawer, type DrawerPage } from "./components/AppDrawer";
 import { AnaliseTelemetriaPage } from "./pages/AnaliseTelemetriaPage";
 import { CentralOcorrenciasPage } from "./pages/central-ocorrencias/CentralOcorrenciasPage";
+import { occurrencesApi } from "../api/occurrences.api";
+import { dtoToOcorrencia } from "../utils/occurrenceMapper";
 import { EsquemasRotaPage } from "./pages/EsquemasRotaPage";
 import { LocaisPage } from "./pages/LocaisPage";
 import { useAppUpdateNotifier } from "../hooks/useAppUpdateNotifier";
@@ -39,8 +41,12 @@ function AppShell() {
 
   const [previewOccurrenceId, setPreviewOccurrenceId] = useState<string | null>(null);
   const [previewOccurrenceView, setPreviewOccurrenceView] = useState<Ocorrencia | null>(null);
+  // pra onde o "Voltar" da edição/preview retorna (Home por padrão; Central
+  // quando a edição começou lá).
+  const [editorReturnTo, setEditorReturnTo] = useState<Page>("home");
 
   const handleIrParaNovo = () => {
+    setEditorReturnTo("home");
     setPreviewOccurrenceId(null);
     setPreviewOccurrenceView(null);
     setCurrentPage("nova-ocorrencia");
@@ -51,6 +57,23 @@ function AppShell() {
     setPreviewOccurrenceId(args.id);
     setPreviewOccurrenceView(args.view);
     setCurrentPage("preview-ocorrencia");
+  };
+
+  // Editar uma ocorrência vinda da Central de Ocorrências: entra no MESMO fluxo
+  // de quem cria pela Home (edição → onSaved → preview → envio do relatório).
+  const openOccurrenceEditor = async (id: string) => {
+    try {
+      const [full, signed] = await Promise.all([
+        occurrencesApi.getOccurrenceById(id),
+        occurrencesApi.getEvidenceSignedUrls(id).catch(() => []),
+      ]);
+      setEditorReturnTo("central-ocorrencias");
+      setPreviewOccurrenceId(id);
+      setPreviewOccurrenceView(dtoToOcorrencia(full as any, signed));
+      setCurrentPage("nova-ocorrencia");
+    } catch {
+      toast.error("Erro ao carregar ocorrência.");
+    }
   };
 
   const drawerPage: DrawerPage | null =
@@ -85,7 +108,7 @@ function AppShell() {
 
           {currentPage === "nova-ocorrencia" && (
             <NovaOcorrencia
-              onVoltar={() => setCurrentPage("home")}
+              onVoltar={() => setCurrentPage(editorReturnTo)}
               onSaved={handleSavedToPreview}
               edicao={previewOccurrenceView ?? undefined}
             />
@@ -101,7 +124,7 @@ function AppShell() {
               <OccurrencePreviewPage
                 occurrenceId={previewOccurrenceId}
                 occurrence={previewOccurrenceView}
-                onBack={() => setCurrentPage("home")}
+                onBack={() => setCurrentPage(editorReturnTo)}
                 onEdit={() => setCurrentPage("nova-ocorrencia")}
               />
             )}
@@ -119,7 +142,10 @@ function AppShell() {
           )}
 
           {currentPage === "central-ocorrencias" && (
-            <CentralOcorrenciasPage onVoltar={() => setCurrentPage("home")} />
+            <CentralOcorrenciasPage
+              onVoltar={() => setCurrentPage("home")}
+              onEditar={openOccurrenceEditor}
+            />
           )}
 
           {currentPage === "analise-viagem" && (
