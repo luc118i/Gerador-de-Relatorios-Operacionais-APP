@@ -390,13 +390,14 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
         <div className="mx-auto flex h-11 max-w-[1600px] items-center gap-1 px-3 sm:px-5">
           <button
             onClick={onVoltar}
-            title="Voltar"
-            aria-label="Voltar"
-            className="flex h-7 w-7 cursor-pointer items-center justify-center rounded text-gray-400 transition-colors hover:bg-black/[0.04] hover:text-gray-600 dark:hover:bg-white/[0.06] dark:hover:text-gray-300"
+            title="Voltar para o início"
+            aria-label="Voltar para o início"
+            className="inline-flex h-7 cursor-pointer items-center gap-1 rounded-md border border-gray-200 pl-1.5 pr-2.5 text-[13px] font-medium text-gray-600 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:text-gray-900 dark:border-gray-800 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:bg-gray-800 dark:hover:text-gray-100"
           >
             <ChevronLeft className="h-4 w-4" />
+            Voltar
           </button>
-          <span className="mx-1 h-4 w-px bg-gray-200 dark:bg-gray-800" />
+          <span className="mx-1.5 h-4 w-px bg-gray-200 dark:bg-gray-800" />
           <PersonalizarLayoutPopover
             view={layout.view}
             density={layout.density}
