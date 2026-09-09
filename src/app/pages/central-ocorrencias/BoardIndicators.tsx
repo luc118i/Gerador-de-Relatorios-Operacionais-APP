@@ -1,5 +1,17 @@
+import { useEffect, useRef, useState } from "react";
 import type { OccurrenceDTO, Prioridade, WorkflowStatus } from "../../../domain/occurrences";
 import { HIGH_PRIORITIES } from "../../config/occurrenceWorkflow";
+
+const CONFETTI = [
+  { left: "6%", color: "#10b981", delay: "0ms" },
+  { left: "18%", color: "#34d399", delay: "60ms" },
+  { left: "31%", color: "#6ee7b7", delay: "20ms" },
+  { left: "44%", color: "#059669", delay: "110ms" },
+  { left: "57%", color: "#34d399", delay: "40ms" },
+  { left: "69%", color: "#a7f3d0", delay: "90ms" },
+  { left: "81%", color: "#10b981", delay: "10ms" },
+  { left: "93%", color: "#6ee7b7", delay: "70ms" },
+];
 
 export type IndicatorFilter =
   | { kind: "all" }
@@ -66,6 +78,20 @@ export function BoardIndicators({ occurrences, active, onPick }: Props) {
   const total = occurrences.length;
   const tratadas = by("TRATADA");
   const pct = total ? Math.round((tratadas / total) * 100) : 0;
+  const done = total > 0 && tratadas === total;
+
+  // "pop" + confete só na transição pra 100%
+  const [celebrate, setCelebrate] = useState(false);
+  const wasDone = useRef(done);
+  useEffect(() => {
+    if (done && !wasDone.current) {
+      setCelebrate(true);
+      const t = setTimeout(() => setCelebrate(false), 1100);
+      wasDone.current = done;
+      return () => clearTimeout(t);
+    }
+    wasDone.current = done;
+  }, [done]);
 
   return (
     <div className="space-y-2">
@@ -111,14 +137,32 @@ export function BoardIndicators({ occurrences, active, onPick }: Props) {
 
       {/* Progresso: tratadas / total no período */}
       <div className="flex items-center gap-2">
-        <div className="h-1 flex-1 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-800">
+        <div className="relative h-1 flex-1 rounded-full bg-gray-200 dark:bg-gray-800">
           <div
-            className="h-full rounded-full bg-emerald-500 transition-all"
+            className={`h-full rounded-full transition-[width] duration-500 ${
+              done
+                ? `central-bar-done ${celebrate ? "central-bar-pop" : ""}`
+                : "bg-emerald-500"
+            }`}
             style={{ width: `${pct}%` }}
           />
+          {celebrate &&
+            CONFETTI.map((c, i) => (
+              <span
+                key={i}
+                className="central-confetti-piece"
+                style={{ left: c.left, backgroundColor: c.color, animationDelay: c.delay }}
+              />
+            ))}
         </div>
-        <span className="shrink-0 text-[11px] tabular-nums text-gray-400 dark:text-gray-500">
-          {tratadas}/{total} tratadas
+        <span
+          className={`shrink-0 text-[11px] tabular-nums transition-colors ${
+            done
+              ? "font-semibold text-emerald-600 dark:text-emerald-400"
+              : "text-gray-400 dark:text-gray-500"
+          }`}
+        >
+          {done ? "Tudo tratado 🎉" : `${tratadas}/${total} tratadas`}
         </span>
       </div>
     </div>
