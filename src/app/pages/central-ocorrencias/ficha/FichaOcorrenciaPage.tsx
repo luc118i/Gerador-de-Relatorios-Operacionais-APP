@@ -324,9 +324,6 @@ export function FichaOcorrenciaPage({ occurrenceId, onVoltar, onEditar, onGerarR
               Novo
             </span>
           )}
-          <span className="ml-auto text-[11px] tabular-nums text-gray-400 dark:text-gray-600">
-            #{o.id.slice(0, 8)}
-          </span>
         </div>
 
         <h1 className="mt-3 text-[1.7rem] font-semibold leading-tight tracking-tight text-gray-900 dark:text-gray-50">
@@ -341,10 +338,6 @@ export function FichaOcorrenciaPage({ occurrenceId, onVoltar, onEditar, onGerarR
           />
           <Cell label="Linha / viagem" value={d.linha} className="col-span-2 lg:col-span-2" />
           <Cell label="Local" value={o.place} />
-          <Cell
-            label="Motorista"
-            value={d.d1 ? `${d.d1.registry ? d.d1.registry + " · " : ""}${d.d1.name}` : ""}
-          />
           <Cell label="Base" value={d.base} />
         </dl>
 
