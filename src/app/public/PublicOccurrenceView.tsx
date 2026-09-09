@@ -1,5 +1,6 @@
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ExternalLink, FileWarning, Link2 } from "lucide-react";
+import { FileWarning } from "lucide-react";
 import { occurrenceSharesApi, type PublicOccurrence } from "../../api/occurrenceShares.api";
 import {
   getPrioridadeConfig,
@@ -7,6 +8,7 @@ import {
 } from "../config/occurrenceWorkflow";
 import type { OccurrenceHistoryEntry } from "../../domain/occurrences";
 import { fmtDateBR, fmtDateTime, historyLine } from "../pages/central-ocorrencias/ficha/fichaHelpers";
+import { FichaEvidencias } from "../pages/central-ocorrencias/ficha/FichaEvidencias";
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   if (value === null || value === undefined || value === "") return null;
@@ -34,9 +36,23 @@ export function PublicOccurrenceView({ token }: { token: string }) {
     retry: false,
   });
 
+  // Documento público é sempre claro — neutraliza o dark mode do visitante.
+  useEffect(() => {
+    const el = document.documentElement;
+    const hadDark = el.classList.contains("dark");
+    el.classList.remove("dark");
+    el.setAttribute("data-theme", "light");
+    return () => {
+      if (hadDark) el.classList.add("dark");
+    };
+  }, []);
+
   return (
-    <div className="min-h-screen bg-[#f4f5f7] py-8 text-gray-900 sm:py-12" style={{ colorScheme: "light" }}>
-      <div className="mx-auto max-w-3xl px-4 sm:px-6">
+    <div
+      className="min-h-screen bg-[#f4f5f7] py-4 text-gray-900 sm:py-12"
+      style={{ colorScheme: "light" }}
+    >
+      <div className="mx-auto max-w-4xl px-3 sm:px-6">
         {q.isLoading ? (
           <p className="py-24 text-center text-sm text-gray-400">Carregando documento…</p>
         ) : q.isError || !q.data ? (
@@ -62,7 +78,7 @@ function Doc({ data: d }: { data: PublicOccurrence }) {
   return (
     <article className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
       {/* Cabeçalho do documento */}
-      <div className="border-b border-gray-200 bg-gray-50/70 px-6 py-5 sm:px-8">
+      <div className="border-b border-gray-200 bg-gray-50/70 px-4 py-4 sm:px-8 sm:py-5">
         <div className="flex items-center gap-2">
           <img src="/logo.png" alt="" className="h-4 w-4 object-contain" />
           <span className="text-[11px] font-semibold uppercase tracking-widest text-gray-400">
@@ -95,10 +111,10 @@ function Doc({ data: d }: { data: PublicOccurrence }) {
         </div>
       </div>
 
-      <div className="space-y-6 px-6 py-6 sm:px-8">
+      <div className="space-y-6 px-4 py-5 sm:px-8 sm:py-6">
         {d.resumo && (
           <Section title="Resumo">
-            <div className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
               <Row label="Situação" value={d.resumo.situacao} />
               <Row label="Local" value={d.resumo.local} />
               <Row label="Operador CCO" value={d.resumo.operadorCco} />
@@ -108,7 +124,7 @@ function Doc({ data: d }: { data: PublicOccurrence }) {
 
         {d.viagem && (d.viagem.linha || d.viagem.motoristas) && (
           <Section title="Dados da viagem">
-            <div className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
               <Row label="Linha" value={d.viagem.linha} />
               <Row label="Sentido" value={d.viagem.sentido} />
               {d.viagem.motoristas?.map((m, i) => (
@@ -124,7 +140,7 @@ function Doc({ data: d }: { data: PublicOccurrence }) {
 
         {d.veiculo && (d.veiculo.prefixo || d.veiculo.km) && (
           <Section title="Veículo">
-            <div className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
               <Row label="Prefixo" value={d.veiculo.prefixo} />
               <Row label="KM" value={d.veiculo.km ? `${d.veiculo.km} km` : null} />
             </div>
@@ -156,7 +172,7 @@ function Doc({ data: d }: { data: PublicOccurrence }) {
         {d.tratativa &&
           (d.tratativa.responsavel || d.tratativa.tipo || d.tratativa.encerrada) && (
             <Section title="Tratativa">
-              <div className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
+              <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
                 <Row label="Responsável" value={d.tratativa.responsavel} />
                 <Row label="Tratativa" value={d.tratativa.tipo} />
                 {d.tratativa.suspensao && (
@@ -194,57 +210,18 @@ function Doc({ data: d }: { data: PublicOccurrence }) {
         )}
 
         {d.evidencias && d.evidencias.length > 0 && (
-          <Section title="Evidências">
-            {(() => {
-              const imgs = d.evidencias!.filter((e) => e.kind === "image");
-              const outros = d.evidencias!.filter((e) => e.kind !== "image");
-              return (
-                <div className="space-y-3">
-                  {imgs.length > 0 && (
-                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                      {imgs.map((e, i) => (
-                        <a
-                          key={i}
-                          href={e.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="relative aspect-[4/3] overflow-hidden rounded-lg border border-gray-200 bg-gray-50"
-                          title={e.caption || "Abrir imagem"}
-                        >
-                          <img
-                            src={e.url}
-                            alt={e.caption || ""}
-                            loading="lazy"
-                            className="h-full w-full object-cover"
-                          />
-                        </a>
-                      ))}
-                    </div>
-                  )}
-                  {outros.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {outros.map((e, i) => (
-                        <a
-                          key={i}
-                          href={e.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
-                        >
-                          {e.kind === "link" ? (
-                            <Link2 className="h-3.5 w-3.5" />
-                          ) : (
-                            <ExternalLink className="h-3.5 w-3.5" />
-                          )}
-                          {e.caption || (e.kind === "pdf" ? "Documento (PDF)" : "Link")}
-                        </a>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-          </Section>
+          <div className="border-t border-gray-200 pt-6">
+            <FichaEvidencias
+              loading={false}
+              evidences={d.evidencias.map((e, i) => ({
+                id: String(i),
+                url: e.kind === "link" ? "" : e.url,
+                caption: e.caption,
+                linkTexto: e.kind === "link" ? e.caption : "",
+                linkUrl: e.kind === "link" ? e.url : "",
+              }))}
+            />
+          </div>
         )}
       </div>
 
