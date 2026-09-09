@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { X, Route, MapPin, BarChart2, LogOut, UserCircle2, Pencil, Check, Loader2 } from "lucide-react";
+import { X, Route, MapPin, BarChart2, LogOut, UserCircle2, Pencil, Check, Loader2, ListChecks } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../context/AuthContext";
 import { useAdminAuth } from "../context/AdminAuthContext";
@@ -27,13 +27,7 @@ const ITEMS: DrawerItem[] = [
     id: "central-ocorrencias",
     label: "Central de Ocorrências",
     description: "Quadro de acompanhamento e tratamento",
-    icon: (
-      <img
-        src="/central-ocorrencias-icon.png"
-        alt=""
-        className="h-9 w-9 shrink-0 object-contain dark:invert"
-      />
-    ),
+    icon: <ListChecks className="w-5 h-5" />,
     everyone: true,
   },
   {
