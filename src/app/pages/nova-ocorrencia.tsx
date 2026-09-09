@@ -634,7 +634,7 @@ export function NovaOcorrencia({ onVoltar, onSaved, edicao, reportForId }: NovaO
               )}
               <div>
                 <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                  Confira o status da devolutiva
+                  Atenção ao status da ocorrência
                 </p>
                 <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
                   Este relatório vai ser salvo com a devolutiva marcada como{" "}
