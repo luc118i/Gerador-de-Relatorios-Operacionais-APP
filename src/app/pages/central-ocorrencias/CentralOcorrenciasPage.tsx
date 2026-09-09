@@ -46,9 +46,11 @@ import { useCentralLayout } from "./useCentralLayout";
 
 interface Props {
   onVoltar: () => void;
-  /** Abre a ocorrência no fluxo completo (edição → preview → relatório), fora
-   *  da Central — mesmo caminho de quem cria pela Home. */
+  /** Abre o formulário de edição da ocorrência (com os dados dela). */
   onEditar: (id: string) => void;
+  /** "Gerar relatório": abre o formulário LIMPO (igual criar pela Home) e ao
+   *  salvar promove essa ocorrência → preview → volta pra Central. */
+  onGerarRelatorio: (id: string) => void;
 }
 
 const EMPTY_LIST: OccurrenceDTO[] = [];
@@ -68,7 +70,7 @@ function readPeriodo(): { from: string; to: string } | null {
   }
 }
 
-export function CentralOcorrenciasPage({ onVoltar, onEditar }: Props) {
+export function CentralOcorrenciasPage({ onVoltar, onEditar, onGerarRelatorio }: Props) {
   const queryClient = useQueryClient();
   const { profileName, user } = useAuth();
   const { layout, setView, setDensity, toggleShow, toggleColumn } = useCentralLayout();
@@ -278,11 +280,17 @@ export function CentralOcorrenciasPage({ onVoltar, onEditar }: Props) {
   const handleEditar = useCallback(
     (id: string) => {
       setSelectedId(null);
-      // Sai da Central e entra no fluxo completo (edição → preview → relatório),
-      // o mesmo de quem cria pela Home — daí vem o preview, o envio e a contagem.
       onEditar(id);
     },
     [onEditar],
+  );
+
+  const handleGerarRelatorio = useCallback(
+    (id: string) => {
+      setSelectedId(null);
+      onGerarRelatorio(id);
+    },
+    [onGerarRelatorio],
   );
 
   // id da última ocorrência movida — dispara a animação de entrada no card
@@ -587,7 +595,7 @@ export function CentralOcorrenciasPage({ onVoltar, onEditar }: Props) {
         onClose={() => setQuickOpen(false)}
         onCreated={(id, opts) => {
           queryClient.invalidateQueries({ queryKey: occurrencesKeys.all });
-          if (opts?.openReport) handleEditar(id);
+          if (opts?.openReport) handleGerarRelatorio(id);
         }}
       />
 
@@ -607,6 +615,7 @@ export function CentralOcorrenciasPage({ onVoltar, onEditar }: Props) {
         open={!!selected}
         onClose={() => setSelectedId(null)}
         onEdit={handleEditar}
+        onGerarRelatorio={handleGerarRelatorio}
         actor={actor}
       />
 

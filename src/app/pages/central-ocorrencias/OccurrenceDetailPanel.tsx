@@ -80,10 +80,19 @@ type Props = {
   open: boolean;
   onClose: () => void;
   onEdit: (id: string) => void;
+  /** "Gerar relatório" — abre o formulário limpo (não a edição). */
+  onGerarRelatorio: (id: string) => void;
   actor: Actor;
 };
 
-export function OccurrenceDetailPanel({ occurrence: o, open, onClose, onEdit, actor }: Props) {
+export function OccurrenceDetailPanel({
+  occurrence: o,
+  open,
+  onClose,
+  onEdit,
+  onGerarRelatorio,
+  actor,
+}: Props) {
   const [showReport, setShowReport] = useState(false);
   const [pendingStatus, setPendingStatus] = useState<WorkflowStatus | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -257,7 +266,7 @@ export function OccurrenceDetailPanel({ occurrence: o, open, onClose, onEdit, ac
               {semRelatorio ? (
                 <div className="flex flex-wrap items-center gap-2">
                   <button
-                    onClick={() => onEdit(o.id)}
+                    onClick={() => onGerarRelatorio(o.id)}
                     className="inline-flex cursor-pointer items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors"
                   >
                     <FileText className="w-3.5 h-3.5" />

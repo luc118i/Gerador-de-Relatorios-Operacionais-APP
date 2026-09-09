@@ -44,9 +44,13 @@ function AppShell() {
   // pra onde o "Voltar" da edição/preview retorna (Home por padrão; Central
   // quando a edição começou lá).
   const [editorReturnTo, setEditorReturnTo] = useState<Page>("home");
+  // id da ocorrência da Central p/ qual estamos gerando relatório (form limpo,
+  // salva no mesmo id). null = criação normal / edição.
+  const [reportForId, setReportForId] = useState<string | null>(null);
 
   const handleIrParaNovo = () => {
     setEditorReturnTo("home");
+    setReportForId(null);
     setPreviewOccurrenceId(null);
     setPreviewOccurrenceView(null);
     setCurrentPage("nova-ocorrencia");
@@ -59,8 +63,7 @@ function AppShell() {
     setCurrentPage("preview-ocorrencia");
   };
 
-  // Editar uma ocorrência vinda da Central de Ocorrências: entra no MESMO fluxo
-  // de quem cria pela Home (edição → onSaved → preview → envio do relatório).
+  // Editar uma ocorrência da Central: abre o formulário com os dados dela.
   const openOccurrenceEditor = async (id: string) => {
     try {
       const [full, signed] = await Promise.all([
@@ -68,12 +71,24 @@ function AppShell() {
         occurrencesApi.getEvidenceSignedUrls(id).catch(() => []),
       ]);
       setEditorReturnTo("central-ocorrencias");
+      setReportForId(null);
       setPreviewOccurrenceId(id);
       setPreviewOccurrenceView(dtoToOcorrencia(full as any, signed));
       setCurrentPage("nova-ocorrencia");
     } catch {
       toast.error("Erro ao carregar ocorrência.");
     }
+  };
+
+  // "Gerar relatório" na Central: abre o formulário LIMPO (igual criar pela
+  // Home — nada pré-preenchido, datas de hoje) e ao salvar promove essa
+  // ocorrência (mesmo id) → onSaved → preview → volta pra Central.
+  const openReportForCentral = (id: string) => {
+    setEditorReturnTo("central-ocorrencias");
+    setPreviewOccurrenceId(null);
+    setPreviewOccurrenceView(null);
+    setReportForId(id);
+    setCurrentPage("nova-ocorrencia");
   };
 
   const drawerPage: DrawerPage | null =
@@ -111,6 +126,7 @@ function AppShell() {
               onVoltar={() => setCurrentPage(editorReturnTo)}
               onSaved={handleSavedToPreview}
               edicao={previewOccurrenceView ?? undefined}
+              reportForId={reportForId ?? undefined}
             />
           )}
 
@@ -145,6 +161,7 @@ function AppShell() {
             <CentralOcorrenciasPage
               onVoltar={() => setCurrentPage("home")}
               onEditar={openOccurrenceEditor}
+              onGerarRelatorio={openReportForCentral}
             />
           )}
 

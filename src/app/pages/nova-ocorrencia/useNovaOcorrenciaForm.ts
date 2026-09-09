@@ -25,9 +25,13 @@ interface NovaOcorrenciaProps {
   onVoltar: () => void;
   onSaved: (args: { id: string; view: Ocorrencia }) => void;
   edicao?: Ocorrencia;
+  /** Gerar relatório a partir de uma ocorrência da Central: o formulário abre
+   *  LIMPO (como um "novo"), mas ao salvar ATUALIZA essa ocorrência (mesmo id)
+   *  em vez de criar outra — assim ela é promovida a relatório sem duplicar. */
+  reportForId?: string;
 }
 
-export function useNovaOcorrenciaForm({ onSaved, edicao }: NovaOcorrenciaProps) {
+export function useNovaOcorrenciaForm({ onSaved, edicao, reportForId }: NovaOcorrenciaProps) {
   const today = new Date().toISOString().split("T")[0];
   const { profileName, profileNameAliases, user } = useAuth();
 
@@ -507,10 +511,11 @@ export function useNovaOcorrenciaForm({ onSaved, edicao }: NovaOcorrenciaProps) 
         analisadoPorUserId,
       });
 
+      const targetId = edicao?.id ?? reportForId;
       let resultId: string;
-      if (edicao?.id) {
-        await updateOccurrence.mutateAsync({ id: edicao.id, input: payload });
-        resultId = edicao.id;
+      if (targetId) {
+        await updateOccurrence.mutateAsync({ id: targetId, input: payload });
+        resultId = targetId;
       } else {
         const created = await createOccurrence.mutateAsync(payload);
         resultId = created.id;

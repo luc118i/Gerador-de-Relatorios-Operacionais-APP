@@ -22,10 +22,12 @@ interface NovaOcorrenciaProps {
   onVoltar: () => void;
   onSaved: (args: { id: string; view: Ocorrencia }) => void;
   edicao?: Ocorrencia;
+  /** Gera relatório para uma ocorrência da Central: form limpo, salva no id. */
+  reportForId?: string;
 }
 
-export function NovaOcorrencia({ onVoltar, onSaved, edicao }: NovaOcorrenciaProps) {
-  const form = useNovaOcorrenciaForm({ onVoltar, onSaved, edicao });
+export function NovaOcorrencia({ onVoltar, onSaved, edicao, reportForId }: NovaOcorrenciaProps) {
+  const form = useNovaOcorrenciaForm({ onVoltar, onSaved, edicao, reportForId });
   const typeConfig = getOccurrenceTypeConfig(form.typeCode);
   const { isAdmin } = useAdminAuth();
 
