@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { FileWarning, RotateCw } from "lucide-react";
+import { Check, FileWarning, RotateCw } from "lucide-react";
 import { occurrenceSharesApi, type PublicOccurrence } from "../../api/occurrenceShares.api";
 import { ApiError } from "../../api/http";
 import {
@@ -8,24 +8,28 @@ import {
   getWorkflowStatusConfig,
 } from "../config/occurrenceWorkflow";
 import type { OccurrenceHistoryEntry } from "../../domain/occurrences";
-import { fmtDateBR, fmtDateTime, historyLine } from "../pages/central-ocorrencias/ficha/fichaHelpers";
+import { fmtDateBR, fmtDateTime } from "../pages/central-ocorrencias/ficha/fichaHelpers";
 import { FichaEvidencias } from "../pages/central-ocorrencias/ficha/FichaEvidencias";
+import { FichaTimeline } from "../pages/central-ocorrencias/ficha/FichaTimeline";
 
-function Row({ label, value }: { label: string; value: React.ReactNode }) {
+const H2 = "text-[12px] font-semibold uppercase tracking-[0.08em] text-gray-400";
+const LABEL = "text-[11px] uppercase tracking-wide text-gray-400";
+
+function Cell({ label, value, className }: { label: string; value: React.ReactNode; className?: string }) {
   if (value === null || value === undefined || value === "") return null;
   return (
-    <div>
-      <p className="text-[11px] font-medium uppercase tracking-wide text-gray-400">{label}</p>
-      <p className="mt-0.5 text-sm text-gray-800">{value}</p>
+    <div className={className}>
+      <p className={LABEL}>{label}</p>
+      <p className="mt-0.5 text-sm font-medium text-gray-900">{value}</p>
     </div>
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Sec({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="border-t border-gray-200 pt-6">
-      <h2 className="text-[13px] font-semibold uppercase tracking-wide text-gray-500">{title}</h2>
-      <div className="mt-3">{children}</div>
+    <section className="border-t border-gray-200/70 pt-8 first:border-t-0 first:pt-0">
+      <h2 className={H2}>{title}</h2>
+      <div className="mt-3.5">{children}</div>
     </section>
   );
 }
@@ -36,8 +40,6 @@ export function PublicOccurrenceView({ token }: { token: string }) {
   const q = useQuery({
     queryKey: ["public-occurrence", token],
     queryFn: () => occurrenceSharesApi.getPublic(token),
-    // 404 = link mesmo revogado → não insiste. Qualquer outra falha (rede,
-    // servidor "acordando" no Koyeb) → tenta de novo antes de desistir.
     retry: (count, err) => !isRevoked(err) && count < 4,
     retryDelay: (attempt) => Math.min(1500 * 2 ** attempt, 8000),
   });
@@ -55,37 +57,23 @@ export function PublicOccurrenceView({ token }: { token: string }) {
 
   return (
     <div
-      className="min-h-screen bg-[#f4f5f7] py-4 text-gray-900 sm:py-12"
+      className="min-h-screen bg-[#f4f5f7] py-4 text-gray-900 sm:py-10"
       style={{ colorScheme: "light" }}
     >
-      <div className="mx-auto max-w-4xl px-3 sm:px-6">
+      <div className="mx-auto max-w-6xl px-3 sm:px-6">
         {q.isLoading || q.isFetching ? (
           <p className="py-24 text-center text-sm text-gray-400">Carregando documento…</p>
         ) : q.isError && isRevoked(q.error) ? (
-          <div className="rounded-xl border border-gray-200 bg-white p-10 text-center shadow-sm">
-            <FileWarning className="mx-auto h-8 w-8 text-gray-300" />
-            <p className="mt-3 text-sm font-medium text-gray-700">Link inválido ou revogado</p>
-            <p className="mt-1 text-xs text-gray-400">
-              Este link de compartilhamento não está mais ativo.
-            </p>
-          </div>
+          <Fallback
+            title="Link inválido ou revogado"
+            sub="Este link de compartilhamento não está mais ativo."
+          />
         ) : q.isError || !q.data ? (
-          <div className="rounded-xl border border-gray-200 bg-white p-10 text-center shadow-sm">
-            <FileWarning className="mx-auto h-8 w-8 text-gray-300" />
-            <p className="mt-3 text-sm font-medium text-gray-700">
-              Não foi possível carregar o documento
-            </p>
-            <p className="mt-1 text-xs text-gray-400">
-              Verifique sua conexão e tente novamente.
-            </p>
-            <button
-              onClick={() => q.refetch()}
-              className="mx-auto mt-4 inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-gray-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-gray-800"
-            >
-              <RotateCw className="h-3.5 w-3.5" />
-              Tentar novamente
-            </button>
-          </div>
+          <Fallback
+            title="Não foi possível carregar o documento"
+            sub="Verifique sua conexão e tente novamente."
+            onRetry={() => q.refetch()}
+          />
         ) : (
           <Doc data={q.data} />
         )}
@@ -94,161 +82,231 @@ export function PublicOccurrenceView({ token }: { token: string }) {
   );
 }
 
+function Fallback({ title, sub, onRetry }: { title: string; sub: string; onRetry?: () => void }) {
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white p-10 text-center shadow-sm">
+      <FileWarning className="mx-auto h-8 w-8 text-gray-300" />
+      <p className="mt-3 text-sm font-medium text-gray-700">{title}</p>
+      <p className="mt-1 text-xs text-gray-400">{sub}</p>
+      {onRetry && (
+        <button
+          onClick={onRetry}
+          className="mx-auto mt-4 inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-gray-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-gray-800"
+        >
+          <RotateCw className="h-3.5 w-3.5" />
+          Tentar novamente
+        </button>
+      )}
+    </div>
+  );
+}
+
 function Doc({ data: d }: { data: PublicOccurrence }) {
   const statusCfg = getWorkflowStatusConfig(d.status.code);
   const prioCfg = getPrioridadeConfig(d.prioridade.code);
+  const tratada = d.status.code === "TRATADA";
+
+  const motoristas = d.viagem?.motoristas ?? null;
+  const prefixo = d.veiculo?.prefixo ?? null;
+  const operador = d.resumo?.operadorCco ?? null;
+
+  const timelineEntries = d.timeline?.map((h, i) => ({
+    id: String(i),
+    createdAt: h.at,
+    actorUserId: null,
+    actorNome: null,
+    action: h.action,
+    fromValue: h.fromValue,
+    toValue: h.toValue,
+    note: h.note,
+  })) as unknown as OccurrenceHistoryEntry[] | undefined;
 
   return (
     <article className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-      {/* Cabeçalho do documento */}
-      <div className="border-b border-gray-200 bg-gray-50/70 px-4 py-4 sm:px-8 sm:py-5">
-        <div className="flex items-center gap-2">
-          <img src="/logo.png" alt="" className="h-4 w-4 object-contain" />
-          <span className="text-[11px] font-semibold uppercase tracking-widest text-gray-400">
-            Ficha de Ocorrência
-          </span>
-          <span className="ml-auto text-[11px] tabular-nums text-gray-400">#{d.code}</span>
-        </div>
-        <h1 className="mt-2 text-xl font-semibold leading-tight tracking-tight text-gray-900">
-          {d.titulo}
-        </h1>
-        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-500">
-          <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${statusCfg.badge}`}>
-            {d.status.label}
-          </span>
-          <span className="flex items-center gap-1">
-            <span className={`inline-block h-1.5 w-1.5 rounded-full ${prioCfg.dot}`} />
-            {d.prioridade.label}
-          </span>
-          <span>·</span>
-          <span>
-            {fmtDateBR(d.eventDate)}
-            {d.hora ? ` — ${d.hora}` : ""}
-          </span>
-          {d.tipo && (
-            <>
-              <span>·</span>
-              <span>{d.tipo}</span>
-            </>
-          )}
-        </div>
+      {/* faixa de identificação do documento */}
+      <div className="flex items-center gap-2 border-b border-gray-200 bg-gray-50/70 px-5 py-3.5 sm:px-8">
+        <img src="/logo.png" alt="" className="h-4 w-4 object-contain" />
+        <span className="text-[11px] font-semibold uppercase tracking-widest text-gray-400">
+          Ficha de Ocorrência
+        </span>
       </div>
 
-      <div className="space-y-6 px-4 py-5 sm:px-8 sm:py-6">
-        {d.resumo && (
-          <Section title="Resumo">
-            <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
-              <Row label="Situação" value={d.resumo.situacao} />
-              <Row label="Local" value={d.resumo.local} />
-              <Row label="Operador CCO" value={d.resumo.operadorCco} />
-            </div>
-          </Section>
-        )}
-
-        {d.viagem && (d.viagem.linha || d.viagem.motoristas) && (
-          <Section title="Dados da viagem">
-            <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
-              <Row label="Linha" value={d.viagem.linha} />
-              <Row label="Sentido" value={d.viagem.sentido} />
-              {d.viagem.motoristas?.map((m, i) => (
-                <Row
-                  key={i}
-                  label={i === 0 ? "Motorista" : `Motorista ${i + 1}`}
-                  value={`${m.matricula ? m.matricula + " · " : ""}${m.nome}`}
-                />
-              ))}
-            </div>
-          </Section>
-        )}
-
-        {d.veiculo && (d.veiculo.prefixo || d.veiculo.km) && (
-          <Section title="Veículo">
-            <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
-              <Row label="Prefixo" value={d.veiculo.prefixo} />
-              <Row label="KM" value={d.veiculo.km ? `${d.veiculo.km} km` : null} />
-            </div>
-          </Section>
-        )}
-
-        {d.relato && (d.relato.relatoHtml || d.relato.devolutivaHtml) && (
-          <Section title="Relato">
-            {d.relato.relatoHtml && (
-              <div
-                className="prose prose-sm max-w-[68ch] leading-relaxed text-gray-800"
-                dangerouslySetInnerHTML={{ __html: d.relato.relatoHtml }}
-              />
+      <div className="px-5 py-6 sm:px-8 sm:py-8">
+        {/* Cabeçalho da ocorrência */}
+        <header className="border-b border-gray-200/70 pb-6">
+          <h1 className="text-[1.6rem] font-semibold leading-[1.15] tracking-tight text-gray-900 sm:text-[1.95rem]">
+            {d.titulo}
+          </h1>
+          <div className="mt-2.5 flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-[13px]">
+            <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${statusCfg.badge}`}>
+              {d.status.label}
+            </span>
+            <span className="text-gray-300">·</span>
+            <span className="inline-flex items-center gap-1.5 text-gray-600">
+              <span className={`inline-block h-1.5 w-1.5 rounded-full ${prioCfg.dot}`} />
+              Gravidade {d.prioridade.label.toLowerCase()}
+            </span>
+            <span className="text-gray-300">·</span>
+            <span className="tabular-nums text-gray-500">
+              {fmtDateBR(d.eventDate)}
+              {d.hora ? ` · ${d.hora}` : ""}
+            </span>
+            {d.tipo && (
+              <>
+                <span className="text-gray-300">·</span>
+                <span className="text-gray-500">{d.tipo}</span>
+              </>
             )}
-            {d.relato.devolutivaHtml && (
-              <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50/60 p-4">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">
-                  Devolutiva{d.relato.devolutivaStatus ? ` · ${d.relato.devolutivaStatus}` : ""}
-                </p>
-                <div
-                  className="prose prose-sm mt-2 max-w-[68ch] text-gray-700"
-                  dangerouslySetInnerHTML={{ __html: d.relato.devolutivaHtml }}
-                />
-              </div>
-            )}
-          </Section>
-        )}
+          </div>
+          <p className="mt-2 font-mono text-[11px] text-gray-400">#{d.code}</p>
+        </header>
 
-        {d.tratativa &&
-          (d.tratativa.responsavel || d.tratativa.tipo || d.tratativa.encerrada) && (
-            <Section title="Tratativa">
-              <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
-                <Row label="Responsável" value={d.tratativa.responsavel} />
-                <Row label="Tratativa" value={d.tratativa.tipo} />
-                {d.tratativa.suspensao && (
-                  <Row
-                    label="Suspensão"
-                    value={`${d.tratativa.suspensao.dias} dia(s) · a partir de ${fmtDateBR(
-                      d.tratativa.suspensao.dataInicio,
-                    )}`}
+        {/* main + sidebar */}
+        <div className="mt-6 grid grid-cols-1 gap-x-10 gap-y-8 lg:grid-cols-[minmax(0,1fr)_248px]">
+          {/* Coluna principal */}
+          <div className="order-first min-w-0 space-y-8 lg:order-1">
+            {d.resumo && (
+              <Sec title="Resumo">
+                <div className="grid grid-cols-2 gap-x-8 gap-y-4 sm:grid-cols-3">
+                  <Cell
+                    label="Situação"
+                    value={
+                      <span className="inline-flex items-center gap-1.5">
+                        {tratada && <Check className="h-3.5 w-3.5 text-emerald-600" />}
+                        {d.resumo.situacao}
+                      </span>
+                    }
+                  />
+                  <Cell label="Local" value={d.resumo.local} />
+                  <Cell label="Operador CCO" value={d.resumo.operadorCco} />
+                </div>
+              </Sec>
+            )}
+
+            {d.viagem && (d.viagem.linha || motoristas || prefixo) && (
+              <Sec title="Dados da viagem">
+                <div className="grid grid-cols-2 gap-x-8 gap-y-4 sm:grid-cols-3 lg:grid-cols-4">
+                  <Cell
+                    label="Linha"
+                    value={d.viagem.linha}
+                    className="col-span-2 sm:col-span-2 lg:col-span-2"
+                  />
+                  <Cell label="Sentido" value={d.viagem.sentido} />
+                  <Cell label="Prefixo" value={prefixo} />
+                  {motoristas?.map((m, i) => (
+                    <Cell
+                      key={i}
+                      label={i === 0 ? "Motorista" : `Motorista ${i + 1}`}
+                      value={`${m.matricula ? m.matricula + " · " : ""}${m.nome}`}
+                    />
+                  ))}
+                  {d.veiculo?.km ? <Cell label="KM" value={`${d.veiculo.km} km`} /> : null}
+                </div>
+              </Sec>
+            )}
+
+            {d.relato && (d.relato.relatoHtml || d.relato.devolutivaHtml) && (
+              <Sec title="Relato">
+                {d.relato.relatoHtml && (
+                  <div
+                    className="prose prose-sm max-w-[70ch] text-[15px] leading-[1.75] text-gray-800 [&_p]:my-3"
+                    dangerouslySetInnerHTML={{ __html: d.relato.relatoHtml }}
                   />
                 )}
-                <Row
-                  label="Situação"
-                  value={d.tratativa.encerrada ? "Encerrada" : "Em acompanhamento"}
+                {d.relato.devolutivaHtml && (
+                  <div className="mt-5 rounded-lg border border-gray-200/80 bg-white p-4">
+                    <p className={LABEL}>
+                      Devolutiva
+                      {d.relato.devolutivaStatus ? ` · ${d.relato.devolutivaStatus}` : ""}
+                    </p>
+                    <div
+                      className="prose prose-sm mt-2 max-w-[70ch] text-gray-700 [&_p]:my-2.5"
+                      dangerouslySetInnerHTML={{ __html: d.relato.devolutivaHtml }}
+                    />
+                  </div>
+                )}
+              </Sec>
+            )}
+
+            {d.evidencias && d.evidencias.length > 0 && (
+              <div className="border-t border-gray-200/70 pt-8 first:border-t-0 first:pt-0">
+                <FichaEvidencias
+                  loading={false}
+                  evidences={d.evidencias.map((e, i) => ({
+                    id: String(i),
+                    url: e.kind === "link" ? "" : e.url,
+                    caption: e.caption,
+                    linkTexto: e.kind === "link" ? e.caption : "",
+                    linkUrl: e.kind === "link" ? e.url : "",
+                  }))}
                 />
               </div>
-            </Section>
-          )}
+            )}
 
-        {d.timeline && d.timeline.length > 0 && (
-          <Section title="Linha do tempo">
-            <ol className="space-y-3">
-              {d.timeline.map((h, i) => (
-                <li key={i} className="border-l-2 border-gray-200 pl-3">
-                  <p className="text-sm font-medium text-gray-800">
-                    {historyLine(h as unknown as OccurrenceHistoryEntry)}
-                  </p>
-                  <p className="text-[11px] tabular-nums text-gray-400">{fmtDateTime(h.at)}</p>
-                  {h.note && h.action !== "NOTA" && (
-                    <p className="mt-0.5 text-xs text-gray-500">{h.note}</p>
-                  )}
-                </li>
-              ))}
-            </ol>
-          </Section>
-        )}
+            {d.tratativa &&
+              (d.tratativa.responsavel || d.tratativa.tipo || d.tratativa.encerrada) && (
+                <section className="border-t border-gray-200/70 pt-8 first:border-t-0 first:pt-0">
+                  <h2 className={H2}>Tratativa</h2>
+                  <div className="mt-3.5 rounded-lg border border-gray-200/80 bg-white p-4">
+                    <div className="grid grid-cols-2 gap-x-8 gap-y-4 sm:grid-cols-3">
+                      <Cell
+                        label="Situação atual"
+                        value={d.tratativa.encerrada ? "Encerrada" : "Em acompanhamento"}
+                      />
+                      <Cell label="Responsável" value={d.tratativa.responsavel} />
+                      <Cell label="Ação" value={d.tratativa.tipo} />
+                      {d.tratativa.suspensao && (
+                        <Cell
+                          label="Suspensão"
+                          value={`${d.tratativa.suspensao.dias} dia(s) · a partir de ${fmtDateBR(
+                            d.tratativa.suspensao.dataInicio,
+                          )}`}
+                        />
+                      )}
+                    </div>
+                  </div>
+                </section>
+              )}
 
-        {d.evidencias && d.evidencias.length > 0 && (
-          <div className="border-t border-gray-200 pt-6">
-            <FichaEvidencias
-              loading={false}
-              evidences={d.evidencias.map((e, i) => ({
-                id: String(i),
-                url: e.kind === "link" ? "" : e.url,
-                caption: e.caption,
-                linkTexto: e.kind === "link" ? e.caption : "",
-                linkUrl: e.kind === "link" ? e.url : "",
-              }))}
-            />
+            {timelineEntries && timelineEntries.length > 0 && (
+              <section className="border-t border-gray-200/70 pt-8 first:border-t-0 first:pt-0">
+                <h2 className={H2}>Histórico da ocorrência</h2>
+                <div className="mt-3.5">
+                  <FichaTimeline bare entries={timelineEntries} loading={false} />
+                </div>
+              </section>
+            )}
           </div>
-        )}
+
+          {/* Sidebar — consulta rápida */}
+          <aside className="order-last lg:order-2 lg:sticky lg:top-6 lg:self-start lg:border-l lg:border-gray-200/70 lg:pl-6">
+            <h2 className={H2}>Resumo da ocorrência</h2>
+            <dl className="mt-3.5 flex flex-wrap gap-x-8 gap-y-4 lg:flex-col lg:gap-y-5">
+              <div>
+                <p className={LABEL}>Status</p>
+                <span
+                  className={`mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${statusCfg.badge}`}
+                >
+                  {tratada && <Check className="h-3 w-3" />}
+                  {d.status.label}
+                </span>
+              </div>
+              <div>
+                <p className={LABEL}>Gravidade</p>
+                <p className="mt-0.5 flex items-center gap-1.5 text-sm font-medium text-gray-900">
+                  <span className={`inline-block h-2 w-2 rounded-full ${prioCfg.dot}`} />
+                  {d.prioridade.label}
+                </p>
+              </div>
+              <Cell label="Prefixo" value={prefixo} />
+              <Cell label="Motorista" value={motoristas?.[0]?.nome} />
+              <Cell label="Operador" value={operador} />
+            </dl>
+          </aside>
+        </div>
       </div>
 
-      <div className="border-t border-gray-200 bg-gray-50/70 px-6 py-4 text-center text-[11px] text-gray-400 sm:px-8">
+      <div className="border-t border-gray-200 bg-gray-50/70 px-5 py-4 text-center text-[11px] text-gray-400 sm:px-8">
         Documento gerado em {fmtDateTime(d.geradoEm)} · válido enquanto o link estiver ativo.
       </div>
     </article>
