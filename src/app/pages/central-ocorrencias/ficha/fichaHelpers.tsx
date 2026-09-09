@@ -1,13 +1,3 @@
-import type { ReactNode } from "react";
-import {
-  ArrowRightLeft,
-  FileCheck2,
-  FilePlus2,
-  Flag,
-  Gavel,
-  MessageSquare,
-  type LucideIcon,
-} from "lucide-react";
 import type { OccurrenceHistoryEntry } from "../../../../domain/occurrences";
 import {
   getPrioridadeConfig,
@@ -41,13 +31,6 @@ export function fmtDateBR(d?: string | null): string {
   return y && m && day ? `${day}/${m}/${y}` : d;
 }
 
-export function fmtHora(iso: string): string {
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime())
-    ? "--:--"
-    : d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-}
-
 export function statusLabel(code: string | null | undefined): string {
   return code ? getWorkflowStatusConfig(code).label : "—";
 }
@@ -71,31 +54,3 @@ export function historyLine(h: OccurrenceHistoryEntry): string {
   }
 }
 
-export const HISTORY_META: Record<string, { Icon: LucideIcon }> = {
-  CRIADA: { Icon: FilePlus2 },
-  STATUS: { Icon: ArrowRightLeft },
-  PRIORIDADE: { Icon: Flag },
-  TRATATIVA: { Icon: Gavel },
-  RELATORIO: { Icon: FileCheck2 },
-  NOTA: { Icon: MessageSquare },
-};
-
-/** Campo rótulo + valor no padrão da ficha. */
-export function Field({
-  label,
-  value,
-  className,
-}: {
-  label: string;
-  value: ReactNode;
-  className?: string;
-}) {
-  return (
-    <div className={className}>
-      <p className="text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">
-        {label}
-      </p>
-      <p className="mt-0.5 text-sm text-gray-800 dark:text-gray-200">{value || "—"}</p>
-    </div>
-  );
-}
