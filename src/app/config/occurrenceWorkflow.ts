@@ -30,7 +30,7 @@ export const WORKFLOW_STATUSES: WorkflowStatusConfig[] = [
       "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700",
     dot: "bg-slate-400",
     cardTint:
-      "bg-slate-50/60 dark:bg-slate-900/30 border-slate-200/70 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700",
+      "bg-slate-100/70 dark:bg-slate-900/50 border-slate-200/80 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700",
   },
   {
     code: "EM_TRATAMENTO",
@@ -41,7 +41,7 @@ export const WORKFLOW_STATUSES: WorkflowStatusConfig[] = [
       "bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800",
     dot: "bg-blue-500",
     cardTint:
-      "bg-blue-50/50 dark:bg-blue-950/20 border-blue-200/60 dark:border-blue-900/50 hover:border-blue-300 dark:hover:border-blue-800",
+      "bg-blue-50/80 dark:bg-blue-950/30 border-blue-200/80 dark:border-blue-900/60 hover:border-blue-300 dark:hover:border-blue-800",
   },
   {
     code: "AGUARDANDO_RETORNO",
@@ -52,7 +52,7 @@ export const WORKFLOW_STATUSES: WorkflowStatusConfig[] = [
       "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800",
     dot: "bg-amber-400",
     cardTint:
-      "bg-amber-50/50 dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-900/50 hover:border-amber-300 dark:hover:border-amber-800",
+      "bg-amber-50/80 dark:bg-amber-950/30 border-amber-200/80 dark:border-amber-900/60 hover:border-amber-300 dark:hover:border-amber-800",
   },
   {
     code: "TRATADA",
@@ -63,7 +63,7 @@ export const WORKFLOW_STATUSES: WorkflowStatusConfig[] = [
       "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800",
     dot: "bg-emerald-500",
     cardTint:
-      "bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200/60 dark:border-emerald-900/50 hover:border-emerald-300 dark:hover:border-emerald-800",
+      "bg-emerald-50/80 dark:bg-emerald-950/30 border-emerald-200/80 dark:border-emerald-900/60 hover:border-emerald-300 dark:hover:border-emerald-800",
   },
   {
     code: "CANCELADA",
@@ -74,7 +74,7 @@ export const WORKFLOW_STATUSES: WorkflowStatusConfig[] = [
       "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700",
     dot: "bg-gray-300 dark:bg-gray-600",
     cardTint:
-      "bg-gray-50 dark:bg-gray-900/50 border-gray-200/70 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700",
+      "bg-gray-100/70 dark:bg-gray-900/60 border-gray-200/80 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700",
   },
   {
     code: "ARQUIVADA",
@@ -85,7 +85,7 @@ export const WORKFLOW_STATUSES: WorkflowStatusConfig[] = [
       "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700",
     dot: "bg-gray-300 dark:bg-gray-600",
     cardTint:
-      "bg-gray-50 dark:bg-gray-900/50 border-gray-200/70 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700",
+      "bg-gray-100/70 dark:bg-gray-900/60 border-gray-200/80 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700",
   },
 ];
 
