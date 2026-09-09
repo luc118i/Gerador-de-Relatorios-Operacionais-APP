@@ -36,7 +36,6 @@ import { ImportPassagemModal } from "./ImportPassagemModal";
 import { BoardColumn } from "./BoardColumn";
 import { BoardFilters as BoardFiltersBar, emptyBoardFilters, type BoardUiFilters } from "./BoardFilters";
 import { BoardIndicators, type IndicatorFilter } from "./BoardIndicators";
-import { OccurrenceDetailPanel } from "./OccurrenceDetailPanel";
 import { PersonalizarLayoutPopover } from "./PersonalizarLayoutPopover";
 import { ViewSwitcher } from "./ViewSwitcher";
 import { coverWidthFraction } from "./coverGeom";
@@ -51,6 +50,8 @@ interface Props {
   /** "Gerar relatório": abre o formulário LIMPO (igual criar pela Home) e ao
    *  salvar promove essa ocorrência → preview → volta pra Central. */
   onGerarRelatorio: (id: string) => void;
+  /** Abre a Ficha Técnica da ocorrência (tela cheia). */
+  onAbrirFicha: (id: string) => void;
 }
 
 const EMPTY_LIST: OccurrenceDTO[] = [];
@@ -70,7 +71,12 @@ function readPeriodo(): { from: string; to: string } | null {
   }
 }
 
-export function CentralOcorrenciasPage({ onVoltar, onEditar, onGerarRelatorio }: Props) {
+export function CentralOcorrenciasPage({
+  onVoltar,
+  onEditar,
+  onGerarRelatorio,
+  onAbrirFicha,
+}: Props) {
   const queryClient = useQueryClient();
   const { profileName, user } = useAuth();
   const { layout, setView, setDensity, toggleShow, toggleColumn } = useCentralLayout();
@@ -183,9 +189,6 @@ export function CentralOcorrenciasPage({ onVoltar, onEditar, onGerarRelatorio }:
     }
   }, [filters.from, filters.to]);
   const [indicator, setIndicator] = useState<IndicatorFilter>({ kind: "all" });
-  // Guarda só o id — o objeto do painel é sempre derivado da lista viva, pra
-  // refletir na hora mudanças feitas pelo próprio painel (status, prioridade).
-  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [quickOpen, setQuickOpen] = useState(false);
   const [quickInitialStatus, setQuickInitialStatus] = useState<WorkflowStatus | undefined>(undefined);
   const [importOpen, setImportOpen] = useState(false);
@@ -209,12 +212,6 @@ export function CentralOcorrenciasPage({ onVoltar, onEditar, onGerarRelatorio }:
     [filters.from, filters.to],
   );
   const { data, isLoading, isError, refetch, isFetching } = useBoardOccurrences(apiFilters);
-
-  // Objeto do painel de detalhe — sempre a versão atual da lista.
-  const selected = useMemo(
-    () => (selectedId ? (data ?? []).find((o) => o.id === selectedId) ?? null : null),
-    [data, selectedId],
-  );
 
   const actor = useMemo(
     () => ({ actorUserId: user?.id ?? null, actorNome: profileName || null }),
@@ -277,19 +274,9 @@ export function CentralOcorrenciasPage({ onVoltar, onEditar, onGerarRelatorio }:
     return map;
   }, [filtered]);
 
-  const handleEditar = useCallback(
-    (id: string) => {
-      setSelectedId(null);
-      onEditar(id);
-    },
-    [onEditar],
-  );
-
+  const handleEditar = useCallback((id: string) => onEditar(id), [onEditar]);
   const handleGerarRelatorio = useCallback(
-    (id: string) => {
-      setSelectedId(null);
-      onGerarRelatorio(id);
-    },
+    (id: string) => onGerarRelatorio(id),
     [onGerarRelatorio],
   );
 
@@ -312,17 +299,18 @@ export function CentralOcorrenciasPage({ onVoltar, onEditar, onGerarRelatorio }:
     [patchStatus, actor],
   );
 
-  // Clicar num card pra ver detalhe: abre o painel e descarta qualquer
-  // confirmação de mudança de status pendente (evita os dois na tela juntos).
-  const handleCardClick = useCallback((o: OccurrenceDTO) => {
-    setPendingMove(null);
-    setSelectedId(o.id);
-  }, []);
+  // Clicar num card abre a Ficha Técnica (tela cheia) e descarta qualquer
+  // confirmação de mudança de status pendente.
+  const handleCardClick = useCallback(
+    (o: OccurrenceDTO) => {
+      setPendingMove(null);
+      onAbrirFicha(o.id);
+    },
+    [onAbrirFicha],
+  );
 
   const onCardDragStart = useCallback((o: OccurrenceDTO) => {
-    // começar a arrastar não é "inspecionar" — fecha o painel de detalhe.
     pendingDropRef.current = null;
-    setSelectedId(null);
     setDrag({ id: o.id, from: (o.workflowStatus ?? "PENDENTE") as WorkflowStatus });
   }, []);
 
@@ -608,15 +596,6 @@ export function CentralOcorrenciasPage({ onVoltar, onEditar, onGerarRelatorio }:
           setFilters((f) => ({ ...f, from: eventDate, to: eventDate }));
           setIndicator({ kind: "all" });
         }}
-      />
-
-      <OccurrenceDetailPanel
-        occurrence={selected}
-        open={!!selected}
-        onClose={() => setSelectedId(null)}
-        onEdit={handleEditar}
-        onGerarRelatorio={handleGerarRelatorio}
-        actor={actor}
       />
 
       {pendingMove && (

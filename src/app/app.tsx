@@ -18,6 +18,7 @@ import { Check } from "lucide-react";
 import { AppDrawer, type DrawerPage } from "./components/AppDrawer";
 import { AnaliseTelemetriaPage } from "./pages/AnaliseTelemetriaPage";
 import { CentralOcorrenciasPage } from "./pages/central-ocorrencias/CentralOcorrenciasPage";
+import { FichaOcorrenciaPage } from "./pages/central-ocorrencias/ficha/FichaOcorrenciaPage";
 import { occurrencesApi } from "../api/occurrences.api";
 import { dtoToOcorrencia } from "../utils/occurrenceMapper";
 import { EsquemasRotaPage } from "./pages/EsquemasRotaPage";
@@ -30,6 +31,7 @@ type Page =
   | "nova-ocorrencia"
   | "relatorio-diario"
   | "preview-ocorrencia"
+  | "ficha-ocorrencia"
   | "motoristas"
   | "gerenciar-nomes"
   | "base-responsaveis"
@@ -47,6 +49,13 @@ function AppShell() {
   // id da ocorrência da Central p/ qual estamos gerando relatório (form limpo,
   // salva no mesmo id). null = criação normal / edição.
   const [reportForId, setReportForId] = useState<string | null>(null);
+  // ocorrência aberta na Ficha Técnica (tela cheia).
+  const [fichaOccurrenceId, setFichaOccurrenceId] = useState<string | null>(null);
+
+  const openFicha = (id: string) => {
+    setFichaOccurrenceId(id);
+    setCurrentPage("ficha-ocorrencia");
+  };
 
   const handleIrParaNovo = () => {
     setEditorReturnTo("home");
@@ -64,13 +73,13 @@ function AppShell() {
   };
 
   // Editar uma ocorrência da Central: abre o formulário com os dados dela.
-  const openOccurrenceEditor = async (id: string) => {
+  const openOccurrenceEditor = async (id: string, returnTo: Page = "central-ocorrencias") => {
     try {
       const [full, signed] = await Promise.all([
         occurrencesApi.getOccurrenceById(id),
         occurrencesApi.getEvidenceSignedUrls(id).catch(() => []),
       ]);
-      setEditorReturnTo("central-ocorrencias");
+      setEditorReturnTo(returnTo);
       setReportForId(null);
       setPreviewOccurrenceId(id);
       setPreviewOccurrenceView(dtoToOcorrencia(full as any, signed));
@@ -83,8 +92,8 @@ function AppShell() {
   // "Gerar relatório" na Central: abre o formulário LIMPO (igual criar pela
   // Home — nada pré-preenchido, datas de hoje) e ao salvar promove essa
   // ocorrência (mesmo id) → onSaved → preview → volta pra Central.
-  const openReportForCentral = (id: string) => {
-    setEditorReturnTo("central-ocorrencias");
+  const openReportForCentral = (id: string, returnTo: Page = "central-ocorrencias") => {
+    setEditorReturnTo(returnTo);
     setPreviewOccurrenceId(null);
     setPreviewOccurrenceView(null);
     setReportForId(id);
@@ -162,6 +171,16 @@ function AppShell() {
               onVoltar={() => setCurrentPage("home")}
               onEditar={openOccurrenceEditor}
               onGerarRelatorio={openReportForCentral}
+              onAbrirFicha={openFicha}
+            />
+          )}
+
+          {currentPage === "ficha-ocorrencia" && fichaOccurrenceId && (
+            <FichaOcorrenciaPage
+              occurrenceId={fichaOccurrenceId}
+              onVoltar={() => setCurrentPage("central-ocorrencias")}
+              onEditar={(id) => openOccurrenceEditor(id, "ficha-ocorrencia")}
+              onGerarRelatorio={(id) => openReportForCentral(id, "ficha-ocorrencia")}
             />
           )}
 
