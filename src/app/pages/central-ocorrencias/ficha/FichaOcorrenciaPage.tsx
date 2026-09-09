@@ -374,7 +374,10 @@ export function FichaOcorrenciaPage({ occurrenceId, onVoltar, onHome, onEditar, 
               </p>
             </div>
             <Cell label="Prefixo" value={o.vehicleNumber} />
-            <Cell label="Motorista" value={d.d1?.name || "—"} />
+            <Cell
+              label="Motorista"
+              value={d.d1 ? `${d.d1.registry ? d.d1.registry + " · " : ""}${d.d1.name}` : "—"}
+            />
             <Cell label="Operador" value={o.ccoOperator || "—"} />
             <Cell label="ID" value={<span className="font-mono">#{o.id.slice(0, 8)}</span>} />
           </dl>
@@ -438,7 +441,7 @@ export function FichaOcorrenciaPage({ occurrenceId, onVoltar, onHome, onEditar, 
                   }`}
                 >
                   <div
-                    className="prose prose-sm max-w-none text-[15px] leading-[1.75] text-gray-800 [&_p]:my-3 dark:prose-invert dark:text-gray-200"
+                    className="prose prose-sm max-w-none text-justify text-[15px] leading-[1.75] text-gray-800 [&_p]:my-3 dark:prose-invert dark:text-gray-200"
                     dangerouslySetInnerHTML={{ __html: o.relatoHtml ?? "" }}
                   />
                   {relatoLongo && !relatoOpen && (
@@ -467,7 +470,7 @@ export function FichaOcorrenciaPage({ occurrenceId, onVoltar, onHome, onEditar, 
                   {o.devolutivaStatus ? ` · ${o.devolutivaStatus}` : ""}
                 </p>
                 <div
-                  className="prose prose-sm mt-2 max-w-none text-gray-700 [&_p]:my-2.5 dark:prose-invert dark:text-gray-300"
+                  className="prose prose-sm mt-2 max-w-none text-justify text-gray-700 [&_p]:my-2.5 dark:prose-invert dark:text-gray-300"
                   dangerouslySetInnerHTML={{ __html: o.devolutivaHtml ?? "" }}
                 />
               </div>

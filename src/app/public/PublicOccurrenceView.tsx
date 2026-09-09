@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Check, FileText, FileWarning, Moon, RotateCw, Sun } from "lucide-react";
+import { Check, Download, FileText, FileWarning, Moon, RotateCw, Sun } from "lucide-react";
 import { occurrenceSharesApi, type PublicOccurrence } from "../../api/occurrenceShares.api";
 import { ApiError } from "../../api/http";
 import {
@@ -86,13 +86,26 @@ export function PublicOccurrenceView({ token }: { token: string }) {
 
   const relatorioUrl = q.data?.relatorioUrl ?? null;
 
+  // "Gerar PDF" = impressão do navegador. Força o tema claro só durante o diálogo.
+  const gerarPdf = () => {
+    const el = document.documentElement;
+    const wasDark = el.classList.contains("dark");
+    if (wasDark) el.classList.remove("dark");
+    window.print();
+    if (wasDark) el.classList.add("dark");
+  };
+
   return (
     <div
       className="min-h-screen bg-[#f4f5f7] py-4 text-gray-900 sm:py-10 dark:bg-gray-950 dark:text-gray-100"
       style={{ colorScheme: theme }}
     >
+      <style>{`@media print {
+        .no-print { display: none !important; }
+        html.dark { color-scheme: light; }
+      }`}</style>
       <div className="mx-auto max-w-6xl px-3 sm:px-6">
-        <div className="mb-3 flex items-center justify-end gap-2">
+        <div className="no-print mb-3 flex items-center justify-end gap-2">
           {relatorioUrl && (
             <a
               href={relatorioUrl}
@@ -104,6 +117,14 @@ export function PublicOccurrenceView({ token }: { token: string }) {
               Abrir relatório (PDF)
             </a>
           )}
+          <button
+            type="button"
+            onClick={gerarPdf}
+            className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800"
+          >
+            <Download className="h-3.5 w-3.5" />
+            Baixar PDF
+          </button>
           <button
             type="button"
             onClick={toggleTheme}
@@ -263,7 +284,7 @@ function Doc({ data: d }: { data: PublicOccurrence }) {
               <Sec title="Relato">
                 {d.relato.relatoHtml && (
                   <div
-                    className="prose prose-sm max-w-none text-[15px] leading-[1.75] text-gray-800 [&_p]:my-3 dark:prose-invert dark:text-gray-200"
+                    className="prose prose-sm max-w-none text-justify text-[15px] leading-[1.75] text-gray-800 [&_p]:my-3 dark:prose-invert dark:text-gray-200"
                     dangerouslySetInnerHTML={{ __html: d.relato.relatoHtml }}
                   />
                 )}
@@ -274,7 +295,7 @@ function Doc({ data: d }: { data: PublicOccurrence }) {
                       {d.relato.devolutivaStatus ? ` · ${d.relato.devolutivaStatus}` : ""}
                     </p>
                     <div
-                      className="prose prose-sm mt-2 max-w-none text-gray-700 [&_p]:my-2.5 dark:prose-invert dark:text-gray-300"
+                      className="prose prose-sm mt-2 max-w-none text-justify text-gray-700 [&_p]:my-2.5 dark:prose-invert dark:text-gray-300"
                       dangerouslySetInnerHTML={{ __html: d.relato.devolutivaHtml }}
                     />
                   </div>
@@ -353,7 +374,14 @@ function Doc({ data: d }: { data: PublicOccurrence }) {
                 </p>
               </div>
               <Cell label="Prefixo" value={prefixo} />
-              <Cell label="Motorista" value={motoristas?.[0]?.nome} />
+              <Cell
+                label="Motorista"
+                value={
+                  motoristas?.[0]
+                    ? `${motoristas[0].matricula ? motoristas[0].matricula + " · " : ""}${motoristas[0].nome}`
+                    : null
+                }
+              />
               <Cell label="Operador" value={operador} />
             </dl>
           </aside>
