@@ -93,8 +93,7 @@ export function CompartilharDialog({ occurrenceId, open, onOpenChange }: Props) 
         <DialogHeader>
           <DialogTitle>Compartilhar ocorrência</DialogTitle>
           <DialogDescription>
-            Link público, sem login. Mostra só as seções marcadas. Pode ser
-            revogado a qualquer momento.
+            Link de consulta externa, sem login.
           </DialogDescription>
         </DialogHeader>
 
