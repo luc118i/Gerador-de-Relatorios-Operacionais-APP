@@ -123,6 +123,20 @@ export function nextBoardStatus(
   return null;
 }
 
+/** Status anterior no fluxo, pulando colunas ocultas. null quando já está no
+ *  começo (ou fora do fluxo linear, ex.: CANCELADA). */
+export function prevBoardStatus(
+  current: string | null | undefined,
+  hidden: string[] = [],
+): WorkflowStatus | null {
+  const i = ADVANCE_FLOW.indexOf((current ?? "PENDENTE") as WorkflowStatus);
+  if (i < 0) return null;
+  for (let j = i - 1; j >= 0; j--) {
+    if (!hidden.includes(ADVANCE_FLOW[j])) return ADVANCE_FLOW[j];
+  }
+  return null;
+}
+
 const STATUS_BY_CODE = new Map(WORKFLOW_STATUSES.map((s) => [s.code, s]));
 
 export function getWorkflowStatusConfig(code: string | null | undefined): WorkflowStatusConfig {

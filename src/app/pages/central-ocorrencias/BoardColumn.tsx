@@ -25,6 +25,7 @@ type Props = {
   onCardDragStart: (o: OccurrenceDTO) => void;
   onCardDragEnd: () => void;
   onCardAdvance: (o: OccurrenceDTO) => void;
+  onCardRegress: (o: OccurrenceDTO) => void;
   /** "+" no header da coluna → nova ocorrência já com esse status inicial */
   onQuickAdd: (status: WorkflowStatus) => void;
   /** ocultar esta coluna do quadro */
@@ -53,6 +54,7 @@ export const BoardColumn = memo(function BoardColumn({
   onCardDragStart,
   onCardDragEnd,
   onCardAdvance,
+  onCardRegress,
   onQuickAdd,
   onHide,
   onHover,
@@ -147,6 +149,7 @@ export const BoardColumn = memo(function BoardColumn({
             onDragStart={onCardDragStart}
             onDragEnd={onCardDragEnd}
             onAdvance={onCardAdvance}
+            onRegress={onCardRegress}
             dragging={draggingId === o.id}
             justMoved={justMovedId === o.id}
           />

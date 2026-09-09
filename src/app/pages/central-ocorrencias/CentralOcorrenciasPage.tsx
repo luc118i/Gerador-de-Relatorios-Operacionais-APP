@@ -30,6 +30,7 @@ import {
   STATUS_NEEDS_CONFIRM,
   getWorkflowStatusConfig,
   nextBoardStatus,
+  prevBoardStatus,
 } from "../../config/occurrenceWorkflow";
 import type { Ocorrencia } from "../../types";
 import { NovaOcorrencia } from "../nova-ocorrencia";
@@ -368,6 +369,16 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
     [applyMove, layout.hiddenColumns],
   );
 
+  // Voltar 1 status no fluxo (nenhum dos anteriores pede confirmação).
+  const onCardRegress = useCallback(
+    (o: OccurrenceDTO) => {
+      const to = prevBoardStatus(o.workflowStatus, layout.hiddenColumns);
+      if (!to) return;
+      applyMove(o.id, to);
+    },
+    [applyMove, layout.hiddenColumns],
+  );
+
   const handleQuickAdd = useCallback((s: WorkflowStatus) => {
     setQuickInitialStatus(s);
     setQuickOpen(true);
@@ -574,6 +585,7 @@ export function CentralOcorrenciasPage({ onVoltar }: Props) {
                 onCardDragStart={onCardDragStart}
                 onCardDragEnd={onCardDragEnd}
                 onCardAdvance={onCardAdvance}
+                onCardRegress={onCardRegress}
                 onQuickAdd={handleQuickAdd}
                 onHide={toggleColumn}
                 onHover={onHover}

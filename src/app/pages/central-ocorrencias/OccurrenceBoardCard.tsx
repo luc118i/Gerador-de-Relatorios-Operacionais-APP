@@ -1,5 +1,5 @@
 import { memo, useRef, useState } from "react";
-import { ArrowRight, ChevronDown, FileCheck2, GripVertical, MapPin, User } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronDown, FileCheck2, GripVertical, MapPin, User } from "lucide-react";
 import type { OccurrenceDTO } from "../../../domain/occurrences";
 import { getOccurrenceFieldVisibility } from "../../config/occurrencePresentation";
 import { getOccurrenceTypeConfig } from "../../config/occurrenceTypes";
@@ -8,6 +8,7 @@ import {
   getWorkflowStatusConfig,
   isRecentlyCreated,
   nextBoardStatus,
+  prevBoardStatus,
   treatmentProgress,
 } from "../../config/occurrenceWorkflow";
 import { resolveBaseSigla } from "../../../utils/base";
@@ -41,6 +42,8 @@ type Props = {
   onDragEnd: () => void;
   /** Avança 1 clique pro próximo status do fluxo. */
   onAdvance: (o: OccurrenceDTO) => void;
+  /** Volta 1 clique pro status anterior do fluxo. */
+  onRegress: (o: OccurrenceDTO) => void;
   actor: { actorUserId?: string | null; actorNome?: string | null };
   dragging: boolean;
   /** true logo após o card mudar de coluna — anima a entrada. */
@@ -59,6 +62,7 @@ export const OccurrenceBoardCard = memo(function OccurrenceBoardCard({
   onDragStart,
   onDragEnd,
   onAdvance,
+  onRegress,
   actor,
   dragging,
   justMoved,
@@ -70,6 +74,7 @@ export const OccurrenceBoardCard = memo(function OccurrenceBoardCard({
   const d1 = firstDriver(o);
   const hasReport = !!o.driveWebViewLink || !!o.rizerRegistered;
   const next = nextBoardStatus(o.workflowStatus, layout.hiddenColumns);
+  const prev = prevBoardStatus(o.workflowStatus, layout.hiddenColumns);
   const cardTint = getWorkflowStatusConfig(o.workflowStatus).cardTint;
   const isNew = isRecentlyCreated(o.createdAt);
   const prog = treatmentProgress(o);
@@ -135,6 +140,21 @@ export const OccurrenceBoardCard = memo(function OccurrenceBoardCard({
         aria-label="Arrastar ocorrência"
         className="absolute bottom-0 right-0 top-0 flex w-9 cursor-grab flex-col items-center justify-center gap-1.5 rounded-r-md bg-gray-100 text-gray-400 opacity-0 transition-opacity duration-150 group-hover:opacity-100 hover:bg-gray-200 hover:text-gray-600 active:cursor-grabbing dark:bg-gray-800 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-300"
       >
+        {prev && (
+          <button
+            type="button"
+            draggable={false}
+            onClick={(e) => {
+              e.stopPropagation();
+              onRegress(o);
+            }}
+            title={`Voltar para "${getWorkflowStatusConfig(prev).label}"`}
+            aria-label={`Voltar para ${getWorkflowStatusConfig(prev).label}`}
+            className="flex h-7 w-7 items-center justify-center rounded text-gray-500 hover:bg-black/[0.08] hover:text-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.10] dark:hover:text-gray-100"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+        )}
         <GripVertical className="h-5 w-5" />
         {next && (
           <button
