@@ -63,7 +63,9 @@ export const BoardColumn = memo(function BoardColumn({
   over,
 }: Props) {
   const cfg = getWorkflowStatusConfig(status);
-  const canDrop = dragFrom != null && dragFrom !== status;
+  const dragging = dragFrom != null;
+  const isSource = dragFrom === status;
+  const canDrop = dragging && !isSource;
   const highlight = over && canDrop;
 
   return (
@@ -82,9 +84,13 @@ export const BoardColumn = memo(function BoardColumn({
         e.preventDefault();
         onDropHere(status);
       }}
-      className={`group/col flex ${COL_WIDTH[layout.density]} shrink-0 flex-col rounded-lg transition-colors ${
-        highlight ? "bg-blue-50/50 dark:bg-blue-950/20" : ""
-      }`}
+      className={`group/col flex ${COL_WIDTH[layout.density]} shrink-0 flex-col rounded-lg outline-dashed -outline-offset-1 transition-[background-color,outline-color,opacity] duration-150 ${
+        highlight
+          ? "bg-blue-50/60 outline-2 outline-blue-400 dark:bg-blue-950/25 dark:outline-blue-500"
+          : canDrop
+            ? "bg-blue-50/25 outline-1 outline-blue-300/70 dark:bg-blue-950/10 dark:outline-blue-800/70"
+            : "outline-1 outline-transparent"
+      } ${isSource ? "opacity-55" : ""}`}
     >
       <div className="flex items-center justify-between px-1 pb-1">
         <div className="flex items-center gap-2">
@@ -127,7 +133,7 @@ export const BoardColumn = memo(function BoardColumn({
         className={`board-col-scroll flex-1 overflow-y-auto pt-1 ${DENSITY_CARD_GAP[layout.density]}`}
         style={{ maxHeight: "calc(100vh - 360px)" }}
       >
-        {occurrences.length === 0 && !highlight && (
+        {occurrences.length === 0 && !dragging && (
           <p className="px-1 py-8 text-center text-xs text-gray-300 dark:text-gray-700">Vazio</p>
         )}
         {occurrences.map((o) => (
@@ -145,11 +151,15 @@ export const BoardColumn = memo(function BoardColumn({
             justMoved={justMovedId === o.id}
           />
         ))}
-        {highlight && (
-          <div className="flex h-14 items-center justify-center rounded-md border border-dashed border-blue-300 text-[11px] font-medium text-blue-500 dark:border-blue-700 dark:text-blue-400">
+        {highlight ? (
+          <div className="flex h-14 items-center justify-center rounded-md border-2 border-dashed border-blue-400 bg-blue-50/60 text-[11px] font-semibold text-blue-600 dark:border-blue-500 dark:bg-blue-950/30 dark:text-blue-300">
             Solte aqui
           </div>
-        )}
+        ) : canDrop ? (
+          <div className="flex h-10 items-center justify-center rounded-md border border-dashed border-blue-300/70 text-[10px] font-medium text-blue-400/80 dark:border-blue-800/70 dark:text-blue-500/70">
+            Mover para “{cfg.label}”
+          </div>
+        ) : null}
       </div>
     </div>
   );
