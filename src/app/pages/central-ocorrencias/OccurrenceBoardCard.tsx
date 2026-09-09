@@ -70,6 +70,7 @@ export const OccurrenceBoardCard = memo(function OccurrenceBoardCard({
   const d1 = firstDriver(o);
   const hasReport = !!o.driveWebViewLink || !!o.rizerRegistered;
   const next = nextBoardStatus(o.workflowStatus, layout.hiddenColumns);
+  const cardTint = getWorkflowStatusConfig(o.workflowStatus).cardTint;
   const isNew = isRecentlyCreated(o.createdAt);
   const prog = treatmentProgress(o);
   const descricao = (o.relatoHtml ?? "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
@@ -100,7 +101,7 @@ export const OccurrenceBoardCard = memo(function OccurrenceBoardCard({
           onSelect(o);
         }
       }}
-      className={`group relative w-full cursor-pointer rounded-md border border-gray-200/70 bg-white pr-7 text-left transition-[transform,border-color,opacity,box-shadow] duration-150 hover:-translate-y-px hover:border-gray-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-gray-700 ${
+      className={`group relative w-full cursor-pointer rounded-md border ${cardTint} pr-7 text-left transition-[transform,border-color,opacity,box-shadow] duration-150 hover:-translate-y-px focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60 ${
         DENSITY_CARD_PADDING[layout.density]
       } ${dragging ? "opacity-40" : ""} ${
         justMoved ? "animate-in fade-in slide-in-from-left-6 duration-300 ease-out" : ""
