@@ -180,6 +180,7 @@ function AppShell() {
             <FichaOcorrenciaPage
               occurrenceId={fichaOccurrenceId}
               onVoltar={() => setCurrentPage("central-ocorrencias")}
+              onHome={() => setCurrentPage("home")}
               onEditar={(id) => openOccurrenceEditor(id, "ficha-ocorrencia")}
               onGerarRelatorio={(id) => openReportForCentral(id, "ficha-ocorrencia")}
             />

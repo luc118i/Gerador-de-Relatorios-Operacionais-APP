@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   Copy,
   FileText,
+  Home,
   MoreHorizontal,
   Pencil,
   Share2,
@@ -56,6 +57,7 @@ import { TRATATIVA_LABEL, fmtDateBR } from "./fichaHelpers";
 type Props = {
   occurrenceId: string;
   onVoltar: () => void;
+  onHome: () => void;
   onEditar: (id: string) => void;
   onGerarRelatorio: (id: string) => void;
 };
@@ -86,7 +88,7 @@ function Sec({ title, children }: { title: string; children: React.ReactNode }) 
   );
 }
 
-export function FichaOcorrenciaPage({ occurrenceId, onVoltar, onEditar, onGerarRelatorio }: Props) {
+export function FichaOcorrenciaPage({ occurrenceId, onVoltar, onHome, onEditar, onGerarRelatorio }: Props) {
   const { profileName, user } = useAuth();
   const qc = useQueryClient();
   const actor = useMemo(
@@ -144,14 +146,14 @@ export function FichaOcorrenciaPage({ occurrenceId, onVoltar, onEditar, onGerarR
 
   if (q.isLoading) {
     return (
-      <Shell onVoltar={onVoltar}>
+      <Shell onVoltar={onVoltar} onHome={onHome}>
         <p className="py-24 text-center text-sm text-gray-400">Carregando ficha…</p>
       </Shell>
     );
   }
   if (q.isError || !o || !d) {
     return (
-      <Shell onVoltar={onVoltar}>
+      <Shell onVoltar={onVoltar} onHome={onHome}>
         <div className="py-24 text-center">
           <p className="text-sm text-gray-600 dark:text-gray-300">Não foi possível carregar a ocorrência.</p>
           <button
@@ -256,7 +258,7 @@ export function FichaOcorrenciaPage({ occurrenceId, onVoltar, onEditar, onGerarR
   );
 
   return (
-    <Shell onVoltar={onVoltar} right={actions}>
+    <Shell onVoltar={onVoltar} onHome={onHome} right={actions}>
       {pendingStatus && (
         <Callout tone="amber">
           <p className="text-sm text-amber-800 dark:text-amber-300">
@@ -554,10 +556,12 @@ function Callout({ tone, children }: { tone: "amber" | "red"; children: React.Re
 
 function Shell({
   onVoltar,
+  onHome,
   right,
   children,
 }: {
   onVoltar: () => void;
+  onHome: () => void;
   right?: React.ReactNode;
   children: React.ReactNode;
 }) {
@@ -571,6 +575,14 @@ function Shell({
           >
             <ChevronLeft className="h-4 w-4" />
             Voltar
+          </button>
+          <button
+            onClick={onHome}
+            title="Ir para a tela inicial"
+            aria-label="Ir para a tela inicial"
+            className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-gray-200 text-gray-500 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:text-gray-900 dark:border-gray-800 dark:text-gray-400 dark:hover:bg-gray-800"
+          >
+            <Home className="h-4 w-4" />
           </button>
           <span className="hidden text-[11px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 sm:block">
             Ficha de ocorrência
