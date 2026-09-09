@@ -33,6 +33,7 @@ import {
 import { ConfirmActionModal } from "../home/ConfirmActionModal";
 import { QuickOccurrenceModal } from "./QuickOccurrenceModal";
 import { ImportPassagemModal } from "./ImportPassagemModal";
+import { OccurrenceDetailPanel } from "./OccurrenceDetailPanel";
 import { BoardColumn } from "./BoardColumn";
 import { BoardFilters as BoardFiltersBar, emptyBoardFilters, type BoardUiFilters } from "./BoardFilters";
 import { BoardIndicators, type IndicatorFilter } from "./BoardIndicators";
@@ -213,6 +214,14 @@ export function CentralOcorrenciasPage({
   );
   const { data, isLoading, isError, refetch, isFetching } = useBoardOccurrences(apiFilters);
 
+  // Ocorrência sem relatório ainda (stub da Central) abre o painel lateral;
+  // com relatório abre a Ficha Técnica em tela cheia.
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selected = useMemo(
+    () => (selectedId ? (data ?? []).find((o) => o.id === selectedId) ?? null : null),
+    [data, selectedId],
+  );
+
   const actor = useMemo(
     () => ({ actorUserId: user?.id ?? null, actorNome: profileName || null }),
     [user?.id, profileName],
@@ -274,9 +283,18 @@ export function CentralOcorrenciasPage({
     return map;
   }, [filtered]);
 
-  const handleEditar = useCallback((id: string) => onEditar(id), [onEditar]);
+  const handleEditar = useCallback(
+    (id: string) => {
+      setSelectedId(null);
+      onEditar(id);
+    },
+    [onEditar],
+  );
   const handleGerarRelatorio = useCallback(
-    (id: string) => onGerarRelatorio(id),
+    (id: string) => {
+      setSelectedId(null);
+      onGerarRelatorio(id);
+    },
     [onGerarRelatorio],
   );
 
@@ -299,18 +317,22 @@ export function CentralOcorrenciasPage({
     [patchStatus, actor],
   );
 
-  // Clicar num card abre a Ficha Técnica (tela cheia) e descarta qualquer
-  // confirmação de mudança de status pendente.
+  // Clicar num card: com relatório criado → Ficha Técnica (tela cheia);
+  // stub da Central (ainda sem relatório) → painel lateral.
   const handleCardClick = useCallback(
     (o: OccurrenceDTO) => {
       setPendingMove(null);
-      onAbrirFicha(o.id);
+      const temRelatorio =
+        o.origin !== "CENTRAL" || !!o.driveWebViewLink || !!o.rizerRegistered;
+      if (temRelatorio) onAbrirFicha(o.id);
+      else setSelectedId(o.id);
     },
     [onAbrirFicha],
   );
 
   const onCardDragStart = useCallback((o: OccurrenceDTO) => {
     pendingDropRef.current = null;
+    setSelectedId(null);
     setDrag({ id: o.id, from: (o.workflowStatus ?? "PENDENTE") as WorkflowStatus });
   }, []);
 
@@ -596,6 +618,15 @@ export function CentralOcorrenciasPage({
           setFilters((f) => ({ ...f, from: eventDate, to: eventDate }));
           setIndicator({ kind: "all" });
         }}
+      />
+
+      <OccurrenceDetailPanel
+        occurrence={selected}
+        open={!!selected}
+        onClose={() => setSelectedId(null)}
+        onEdit={handleEditar}
+        onGerarRelatorio={handleGerarRelatorio}
+        actor={actor}
       />
 
       {pendingMove && (
