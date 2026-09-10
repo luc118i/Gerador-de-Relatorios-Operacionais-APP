@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ClipboardList, HelpCircle, Plus, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
@@ -82,6 +82,13 @@ export function CentralOcorrenciasPage({
   const queryClient = useQueryClient();
   const { profileName, user } = useAuth();
   const { layout, setView, setDensity, toggleShow, toggleColumn } = useCentralLayout();
+
+  // A navegação vem de outra tela (Home) que pode estar rolada. Ao montar,
+  // reseta a rolagem pro topo — o título "Central de Ocorrências" começa
+  // sempre totalmente visível.
+  useLayoutEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   const { data: cover } = useCentralCover();
   const setCover = useSetCentralCover();
@@ -538,19 +545,22 @@ export function CentralOcorrenciasPage({
           </p>
         </div>
 
-        <div className="relative z-10">
+        {/* Indicadores + filtros — permanecem fixos abaixo da faixa de
+            controles enquanto a lista de ocorrências rola. O fundo opaco e a
+            borda evitam que os cards apareçam por trás. */}
+        <div className="sticky top-11 z-10 -mx-4 border-b border-gray-100 bg-gray-50/95 px-4 pb-3 pt-2 backdrop-blur sm:-mx-6 sm:px-6 dark:border-gray-900 dark:bg-gray-950/95">
           <BoardIndicators occurrences={visible} active={indicator} onPick={setIndicator} />
-        </div>
-        <div className="relative z-10 mt-3">
-          <BoardFiltersBar
-            value={filters}
-            onChange={setFilters}
-            onReset={() => {
-              setFilters(emptyBoardFilters(filters.from, filters.to));
-              setIndicator({ kind: "all" });
-            }}
-            resultCount={filtered.length}
-          />
+          <div className="mt-3">
+            <BoardFiltersBar
+              value={filters}
+              onChange={setFilters}
+              onReset={() => {
+                setFilters(emptyBoardFilters(filters.from, filters.to));
+                setIndicator({ kind: "all" });
+              }}
+              resultCount={filtered.length}
+            />
+          </div>
         </div>
         <div className="pb-4 pt-4">
 
