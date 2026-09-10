@@ -128,24 +128,25 @@ export function PersonalizarLayoutPopover({
   return (
     <Popover>
       <PopoverTrigger asChild>
-        {compact ? (
-          <button
-            type="button"
-            title="Personalizar layout"
-            aria-label="Personalizar layout"
-            className="flex h-7 w-7 cursor-pointer items-center justify-center rounded text-gray-400 transition-colors hover:bg-black/[0.04] hover:text-gray-600 dark:hover:bg-white/[0.06] dark:hover:text-gray-300"
+        {/* Um só botão: no modo recolhido o rótulo colapsa (max-width) e ele
+            fica quadrado, igual aos outros ícones da nav — sem troca brusca. */}
+        <button
+          type="button"
+          title="Personalizar layout"
+          aria-label="Personalizar layout"
+          className={`inline-flex cursor-pointer items-center rounded text-gray-400 transition-[background-color,color,gap,width,padding] duration-[320ms] ease-[cubic-bezier(0.33,1,0.68,1)] hover:bg-black/[0.04] hover:text-gray-600 dark:hover:bg-white/[0.06] dark:hover:text-gray-300 ${
+            compact ? "h-7 w-7 justify-center gap-0 px-0" : "gap-1.5 px-1 py-0.5"
+          }`}
+        >
+          <SlidersHorizontal className="h-4 w-4 shrink-0" />
+          <span
+            className={`overflow-hidden whitespace-nowrap text-[13px] transition-[max-width,opacity] duration-[320ms] ease-[cubic-bezier(0.33,1,0.68,1)] motion-reduce:transition-none ${
+              compact ? "max-w-0 opacity-0" : "max-w-[160px] opacity-100"
+            }`}
           >
-            <SlidersHorizontal className="h-4 w-4" />
-          </button>
-        ) : (
-          <button
-            type="button"
-            className="inline-flex cursor-pointer items-center gap-1.5 rounded px-1 py-0.5 text-[13px] text-gray-500 transition-colors hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100"
-          >
-            <SlidersHorizontal className="h-3.5 w-3.5" />
             Personalizar layout
-          </button>
-        )}
+          </span>
+        </button>
       </PopoverTrigger>
       <PopoverContent
         align="start"

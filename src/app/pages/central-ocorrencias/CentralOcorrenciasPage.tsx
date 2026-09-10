@@ -150,7 +150,7 @@ export function CentralOcorrenciasPage({
     const t0 = performance.now();
     const tick = (t: number) => {
       root.style.setProperty("--central-header-h", `${el.offsetHeight}px`);
-      if (t - t0 < 320) raf = requestAnimationFrame(tick);
+      if (t - t0 < 420) raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
@@ -499,7 +499,7 @@ export function CentralOcorrenciasPage({
             <div
               ref={coverBandRef}
               aria-hidden
-              className={`pointer-events-none absolute inset-x-0 top-11 z-0 h-[168px] overflow-hidden transition-opacity duration-200 ${
+              className={`pointer-events-none absolute inset-x-0 top-11 z-0 h-[168px] overflow-hidden transition-opacity duration-[320ms] ease-[cubic-bezier(0.33,1,0.68,1)] ${
                 condensed ? "opacity-0" : "opacity-100"
               }`}
             >
@@ -571,42 +571,59 @@ export function CentralOcorrenciasPage({
             </button>
           )}
 
-          {/* Título compacto — aparece só quando o header condensa. */}
-          <span
-            className={`overflow-hidden whitespace-nowrap text-sm font-semibold text-gray-900 transition-all duration-200 dark:text-gray-100 ${
-              condensed ? "ml-1 max-w-[280px] opacity-100" : "max-w-0 opacity-0"
-            }`}
-          >
-            Central de Ocorrências
-          </span>
-
-          {/* Progresso enxuto — só no header recolhido, bem discreto. */}
-          {condensed && progress.total > 0 && (
-            <span
-              className="ml-2 flex shrink-0 items-center gap-1.5 animate-in fade-in duration-200"
-              title={`${progress.done} de ${progress.total} tratadas`}
-            >
-              <span className="h-1 w-10 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-800">
+          {/* Elementos do estado recolhido — sempre montados, revelados com
+              a mesma curva do recolhimento (max-width + opacity) pra não
+              "pipocar" nem empurrar o resto do navbar de repente. */}
+          {(() => {
+            const REVEAL =
+              "shrink-0 overflow-hidden whitespace-nowrap transition-[max-width,opacity,margin] duration-[320ms] ease-[cubic-bezier(0.33,1,0.68,1)] motion-reduce:transition-none";
+            return (
+              <>
                 <span
-                  className={`block h-full rounded-full ${
-                    progress.allDone ? "bg-emerald-500" : "bg-emerald-500/70"
+                  className={`text-sm font-semibold text-gray-900 dark:text-gray-100 ${REVEAL} ${
+                    condensed ? "ml-1 max-w-[280px] opacity-100" : "ml-0 max-w-0 opacity-0"
                   }`}
-                  style={{ width: `${progress.pct}%` }}
-                />
-              </span>
-              <span className="text-[11px] tabular-nums text-gray-400 dark:text-gray-500">
-                {progress.allDone ? "tudo tratado" : `${progress.done}/${progress.total}`}
-              </span>
-            </span>
-          )}
+                >
+                  Central de Ocorrências
+                </span>
 
-          {/* Atalhos de filtro — versão minúscula, só no header recolhido e
-              em telas largas (senão o navbar fica apertado demais). */}
-          {condensed && (
-            <div className="ml-2 hidden shrink-0 animate-in fade-in duration-200 lg:block">
-              <BoardIndicators variant="chips" occurrences={visible} active={indicator} onPick={setIndicator} />
-            </div>
-          )}
+                {progress.total > 0 && (
+                  <span
+                    className={`flex items-center gap-1.5 ${REVEAL} ${
+                      condensed ? "ml-2 max-w-[140px] opacity-100" : "ml-0 max-w-0 opacity-0"
+                    }`}
+                    title={`${progress.done} de ${progress.total} tratadas`}
+                  >
+                    <span className="h-1 w-10 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-800">
+                      <span
+                        className={`block h-full rounded-full ${
+                          progress.allDone ? "bg-emerald-500" : "bg-emerald-500/70"
+                        }`}
+                        style={{ width: `${progress.pct}%` }}
+                      />
+                    </span>
+                    <span className="text-[11px] tabular-nums text-gray-400 dark:text-gray-500">
+                      {progress.allDone ? "tudo tratado" : `${progress.done}/${progress.total}`}
+                    </span>
+                  </span>
+                )}
+
+                {/* atalhos de filtro — só em telas largas */}
+                <div
+                  className={`hidden lg:block ${REVEAL} ${
+                    condensed ? "ml-2 max-w-[380px] opacity-100" : "ml-0 max-w-0 opacity-0"
+                  }`}
+                >
+                  <BoardIndicators
+                    variant="chips"
+                    occurrences={visible}
+                    active={indicator}
+                    onPick={setIndicator}
+                  />
+                </div>
+              </>
+            );
+          })()}
 
           <div className="ml-auto flex items-center gap-1">
             <button
@@ -648,7 +665,7 @@ export function CentralOcorrenciasPage({
           {/* Bloco colapsável: identidade (título + progresso) + tiles.
               Recolhe com transição de altura quando o header condensa. */}
           <div
-            className={`grid transition-[grid-template-rows,opacity] duration-200 ease-out motion-reduce:transition-none ${
+            className={`grid transition-[grid-template-rows,opacity] duration-[320ms] ease-[cubic-bezier(0.33,1,0.68,1)] motion-reduce:transition-none ${
               condensed ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"
             }`}
           >
