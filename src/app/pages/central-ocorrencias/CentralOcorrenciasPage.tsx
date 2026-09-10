@@ -90,19 +90,31 @@ export function CentralOcorrenciasPage({
     window.scrollTo(0, 0);
   }, []);
 
-  // Sombra sutil no header só depois que a página começa a rolar — um sentinel
-  // de 1px no topo dispara o estado assim que sai da viewport.
-  const stuckSentinelRef = useRef<HTMLDivElement>(null);
-  const [filtersStuck, setFiltersStuck] = useState(false);
+  // Header que condensa no scroll:
+  //  · scrolled  → qualquer rolagem: liga a sombra sutil do header.
+  //  · condensed → rolou além do bloco de identidade: recolhe título +
+  //    subtítulo + progresso + tiles, deixando fixo só nav + filtros.
+  // Limiares com histerese (condensa em 150px, só reexpande abaixo de 72px)
+  // pra não tremer com micro-rolagens.
+  const [scrolled, setScrolled] = useState(false);
+  const [condensed, setCondensed] = useState(false);
   useEffect(() => {
-    const el = stuckSentinelRef.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      ([entry]) => setFiltersStuck(!entry.isIntersecting),
-      { threshold: 0 },
-    );
-    io.observe(el);
-    return () => io.disconnect();
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      const y = window.scrollY;
+      setScrolled(y > 4);
+      setCondensed((c) => (c ? y > 72 : y > 150));
+    };
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
   }, []);
 
   const { data: cover } = useCentralCover();
@@ -423,14 +435,11 @@ export function CentralOcorrenciasPage({
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      {/* Sentinel de topo — liga a sombra do header assim que a página rola. */}
-      <div ref={stuckSentinelRef} aria-hidden className="h-px" />
-
-      {/* Header fixo único: nav + título + progresso + indicadores + filtros.
-          Só o quadro/lista rola por baixo. */}
+      {/* Header fixo único que condensa no scroll: nav + título + progresso +
+          indicadores + filtros. Só o quadro/lista rola por baixo. */}
       <header
         className={`sticky top-0 z-30 border-b border-gray-100 bg-gray-50/95 backdrop-blur transition-shadow duration-200 dark:border-gray-900 dark:bg-gray-950/95 ${
-          filtersStuck
+          scrolled
             ? "shadow-[0_6px_16px_-10px_rgba(0,0,0,0.25)] dark:shadow-[0_6px_16px_-10px_rgba(0,0,0,0.6)]"
             : "shadow-none"
         }`}
@@ -442,7 +451,9 @@ export function CentralOcorrenciasPage({
             <div
               ref={coverBandRef}
               aria-hidden
-              className="pointer-events-none absolute inset-x-0 top-11 z-0 h-[168px] overflow-hidden"
+              className={`pointer-events-none absolute inset-x-0 top-11 z-0 h-[168px] overflow-hidden transition-opacity duration-200 ${
+                condensed ? "opacity-0" : "opacity-100"
+              }`}
             >
               <div className="absolute inset-0" style={{ opacity: coverOpacity }}>
                 <div
@@ -511,6 +522,15 @@ export function CentralOcorrenciasPage({
             </button>
           )}
 
+          {/* Título compacto — aparece só quando o header condensa. */}
+          <span
+            className={`overflow-hidden whitespace-nowrap text-sm font-semibold text-gray-900 transition-all duration-200 dark:text-gray-100 ${
+              condensed ? "ml-1 max-w-[280px] opacity-100" : "max-w-0 opacity-0"
+            }`}
+          >
+            Central de Ocorrências
+          </span>
+
           <div className="ml-auto flex items-center gap-1">
             <button
               onClick={() => setTutorialOpen(true)}
@@ -548,52 +568,64 @@ export function CentralOcorrenciasPage({
           </div>
           </div>
 
-          {/* Identidade da página — título + progresso, agora fixos no header. */}
-          <div className="pt-3">
-            <div className="flex items-center gap-2">
-              <img src="/logo.png" alt="" className="h-[18px] w-[18px] object-contain dark:hidden" />
-              <img
-                src="/favicon-dark.png"
-                alt=""
-                className="hidden h-[18px] w-[18px] object-contain dark:block"
-              />
-              <ViewSwitcher view={layout.view} onChange={setView} />
-            </div>
-            <h1 className="mt-1.5 text-[1.9rem] font-semibold leading-tight tracking-tight text-gray-900 dark:text-gray-50">
-              Central de Ocorrências
-            </h1>
-            <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
-              Central de acompanhamento e tratamento de ocorrências
-            </p>
-            <div className="mt-3 max-w-md">
-              <BoardIndicators
-                variant="progress"
-                occurrences={visible}
-                active={indicator}
-                onPick={setIndicator}
-              />
+          {/* Bloco colapsável: identidade (título + progresso) + tiles.
+              Recolhe com transição de altura quando o header condensa. */}
+          <div
+            className={`grid transition-[grid-template-rows,opacity] duration-200 ease-out motion-reduce:transition-none ${
+              condensed ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"
+            }`}
+          >
+            <div className={`min-h-0 overflow-hidden ${condensed ? "pointer-events-none" : ""}`}>
+              {/* Identidade da página — título + progresso. */}
+              <div className="pt-3">
+                <div className="flex items-center gap-2">
+                  <img src="/logo.png" alt="" className="h-[18px] w-[18px] object-contain dark:hidden" />
+                  <img
+                    src="/favicon-dark.png"
+                    alt=""
+                    className="hidden h-[18px] w-[18px] object-contain dark:block"
+                  />
+                  <ViewSwitcher view={layout.view} onChange={setView} />
+                </div>
+                <h1 className="mt-1.5 text-[1.9rem] font-semibold leading-tight tracking-tight text-gray-900 dark:text-gray-50">
+                  Central de Ocorrências
+                </h1>
+                <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
+                  Central de acompanhamento e tratamento de ocorrências
+                </p>
+                <div className="mt-3 max-w-md">
+                  <BoardIndicators
+                    variant="progress"
+                    occurrences={visible}
+                    active={indicator}
+                    onPick={setIndicator}
+                  />
+                </div>
+              </div>
+
+              {/* Tiles de indicadores. */}
+              <div className="pt-3">
+                <BoardIndicators
+                  variant="tiles"
+                  occurrences={visible}
+                  active={indicator}
+                  onPick={setIndicator}
+                />
+              </div>
             </div>
           </div>
 
-          {/* Indicadores (tiles) + filtros. */}
+          {/* Filtros — sempre visíveis, mesmo com o header condensado. */}
           <div className="pb-3 pt-3">
-            <BoardIndicators
-              variant="tiles"
-              occurrences={visible}
-              active={indicator}
-              onPick={setIndicator}
+            <BoardFiltersBar
+              value={filters}
+              onChange={setFilters}
+              onReset={() => {
+                setFilters(emptyBoardFilters(filters.from, filters.to));
+                setIndicator({ kind: "all" });
+              }}
+              resultCount={filtered.length}
             />
-            <div className="mt-3">
-              <BoardFiltersBar
-                value={filters}
-                onChange={setFilters}
-                onReset={() => {
-                  setFilters(emptyBoardFilters(filters.from, filters.to));
-                  setIndicator({ kind: "all" });
-                }}
-                resultCount={filtered.length}
-              />
-            </div>
           </div>
           </div>
         </div>
