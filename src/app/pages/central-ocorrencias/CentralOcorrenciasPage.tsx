@@ -426,8 +426,8 @@ export function CentralOcorrenciasPage({
       {/* Sentinel de topo — liga a sombra do header assim que a página rola. */}
       <div ref={stuckSentinelRef} aria-hidden className="h-px" />
 
-      {/* Header fixo único: nav + indicadores + filtros. Só o conteúdo rola
-          por baixo. */}
+      {/* Header fixo único: nav + título + progresso + indicadores + filtros.
+          Só o quadro/lista rola por baixo. */}
       <header
         className={`sticky top-0 z-30 border-b border-gray-100 bg-gray-50/95 backdrop-blur transition-shadow duration-200 dark:border-gray-900 dark:bg-gray-950/95 ${
           filtersStuck
@@ -435,7 +435,41 @@ export function CentralOcorrenciasPage({
             : "shadow-none"
         }`}
       >
-        <div className="mx-auto max-w-[1600px] px-4 sm:px-6">
+        <div className="relative mx-auto max-w-[1600px] px-4 sm:px-6">
+          {/* Plano de fundo do cabeçalho — bem discreto, com véu que garante
+              a legibilidade do título por cima. Começa abaixo da linha de nav. */}
+          {cover?.url && (
+            <div
+              ref={coverBandRef}
+              aria-hidden
+              className="pointer-events-none absolute inset-x-0 top-11 z-0 h-[168px] overflow-hidden"
+            >
+              <div className="absolute inset-0" style={{ opacity: coverOpacity }}>
+                <div
+                  className="absolute inset-0 scale-[1.2]"
+                  style={{
+                    backgroundImage: `url("${cover.url}")`,
+                    backgroundRepeat: "no-repeat",
+                    backgroundPosition: `50% ${coverPosY}%`,
+                    backgroundSize: "cover",
+                    filter: "blur(24px)",
+                  }}
+                />
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    backgroundImage: `url("${cover.url}")`,
+                    backgroundRepeat: "no-repeat",
+                    backgroundPosition: `50% ${coverPosY}%`,
+                    backgroundSize: coverBgSize,
+                  }}
+                />
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-b from-gray-50/30 via-gray-50/70 to-gray-50 dark:from-gray-950/30 dark:via-gray-950/70 dark:to-gray-950" />
+            </div>
+          )}
+
+          <div className="relative z-10">
           <div className="flex h-11 items-center gap-1">
           <button
             onClick={onVoltar}
@@ -514,8 +548,35 @@ export function CentralOcorrenciasPage({
           </div>
           </div>
 
-          {/* Indicadores (tiles) + filtros — parte fixa, junto da nav. */}
-          <div className="pb-3 pt-1">
+          {/* Identidade da página — título + progresso, agora fixos no header. */}
+          <div className="pt-3">
+            <div className="flex items-center gap-2">
+              <img src="/logo.png" alt="" className="h-[18px] w-[18px] object-contain dark:hidden" />
+              <img
+                src="/favicon-dark.png"
+                alt=""
+                className="hidden h-[18px] w-[18px] object-contain dark:block"
+              />
+              <ViewSwitcher view={layout.view} onChange={setView} />
+            </div>
+            <h1 className="mt-1.5 text-[1.9rem] font-semibold leading-tight tracking-tight text-gray-900 dark:text-gray-50">
+              Central de Ocorrências
+            </h1>
+            <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
+              Central de acompanhamento e tratamento de ocorrências
+            </p>
+            <div className="mt-3 max-w-md">
+              <BoardIndicators
+                variant="progress"
+                occurrences={visible}
+                active={indicator}
+                onPick={setIndicator}
+              />
+            </div>
+          </div>
+
+          {/* Indicadores (tiles) + filtros. */}
+          <div className="pb-3 pt-3">
             <BoardIndicators
               variant="tiles"
               occurrences={visible}
@@ -534,76 +595,12 @@ export function CentralOcorrenciasPage({
               />
             </div>
           </div>
+          </div>
         </div>
       </header>
 
-      <div className="relative mx-auto max-w-[1600px] px-4 sm:px-6">
-        {/* Plano de fundo do cabeçalho — bem discreto, com véu que garante a
-            legibilidade do título por cima. */}
-        {cover?.url && (
-          <div
-            ref={coverBandRef}
-            aria-hidden
-            className="pointer-events-none absolute inset-x-0 top-0 z-0 h-[168px] overflow-hidden"
-          >
-            <div className="absolute inset-0" style={{ opacity: coverOpacity }}>
-              {/* preenche a largura toda com uma cópia borrada — sem cortar a
-                  imagem quando o zoom está baixo */}
-              <div
-                className="absolute inset-0 scale-[1.2]"
-                style={{
-                  backgroundImage: `url("${cover.url}")`,
-                  backgroundRepeat: "no-repeat",
-                  backgroundPosition: `50% ${coverPosY}%`,
-                  backgroundSize: "cover",
-                  filter: "blur(24px)",
-                }}
-              />
-              {/* imagem "real" enquadrada */}
-              <div
-                className="absolute inset-0"
-                style={{
-                  backgroundImage: `url("${cover.url}")`,
-                  backgroundRepeat: "no-repeat",
-                  backgroundPosition: `50% ${coverPosY}%`,
-                  backgroundSize: coverBgSize,
-                }}
-              />
-            </div>
-            <div className="absolute inset-0 bg-gradient-to-b from-gray-50/30 via-gray-50/70 to-gray-50 dark:from-gray-950/30 dark:via-gray-950/70 dark:to-gray-950" />
-          </div>
-        )}
-
-        {/* Bloco de identidade — tratamento de título de página */}
-        <div className="relative z-10 pb-3 pt-6">
-          <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="" className="h-[18px] w-[18px] object-contain dark:hidden" />
-            <img
-              src="/favicon-dark.png"
-              alt=""
-              className="hidden h-[18px] w-[18px] object-contain dark:block"
-            />
-            <ViewSwitcher view={layout.view} onChange={setView} />
-          </div>
-          <h1 className="mt-1.5 text-[1.9rem] font-semibold leading-tight tracking-tight text-gray-900 dark:text-gray-50">
-            Central de Ocorrências
-          </h1>
-          <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
-            Central de acompanhamento e tratamento de ocorrências
-          </p>
-          {/* Progresso é leitura de status (não controle) — rola junto do
-              título em vez de ocupar o header fixo. */}
-          <div className="mt-3 max-w-md">
-            <BoardIndicators
-              variant="progress"
-              occurrences={visible}
-              active={indicator}
-              onPick={setIndicator}
-            />
-          </div>
-        </div>
-
-        <div className="pb-4 pt-2">
+      <div className="mx-auto max-w-[1600px] px-4 sm:px-6">
+        <div className="pb-4 pt-3">
 
         {isError ? (
           <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-12 text-center">
