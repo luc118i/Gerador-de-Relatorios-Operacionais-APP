@@ -90,6 +90,22 @@ export function CentralOcorrenciasPage({
     window.scrollTo(0, 0);
   }, []);
 
+  // Sombra sutil no bloco de filtros só quando ele está "grudado" no topo —
+  // um sentinel logo acima dispara o estado quando some sob a faixa de
+  // controles (h-11 = 44px).
+  const stuckSentinelRef = useRef<HTMLDivElement>(null);
+  const [filtersStuck, setFiltersStuck] = useState(false);
+  useEffect(() => {
+    const el = stuckSentinelRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => setFiltersStuck(!entry.isIntersecting),
+      { threshold: 0, rootMargin: "-45px 0px 0px 0px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
   const { data: cover } = useCentralCover();
   const setCover = useSetCentralCover();
   const clearCover = useClearCentralCover();
@@ -410,7 +426,7 @@ export function CentralOcorrenciasPage({
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Faixa de controles — baixa, integrada à página */}
       <div className="sticky top-0 z-20 border-b border-gray-100 bg-gray-50/95 dark:border-gray-900 dark:bg-gray-950/95 backdrop-blur">
-        <div className="mx-auto flex h-11 max-w-[1600px] items-center gap-1 px-3 sm:px-5">
+        <div className="mx-auto flex h-11 max-w-[1600px] items-center gap-1 px-4 sm:px-6">
           <button
             onClick={onVoltar}
             title="Voltar para o início"
@@ -547,8 +563,16 @@ export function CentralOcorrenciasPage({
 
         {/* Indicadores + filtros — permanecem fixos abaixo da faixa de
             controles enquanto a lista de ocorrências rola. O fundo opaco e a
-            borda evitam que os cards apareçam por trás. */}
-        <div className="sticky top-11 z-10 -mx-4 border-b border-gray-100 bg-gray-50/95 px-4 pb-3 pt-2 backdrop-blur sm:-mx-6 sm:px-6 dark:border-gray-900 dark:bg-gray-950/95">
+            borda evitam que os cards apareçam por trás; a sombra só aparece
+            quando o bloco está grudado. */}
+        <div ref={stuckSentinelRef} aria-hidden className="h-px" />
+        <div
+          className={`sticky top-11 z-10 -mx-4 border-b border-gray-100 bg-gray-50/95 px-4 pb-3 pt-2 backdrop-blur transition-shadow duration-200 sm:-mx-6 sm:px-6 dark:border-gray-900 dark:bg-gray-950/95 ${
+            filtersStuck
+              ? "shadow-[0_6px_16px_-10px_rgba(0,0,0,0.25)] dark:shadow-[0_6px_16px_-10px_rgba(0,0,0,0.6)]"
+              : "shadow-none"
+          }`}
+        >
           <BoardIndicators occurrences={visible} active={indicator} onPick={setIndicator} />
           <div className="mt-3">
             <BoardFiltersBar
