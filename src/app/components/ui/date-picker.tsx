@@ -12,6 +12,8 @@ interface DatePickerProps {
   placeholder?: string;
   className?: string;
   hasError?: boolean;
+  /** exibe a data no formato curto dd/MM/yy (ex.: 01/09/26) */
+  compact?: boolean;
 }
 
 export function DatePicker({
@@ -20,6 +22,7 @@ export function DatePicker({
   placeholder = "Selecione a data",
   className,
   hasError = false,
+  compact = false,
 }: DatePickerProps) {
   const [open, setOpen] = useState(false);
 
@@ -44,7 +47,9 @@ export function DatePicker({
           <CalendarIcon className="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
           <span className={cn("flex-1", valid ? "text-gray-900 dark:text-gray-100" : "text-gray-400 dark:text-gray-500")}>
             {valid
-              ? format(date!, "dd 'de' MMM. 'de' yyyy", { locale: ptBR })
+              ? format(date!, compact ? "dd/MM/yy" : "dd 'de' MMM. 'de' yyyy", {
+                  locale: ptBR,
+                })
               : placeholder}
           </span>
         </button>

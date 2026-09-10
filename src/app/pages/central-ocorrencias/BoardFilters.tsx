@@ -46,12 +46,14 @@ type Props = {
   onChange: (next: BoardUiFilters) => void;
   onReset: () => void;
   resultCount: number;
+  /** header recolhido — datas no formato curto dd/MM/yy */
+  condensed?: boolean;
 };
 
 const inputCls =
   "px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-900 text-xs text-gray-700 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-400 focus:border-blue-400";
 
-export function BoardFilters({ value, onChange, onReset, resultCount }: Props) {
+export function BoardFilters({ value, onChange, onReset, resultCount, condensed = false }: Props) {
   const set = <K extends keyof BoardUiFilters>(k: K, v: BoardUiFilters[K]) =>
     onChange({ ...value, [k]: v });
 
@@ -105,7 +107,8 @@ export function BoardFilters({ value, onChange, onReset, resultCount }: Props) {
           <DatePicker
             value={value.from}
             onChange={(v) => set("from", v)}
-            className="w-[168px] py-1.5 text-xs"
+            compact={condensed}
+            className={`${condensed ? "w-[116px]" : "w-[168px]"} py-1.5 text-xs`}
           />
         </div>
         <div className="flex flex-col gap-0.5">
@@ -113,7 +116,8 @@ export function BoardFilters({ value, onChange, onReset, resultCount }: Props) {
           <DatePicker
             value={value.to}
             onChange={(v) => set("to", v)}
-            className="w-[168px] py-1.5 text-xs"
+            compact={condensed}
+            className={`${condensed ? "w-[116px]" : "w-[168px]"} py-1.5 text-xs`}
           />
         </div>
 

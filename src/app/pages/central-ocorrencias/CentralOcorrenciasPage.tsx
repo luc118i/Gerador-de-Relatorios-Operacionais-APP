@@ -702,6 +702,7 @@ export function CentralOcorrenciasPage({
                 setIndicator({ kind: "all" });
               }}
               resultCount={filtered.length}
+              condensed={condensed}
             />
           </div>
           </div>
