@@ -600,6 +600,14 @@ export function CentralOcorrenciasPage({
             </span>
           )}
 
+          {/* Atalhos de filtro — versão minúscula, só no header recolhido e
+              em telas largas (senão o navbar fica apertado demais). */}
+          {condensed && (
+            <div className="ml-2 hidden shrink-0 animate-in fade-in duration-200 lg:block">
+              <BoardIndicators variant="chips" occurrences={visible} active={indicator} onPick={setIndicator} />
+            </div>
+          )}
+
           <div className="ml-auto flex items-center gap-1">
             <button
               onClick={() => setTutorialOpen(true)}

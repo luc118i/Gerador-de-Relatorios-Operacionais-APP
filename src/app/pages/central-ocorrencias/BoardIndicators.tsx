@@ -1,6 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import type { OccurrenceDTO, Prioridade, WorkflowStatus } from "../../../domain/occurrences";
-import { HIGH_PRIORITIES } from "../../config/occurrenceWorkflow";
+import { HIGH_PRIORITIES, getWorkflowStatusConfig } from "../../config/occurrenceWorkflow";
+
+const CHIP_STATUSES: { status: WorkflowStatus; short: string }[] = [
+  { status: "PENDENTE", short: "Pendentes" },
+  { status: "EM_TRATAMENTO", short: "Em trat." },
+  { status: "AGUARDANDO_RETORNO", short: "Aguard." },
+  { status: "TRATADA", short: "Tratadas" },
+];
 
 const CONFETTI = [
   { left: "6%", color: "#10b981", delay: "0ms" },
@@ -22,9 +29,10 @@ type Props = {
   occurrences: OccurrenceDTO[];
   active: IndicatorFilter;
   onPick: (f: IndicatorFilter) => void;
-  /** "tiles" = só os indicadores clicáveis; "progress" = só a barra de
-   *  progresso; "full" (padrão) = os dois. */
-  variant?: "tiles" | "progress" | "full";
+  /** "tiles" = os indicadores clicáveis; "progress" = só a barra de progresso;
+   *  "full" (padrão) = os dois; "chips" = versão minúscula em linha pro header
+   *  recolhido. */
+  variant?: "tiles" | "progress" | "full" | "chips";
 };
 
 function Tile({
@@ -73,8 +81,8 @@ function Tile({
 /** Indicadores clicáveis do topo (spec §11) — cada um aplica o filtro
  *  correspondente ao quadro. */
 export function BoardIndicators({ occurrences, active, onPick, variant = "full" }: Props) {
-  const showTiles = variant !== "progress";
-  const showProgress = variant !== "tiles";
+  const showTiles = variant === "tiles" || variant === "full";
+  const showProgress = variant === "progress" || variant === "full";
   const by = (s: WorkflowStatus) => occurrences.filter((o) => o.workflowStatus === s).length;
   const highPrio = occurrences.filter((o) => HIGH_PRIORITIES.includes((o.prioridade ?? "MEDIA") as Prioridade)).length;
 
@@ -97,6 +105,71 @@ export function BoardIndicators({ occurrences, active, onPick, variant = "full" 
     }
     wasDone.current = done;
   }, [done]);
+
+  // Versão minúscula em linha — atalhos de filtro pro header recolhido.
+  // Número em cima, legenda embaixo (bem pequena) pra continuar legível.
+  if (variant === "chips") {
+    const chipCls = (on: boolean) =>
+      `flex cursor-pointer flex-col items-center rounded px-1.5 py-0.5 leading-none transition-colors ${
+        on
+          ? "bg-black/[0.06] dark:bg-white/[0.08]"
+          : "hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
+      }`;
+    const capCls = (on: boolean) =>
+      `mt-0.5 text-[9px] tracking-wide ${
+        on
+          ? "font-medium text-blue-600 dark:text-blue-400"
+          : "text-gray-400 dark:text-gray-500"
+      }`;
+    return (
+      <div className="flex items-center gap-0.5">
+        {(() => {
+          const on = isActive({ kind: "all" });
+          return (
+            <button type="button" onClick={() => onPick({ kind: "all" })} className={chipCls(on)}>
+              <span className="text-[13px] font-semibold tabular-nums text-gray-800 dark:text-gray-100">
+                {total}
+              </span>
+              <span className={capCls(on)}>Total</span>
+            </button>
+          );
+        })()}
+        {CHIP_STATUSES.map(({ status, short }) => {
+          const cfg = getWorkflowStatusConfig(status);
+          const on = isActive({ kind: "status", status });
+          return (
+            <button
+              key={status}
+              type="button"
+              onClick={() => onPick({ kind: "status", status })}
+              className={chipCls(on)}
+            >
+              <span className="flex items-center gap-1 text-[13px] font-semibold tabular-nums text-gray-800 dark:text-gray-100">
+                <span className={`inline-block h-1.5 w-1.5 rounded-full ${cfg.dot}`} />
+                {by(status)}
+              </span>
+              <span className={capCls(on)}>{short}</span>
+            </button>
+          );
+        })}
+        {(() => {
+          const on = isActive({ kind: "priority", priorities: HIGH_PRIORITIES });
+          return (
+            <button
+              type="button"
+              onClick={() => onPick({ kind: "priority", priorities: HIGH_PRIORITIES })}
+              className={chipCls(on)}
+            >
+              <span className="text-[13px] font-semibold tabular-nums text-orange-600 dark:text-orange-400">
+                {highPrio}
+              </span>
+              <span className={capCls(on)}>Alta</span>
+            </button>
+          );
+        })()}
+      </div>
+    );
+  }
 
   return (
     <div className={showTiles && showProgress ? "space-y-2" : undefined}>
