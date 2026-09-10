@@ -95,8 +95,8 @@ export const BoardColumn = memo(function BoardColumn({
       } ${isSource ? "opacity-55" : ""}`}
     >
       {/* Cabeçalho da coluna — fixo logo abaixo do header principal enquanto
-          o quadro rola. */}
-      <div className="sticky top-0 z-10 bg-gray-50/90 pt-1 backdrop-blur-sm dark:bg-gray-950/90">
+          o quadro rola. Fundo opaco e encostado no header (sem brecha). */}
+      <div className="sticky top-0 z-10 bg-gray-50 pt-3 dark:bg-gray-950">
         <div className="flex items-center justify-between px-1 pb-1">
           <div className="flex items-center gap-2">
             <span className={`inline-block h-1.5 w-1.5 rounded-full ${cfg.dot}`} />

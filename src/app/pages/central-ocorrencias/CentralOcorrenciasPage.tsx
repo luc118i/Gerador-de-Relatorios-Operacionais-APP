@@ -90,40 +90,37 @@ export function CentralOcorrenciasPage({
     window.scrollTo(0, 0);
   }, []);
 
-  // Header que condensa no scroll:
-  //  · scrolled  → qualquer rolagem: liga a sombra sutil do header.
-  //  · condensed → rolou além do bloco de identidade: recolhe título +
-  //    subtítulo + progresso + tiles, deixando fixo só nav + filtros.
-  // Limiares com histerese (condensa em 150px, só reexpande abaixo de 72px)
-  // pra não tremer com micro-rolagens. No kanban a rolagem do quadro (painel
-  // próprio) também dispara — senão a página quase não rola.
+  // Header que condensa no scroll (uma vez, definitivo): ao passar do limiar
+  // recolhe título + subtítulo + progresso + tiles, deixando só nav + filtros,
+  // e fica assim até um novo carregamento. No kanban a rolagem do quadro
+  // (painel próprio) também dispara — senão a página quase não rola.
   const headerRef = useRef<HTMLElement>(null);
-  const boardScrollRef = useRef<HTMLDivElement>(null);
-  const [scrolled, setScrolled] = useState(false);
+  // Callback ref: o nó do quadro só existe depois que os dados carregam, então
+  // guardamos no state pra reanexar o listener de scroll quando ele aparece.
+  const [boardScrollEl, setBoardScrollEl] = useState<HTMLDivElement | null>(null);
+  // Recolhe UMA vez, sem volta: passou o limiar, o header fica compacto até um
+  // novo carregamento (F5). Rolar de volta ao topo não reexpande.
   const [condensed, setCondensed] = useState(false);
   useEffect(() => {
+    if (condensed) return;
     let raf = 0;
-    const read = () =>
-      Math.max(window.scrollY, boardScrollRef.current?.scrollTop ?? 0);
-    const apply = () => {
+    const check = () => {
       raf = 0;
-      const y = read();
-      setScrolled(y > 4);
-      setCondensed((c) => (c ? y > 72 : y > 150));
+      const y = Math.max(window.scrollY, boardScrollEl?.scrollTop ?? 0);
+      if (y > 120) setCondensed(true);
     };
     const onScroll = () => {
-      if (!raf) raf = requestAnimationFrame(apply);
+      if (!raf) raf = requestAnimationFrame(check);
     };
-    apply();
+    check();
     window.addEventListener("scroll", onScroll, { passive: true });
-    const board = boardScrollRef.current;
-    board?.addEventListener("scroll", onScroll, { passive: true });
+    boardScrollEl?.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       window.removeEventListener("scroll", onScroll);
-      board?.removeEventListener("scroll", onScroll);
+      boardScrollEl?.removeEventListener("scroll", onScroll);
       if (raf) cancelAnimationFrame(raf);
     };
-  }, [layout.view]);
+  }, [boardScrollEl, condensed]);
 
   // Altura real do header → CSS var, pra ancorar o quadro (e o cabeçalho das
   // colunas) exatamente abaixo dele, condensado ou não.
@@ -141,6 +138,23 @@ export function CentralOcorrenciasPage({
       root.style.removeProperty("--central-header-h");
     };
   }, []);
+
+  // A transição de condensar/expandir (grid-rows) não dispara o ResizeObserver
+  // em todos os frames — segue a altura por ~320ms pra a CSS var terminar
+  // exatamente no valor final.
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const root = document.documentElement;
+    let raf = 0;
+    const t0 = performance.now();
+    const tick = (t: number) => {
+      root.style.setProperty("--central-header-h", `${el.offsetHeight}px`);
+      if (t - t0 < 320) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [condensed]);
 
   const { data: cover } = useCentralCover();
   const setCover = useSetCentralCover();
@@ -464,11 +478,7 @@ export function CentralOcorrenciasPage({
           indicadores + filtros. Só o quadro/lista rola por baixo. */}
       <header
         ref={headerRef}
-        className={`sticky top-0 z-30 border-b border-gray-100 bg-gray-50/95 backdrop-blur transition-shadow duration-200 dark:border-gray-900 dark:bg-gray-950/95 ${
-          scrolled
-            ? "shadow-[0_6px_16px_-10px_rgba(0,0,0,0.25)] dark:shadow-[0_6px_16px_-10px_rgba(0,0,0,0.6)]"
-            : "shadow-none"
-        }`}
+        className="sticky top-0 z-30 border-b-[3px] border-blue-500 bg-gray-50 backdrop-blur dark:border-blue-500 dark:bg-gray-950"
       >
         <div className="relative mx-auto max-w-[1600px] px-4 sm:px-6">
           {/* Plano de fundo do cabeçalho — bem discreto, com véu que garante
@@ -691,14 +701,18 @@ export function CentralOcorrenciasPage({
             onEdit={handleEditar}
           />
         ) : (
+          /* Quadro = painel preso à viewport, logo abaixo do header. Ele
+             (não a página) rola, então o cabeçalho das colunas fica sempre
+             visível e o header condensa conforme o quadro é percorrido. */
           <div
-            ref={boardScrollRef}
-            className="board-scroll sticky flex gap-5 overflow-auto overscroll-contain pb-4"
-            style={{
-              top: "var(--central-header-h, 0px)",
-              maxHeight: "calc(100dvh - var(--central-header-h, 0px) - 1rem)",
-            }}
+            className="fixed inset-x-0 z-10"
+            style={{ top: "var(--central-header-h, 0px)", bottom: 0 }}
           >
+            <div
+              ref={setBoardScrollEl}
+              className="board-col-scroll h-full overflow-auto overscroll-contain"
+            >
+            <div className="mx-auto flex min-h-full max-w-[1600px] gap-5 px-4 pb-4 sm:px-6">
             {BOARD_COLUMNS.filter((s) => !layout.hiddenColumns.includes(s)).map((s) => (
               <BoardColumn
                 key={s}
@@ -722,6 +736,8 @@ export function CentralOcorrenciasPage({
                 over={overStatus === s}
               />
             ))}
+            </div>
+            </div>
           </div>
         )}
         </div>
