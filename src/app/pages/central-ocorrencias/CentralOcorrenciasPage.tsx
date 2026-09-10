@@ -306,6 +306,18 @@ export function CentralOcorrenciasPage({
   // período (diferente da Home, que filtra por analista). Sem gating de admin.
   const visible = data ?? EMPTY_LIST;
 
+  // Progresso do período (tratadas / total) — versão enxuta pro navbar recolhido.
+  const progress = useMemo(() => {
+    const total = visible.length;
+    const done = visible.filter((o) => o.workflowStatus === "TRATADA").length;
+    return {
+      total,
+      done,
+      pct: total ? Math.round((done / total) * 100) : 0,
+      allDone: total > 0 && done === total,
+    };
+  }, [visible]);
+
   // Filtros locais (tudo menos o período).
   const filtered = useMemo(() => {
     const q = normalizeText(filters.search);
@@ -547,6 +559,7 @@ export function CentralOcorrenciasPage({
             onPickCover={handlePickCover}
             onClearCover={handleClearCover}
             onSaveCoverSettings={handleSaveCoverSettings}
+            compact={condensed}
           />
           {layout.hiddenColumns.length > 0 && layout.view !== "tabela" && (
             <button
@@ -566,6 +579,26 @@ export function CentralOcorrenciasPage({
           >
             Central de Ocorrências
           </span>
+
+          {/* Progresso enxuto — só no header recolhido, bem discreto. */}
+          {condensed && progress.total > 0 && (
+            <span
+              className="ml-2 flex shrink-0 items-center gap-1.5 animate-in fade-in duration-200"
+              title={`${progress.done} de ${progress.total} tratadas`}
+            >
+              <span className="h-1 w-10 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-800">
+                <span
+                  className={`block h-full rounded-full ${
+                    progress.allDone ? "bg-emerald-500" : "bg-emerald-500/70"
+                  }`}
+                  style={{ width: `${progress.pct}%` }}
+                />
+              </span>
+              <span className="text-[11px] tabular-nums text-gray-400 dark:text-gray-500">
+                {progress.allDone ? "tudo tratado" : `${progress.done}/${progress.total}`}
+              </span>
+            </span>
+          )}
 
           <div className="ml-auto flex items-center gap-1">
             <button

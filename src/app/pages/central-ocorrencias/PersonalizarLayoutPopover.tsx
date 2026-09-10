@@ -31,6 +31,8 @@ type Props = {
   canEditCover: boolean;
   /** upload/remoção/ajuste em andamento */
   coverBusy: boolean;
+  /** no header recolhido o gatilho vira só ícone, igual aos outros da nav */
+  compact?: boolean;
   onView: (v: CentralView) => void;
   onDensity: (d: CentralDensity) => void;
   onToggleShow: (k: CentralShowKey) => void;
@@ -106,6 +108,7 @@ export function PersonalizarLayoutPopover({
   onPickCover,
   onClearCover,
   onSaveCoverSettings,
+  compact = false,
 }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -125,13 +128,24 @@ export function PersonalizarLayoutPopover({
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button
-          type="button"
-          className="inline-flex cursor-pointer items-center gap-1.5 rounded px-1 py-0.5 text-[13px] text-gray-500 transition-colors hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100"
-        >
-          <SlidersHorizontal className="h-3.5 w-3.5" />
-          Personalizar layout
-        </button>
+        {compact ? (
+          <button
+            type="button"
+            title="Personalizar layout"
+            aria-label="Personalizar layout"
+            className="flex h-7 w-7 cursor-pointer items-center justify-center rounded text-gray-400 transition-colors hover:bg-black/[0.04] hover:text-gray-600 dark:hover:bg-white/[0.06] dark:hover:text-gray-300"
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="inline-flex cursor-pointer items-center gap-1.5 rounded px-1 py-0.5 text-[13px] text-gray-500 transition-colors hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100"
+          >
+            <SlidersHorizontal className="h-3.5 w-3.5" />
+            Personalizar layout
+          </button>
+        )}
       </PopoverTrigger>
       <PopoverContent
         align="start"
