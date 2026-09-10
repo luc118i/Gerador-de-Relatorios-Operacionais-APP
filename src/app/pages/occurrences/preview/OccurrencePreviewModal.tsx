@@ -13,27 +13,22 @@ import {
   AlertTriangle,
   Loader2,
   Check,
+  FolderCog,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { occurrencesApi } from "../../../../api/occurrences.api";
 import { reportsDriveApi } from "../../../../api/reportsDrive.api";
 import type { OccurrenceDTO } from "../../../../domain/occurrences";
-import { useGetOccurrencePdf } from "../../../../features/reportsPdf/queries/reportsPdf.queries";
 import { getApiErrorMessage } from "../../../../api/http";
 import { TratativaSelect, type TratativaKey } from "../../../components/TratativaSelect";
 import { useAuth } from "../../../context/AuthContext";
-import { useDriveFolder } from "../../../../hooks/useDriveFolder";
+import { useDriveFolder, type DriveFolderConfig } from "../../../../hooks/useDriveFolder";
 import { requestDriveToken } from "../../../../utils/googleAuth";
 import { getDriveLink, setDriveLink } from "../../../../utils/driveLinkCache";
 import { resolveAnalisadoPorUserId } from "../../../../utils/analisadoPor";
 import { getOccurrenceFieldVisibility } from "../../../config/occurrencePresentation";
-
-import {
-  buildDriverPdfFileName,
-  fetchBlobFromUrl,
-  downloadBlob,
-} from "../../../../utils/pdfDownload";
+import { DrivePickerModal } from "./components/DrivePickerModal";
 
 type Props = {
   occurrenceId: string | null;
@@ -50,8 +45,6 @@ function formatDateBR(date: string | undefined) {
 }
 
 export function OccurrencePreviewModal({ occurrenceId, open, onClose }: Props) {
-  const getPdf = useGetOccurrencePdf();
-
   const {
     data: occ,
     isLoading,
@@ -64,6 +57,8 @@ export function OccurrencePreviewModal({ occurrenceId, open, onClose }: Props) {
     staleTime: 0,
     retry: false,
   });
+
+  const drive = useOccurrenceDrive(occ ?? null);
 
   useEffect(() => {
     if (isError) console.error("Erro detalhado da query:", error);
@@ -78,40 +73,6 @@ export function OccurrencePreviewModal({ occurrenceId, open, onClose }: Props) {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [open, onClose]);
-
-  async function handleDownloadPdf() {
-    if (!occurrenceId || !occ) return;
-
-    try {
-      const res = await getPdf.mutateAsync({
-        occurrenceId,
-        ttlSeconds: 3600,
-        force: true,
-      });
-
-      const signedUrl = res.data.pdf.signedUrl;
-      const blob = await fetchBlobFromUrl(signedUrl);
-
-      const d1 = occ.drivers?.[0];
-      const fileName = buildDriverPdfFileName({
-        registry: d1?.registry,
-        name: d1?.name,
-        base: d1?.baseCode,
-        occurrenceTitle:
-          occ.typeCode === "GENERICO" && (occ as any).reportTitle
-            ? (occ as any).reportTitle
-            : occ.typeTitle,
-        eventDate: occ.eventDate,
-        readableWhenAnonymous: true,
-      });
-
-      downloadBlob(blob, fileName);
-      toast.success("PDF baixado!");
-      onClose();
-    } catch (e) {
-      toast.error(getApiErrorMessage(e, "Falha ao baixar PDF"));
-    }
-  }
 
   if (!open) return null;
 
@@ -162,16 +123,23 @@ export function OccurrencePreviewModal({ occurrenceId, open, onClose }: Props) {
             <div className="flex items-center gap-2 shrink-0">
               {occ && <StatusBadge tratativa={occ.tratativa ?? null} />}
               <button
-                onClick={handleDownloadPdf}
-                disabled={!occurrenceId || !occ || getPdf.isPending}
+                onClick={drive.send}
+                disabled={!occ || drive.sending}
                 className="cursor-pointer h-8 px-3 rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 text-xs font-medium hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-60 flex items-center gap-1.5 transition-colors"
+                title={drive.folderName ? `Pasta: ${drive.folderName}` : "Escolher pasta no Drive"}
               >
-                {getPdf.isPending ? (
+                {drive.sending ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : drive.link ? (
+                  <RefreshCw className="w-3.5 h-3.5" />
                 ) : (
-                  <FileText className="w-3.5 h-3.5" />
+                  <DriveIcon className="w-4 h-4" />
                 )}
-                {getPdf.isPending ? "Baixando…" : "Baixar PDF"}
+                {drive.sending
+                  ? "Enviando…"
+                  : drive.link
+                    ? "Reenviar ao Drive"
+                    : "Enviar ao Drive"}
               </button>
               <button
                 onClick={onClose}
@@ -251,12 +219,20 @@ export function OccurrencePreviewModal({ occurrenceId, open, onClose }: Props) {
                 </div>
 
                 {/* Análise e Tratativa + Observações */}
-                <TratativaBlock occ={occ} onSaved={onClose} />
+                <TratativaBlock occ={occ} onSaved={onClose} drive={drive} />
               </>
             ) : null}
           </div>
         </div>
       </div>
+
+      {drive.pickerOpen && (
+        <DrivePickerModal
+          currentConfig={drive.currentConfig}
+          onConfirm={drive.handlePickerConfirm}
+          onClose={drive.closePicker}
+        />
+      )}
     </div>
   );
 }
@@ -394,7 +370,15 @@ function EvidenceViewerButton({ occ }: { occ: OccurrenceDTO }) {
  * PATCH /occurrences/:id/tratativa ao clicar em "Salvar tratativa".
  * O analista é preenchido automaticamente com o usuário logado.
  */
-function TratativaBlock({ occ, onSaved }: { occ: OccurrenceDTO; onSaved: () => void }) {
+function TratativaBlock({
+  occ,
+  onSaved,
+  drive,
+}: {
+  occ: OccurrenceDTO;
+  onSaved: () => void;
+  drive: OccurrenceDriveState;
+}) {
   const { profileName, profileNameAliases, user } = useAuth();
   const qc = useQueryClient();
 
@@ -486,7 +470,7 @@ function TratativaBlock({ occ, onSaved }: { occ: OccurrenceDTO; onSaved: () => v
       </div>
 
       {/* Relatório no Google Drive */}
-      <DriveReportRow occ={occ} />
+      <DriveReportRow drive={drive} />
 
       {/* Observações adicionais */}
       <div className="rounded-xl bg-white dark:bg-gray-900 border border-black/5 p-4">
@@ -549,37 +533,70 @@ function DriveIcon({ className }: { className?: string }) {
   );
 }
 
+/* ------------------------------------------------------------------ */
+/* Envio ao Google Drive                                               */
+/* ------------------------------------------------------------------ */
+
+type OccurrenceDriveState = {
+  /** Link do arquivo no Drive (null enquanto nunca foi enviado). */
+  link: string | null;
+  /** Envio em andamento. */
+  sending: boolean;
+  /** Nome da pasta padrão configurada (null se ainda não há). */
+  folderName: string | null;
+  /** Config atual da pasta (repassada ao DrivePickerModal). */
+  currentConfig: DriveFolderConfig | null;
+  /** Dispara o envio: usa a pasta salva ou abre o seletor de pasta. */
+  send: () => void;
+  /** Estado de abertura do DrivePickerModal. */
+  pickerOpen: boolean;
+  /** Abre o seletor de pasta sem encadear um envio (trocar pasta). */
+  openPicker: () => void;
+  closePicker: () => void;
+  handlePickerConfirm: (args: {
+    config: DriveFolderConfig;
+    accessToken: string;
+    saveAsDefault: boolean;
+  }) => void;
+};
+
 /**
- * Linha do relatório no Google Drive.
+ * Concentra o envio do relatório da ocorrência ao Google Drive.
  *
- * Se o relatório já foi enviado (link em cache), mostra "Abrir no Drive";
- * caso contrário, oferece o botão para enviar. O link é descoberto apenas no
- * envio (o backend não o retorna no DTO), então é persistido via driveLinkCache.
+ * - Sem pasta configurada: o clique em enviar abre o `DrivePickerModal`
+ *   (mesmo seletor usado no resto do app) e, ao confirmar, encadeia o envio.
+ * - Com pasta configurada: envia direto, com `force` quando o arquivo já
+ *   existe (reenvio/atualização).
+ *
+ * O link do Drive não vem no DTO da ocorrência — é descoberto só no envio e
+ * persistido via `driveLinkCache`.
  */
-function DriveReportRow({ occ }: { occ: OccurrenceDTO }) {
-  const driveFolder = useDriveFolder();
-  const [link, setLink] = useState<string | null>(() => getDriveLink(occ.id));
+function useOccurrenceDrive(occ: OccurrenceDTO | null): OccurrenceDriveState {
+  const { config, save } = useDriveFolder();
+  const [link, setLink] = useState<string | null>(() =>
+    occ ? getDriveLink(occ.id) : null,
+  );
   const [sending, setSending] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  // Marca que, ao confirmar o seletor de pasta, o envio deve seguir na hora.
+  const pendingSendRef = useRef(false);
 
-  async function handleSend() {
-    if (sending) return;
+  useEffect(() => {
+    setLink(occ ? getDriveLink(occ.id) : null);
+  }, [occ?.id]);
 
-    if (!driveFolder.config) {
-      toast.error(
-        "Configure a pasta do Drive na tela inicial (botão Drive) antes de enviar.",
-      );
-      return;
-    }
-
+  async function doSend(folderId: string, token?: string) {
+    if (!occ || sending) return;
     setSending(true);
     try {
-      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string;
-      const token = await requestDriveToken(clientId);
+      const accessToken =
+        token ??
+        (await requestDriveToken(import.meta.env.VITE_GOOGLE_CLIENT_ID as string));
 
       const res = await reportsDriveApi.sendOccurrenceToDrive({
         occurrenceId: occ.id,
-        accessToken: token,
-        folderId: driveFolder.config.folderId,
+        accessToken,
+        folderId,
         force: !!link, // já existia → atualiza o arquivo
       });
 
@@ -593,6 +610,62 @@ function DriveReportRow({ occ }: { occ: OccurrenceDTO }) {
       setSending(false);
     }
   }
+
+  function send() {
+    if (!occ || sending) return;
+    if (!config) {
+      pendingSendRef.current = true;
+      setPickerOpen(true);
+      return;
+    }
+    void doSend(config.folderId);
+  }
+
+  function openPicker() {
+    pendingSendRef.current = false;
+    setPickerOpen(true);
+  }
+
+  function closePicker() {
+    pendingSendRef.current = false;
+    setPickerOpen(false);
+  }
+
+  function handlePickerConfirm({
+    config: picked,
+    accessToken,
+    saveAsDefault,
+  }: {
+    config: DriveFolderConfig;
+    accessToken: string;
+    saveAsDefault: boolean;
+  }) {
+    if (saveAsDefault) save(picked);
+    setPickerOpen(false);
+    const shouldSend = pendingSendRef.current;
+    pendingSendRef.current = false;
+    if (shouldSend) void doSend(picked.folderId, accessToken);
+  }
+
+  return {
+    link,
+    sending,
+    folderName: config?.folderName ?? null,
+    currentConfig: config,
+    send,
+    pickerOpen,
+    openPicker,
+    closePicker,
+    handlePickerConfirm,
+  };
+}
+
+/**
+ * Linha "Relatório no Drive" — mostra a pasta de destino, o link do arquivo
+ * (quando já enviado) e os botões de enviar/reenviar e trocar de pasta.
+ */
+function DriveReportRow({ drive }: { drive: OccurrenceDriveState }) {
+  const { link, sending, folderName } = drive;
 
   return (
     <div className="rounded-xl bg-white dark:bg-gray-900 border border-black/5 px-4 py-3 flex items-center justify-between gap-3">
@@ -612,18 +685,22 @@ function DriveReportRow({ occ }: { occ: OccurrenceDTO }) {
           ) : (
             <p className="text-xs text-gray-400 dark:text-gray-500">Ainda não enviado</p>
           )}
+          <button
+            type="button"
+            onClick={drive.openPicker}
+            className="mt-0.5 flex items-center gap-1 text-[11px] text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+          >
+            <FolderCog className="w-3 h-3" />
+            {folderName ? `Pasta: ${folderName}` : "Escolher pasta"}
+          </button>
         </div>
       </div>
 
       <button
         type="button"
-        onClick={handleSend}
+        onClick={drive.send}
         disabled={sending}
-        className={`shrink-0 cursor-pointer h-8 px-3 rounded-lg border text-xs font-medium flex items-center gap-1.5 transition-colors disabled:opacity-60 ${
-          link
-            ? "border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
-            : "border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
-        }`}
+        className="shrink-0 cursor-pointer h-8 px-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 text-xs font-medium flex items-center gap-1.5 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-60"
       >
         {sending ? (
           <Loader2 className="w-3.5 h-3.5 animate-spin" />
