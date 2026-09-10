@@ -95,25 +95,50 @@ export function CentralOcorrenciasPage({
   //  · condensed → rolou além do bloco de identidade: recolhe título +
   //    subtítulo + progresso + tiles, deixando fixo só nav + filtros.
   // Limiares com histerese (condensa em 150px, só reexpande abaixo de 72px)
-  // pra não tremer com micro-rolagens.
+  // pra não tremer com micro-rolagens. No kanban a rolagem do quadro (painel
+  // próprio) também dispara — senão a página quase não rola.
+  const headerRef = useRef<HTMLElement>(null);
+  const boardScrollRef = useRef<HTMLDivElement>(null);
   const [scrolled, setScrolled] = useState(false);
   const [condensed, setCondensed] = useState(false);
   useEffect(() => {
     let raf = 0;
-    const update = () => {
+    const read = () =>
+      Math.max(window.scrollY, boardScrollRef.current?.scrollTop ?? 0);
+    const apply = () => {
       raf = 0;
-      const y = window.scrollY;
+      const y = read();
       setScrolled(y > 4);
       setCondensed((c) => (c ? y > 72 : y > 150));
     };
     const onScroll = () => {
-      if (!raf) raf = requestAnimationFrame(update);
+      if (!raf) raf = requestAnimationFrame(apply);
     };
-    update();
+    apply();
     window.addEventListener("scroll", onScroll, { passive: true });
+    const board = boardScrollRef.current;
+    board?.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       window.removeEventListener("scroll", onScroll);
+      board?.removeEventListener("scroll", onScroll);
       if (raf) cancelAnimationFrame(raf);
+    };
+  }, [layout.view]);
+
+  // Altura real do header → CSS var, pra ancorar o quadro (e o cabeçalho das
+  // colunas) exatamente abaixo dele, condensado ou não.
+  useLayoutEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const root = document.documentElement;
+    const set = () =>
+      root.style.setProperty("--central-header-h", `${el.offsetHeight}px`);
+    set();
+    const ro = new ResizeObserver(set);
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      root.style.removeProperty("--central-header-h");
     };
   }, []);
 
@@ -438,6 +463,7 @@ export function CentralOcorrenciasPage({
       {/* Header fixo único que condensa no scroll: nav + título + progresso +
           indicadores + filtros. Só o quadro/lista rola por baixo. */}
       <header
+        ref={headerRef}
         className={`sticky top-0 z-30 border-b border-gray-100 bg-gray-50/95 backdrop-blur transition-shadow duration-200 dark:border-gray-900 dark:bg-gray-950/95 ${
           scrolled
             ? "shadow-[0_6px_16px_-10px_rgba(0,0,0,0.25)] dark:shadow-[0_6px_16px_-10px_rgba(0,0,0,0.6)]"
@@ -665,7 +691,14 @@ export function CentralOcorrenciasPage({
             onEdit={handleEditar}
           />
         ) : (
-          <div className="flex gap-5 overflow-x-auto pb-4">
+          <div
+            ref={boardScrollRef}
+            className="board-scroll sticky flex gap-5 overflow-auto overscroll-contain pb-4"
+            style={{
+              top: "var(--central-header-h, 0px)",
+              maxHeight: "calc(100dvh - var(--central-header-h, 0px) - 1rem)",
+            }}
+          >
             {BOARD_COLUMNS.filter((s) => !layout.hiddenColumns.includes(s)).map((s) => (
               <BoardColumn
                 key={s}

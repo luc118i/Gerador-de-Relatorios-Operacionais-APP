@@ -94,47 +94,48 @@ export const BoardColumn = memo(function BoardColumn({
             : "outline-1 outline-transparent"
       } ${isSource ? "opacity-55" : ""}`}
     >
-      <div className="flex items-center justify-between px-1 pb-1">
-        <div className="flex items-center gap-2">
-          <span className={`inline-block h-1.5 w-1.5 rounded-full ${cfg.dot}`} />
-          <span className="text-[13px] font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">
-            {cfg.label}
-          </span>
-          <span className="text-xs tabular-nums text-gray-400 dark:text-gray-500">
-            {occurrences.length}
-          </span>
+      {/* Cabeçalho da coluna — fixo logo abaixo do header principal enquanto
+          o quadro rola. */}
+      <div className="sticky top-0 z-10 bg-gray-50/90 pt-1 backdrop-blur-sm dark:bg-gray-950/90">
+        <div className="flex items-center justify-between px-1 pb-1">
+          <div className="flex items-center gap-2">
+            <span className={`inline-block h-1.5 w-1.5 rounded-full ${cfg.dot}`} />
+            <span className="text-[13px] font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">
+              {cfg.label}
+            </span>
+            <span className="text-xs tabular-nums text-gray-400 dark:text-gray-500">
+              {occurrences.length}
+            </span>
+          </div>
+          <div className="flex items-center opacity-0 transition-opacity group-hover/col:opacity-100">
+            <button
+              type="button"
+              onClick={() => onHide(status)}
+              title={`Ocultar "${cfg.label}"`}
+              aria-label={`Ocultar ${cfg.label}`}
+              className="flex h-5 w-5 cursor-pointer items-center justify-center rounded text-gray-300 hover:bg-black/[0.04] hover:text-gray-600 dark:text-gray-600 dark:hover:bg-white/[0.06] dark:hover:text-gray-300"
+            >
+              <EyeOff className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => onQuickAdd(status)}
+              title={`Nova ocorrência em "${cfg.label}"`}
+              aria-label={`Nova ocorrência em ${cfg.label}`}
+              className="flex h-5 w-5 cursor-pointer items-center justify-center rounded text-gray-300 hover:bg-black/[0.04] hover:text-gray-600 dark:text-gray-600 dark:hover:bg-white/[0.06] dark:hover:text-gray-300"
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </button>
+          </div>
         </div>
-        <div className="flex items-center opacity-0 transition-opacity group-hover/col:opacity-100">
-          <button
-            type="button"
-            onClick={() => onHide(status)}
-            title={`Ocultar "${cfg.label}"`}
-            aria-label={`Ocultar ${cfg.label}`}
-            className="flex h-5 w-5 cursor-pointer items-center justify-center rounded text-gray-300 hover:bg-black/[0.04] hover:text-gray-600 dark:text-gray-600 dark:hover:bg-white/[0.06] dark:hover:text-gray-300"
-          >
-            <EyeOff className="h-3.5 w-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => onQuickAdd(status)}
-            title={`Nova ocorrência em "${cfg.label}"`}
-            aria-label={`Nova ocorrência em ${cfg.label}`}
-            className="flex h-5 w-5 cursor-pointer items-center justify-center rounded text-gray-300 hover:bg-black/[0.04] hover:text-gray-600 dark:text-gray-600 dark:hover:bg-white/[0.06] dark:hover:text-gray-300"
-          >
-            <Plus className="h-3.5 w-3.5" />
-          </button>
-        </div>
+        {layout.show.contagem && (
+          <p className="px-1 pb-2 text-[11px] text-gray-400 dark:text-gray-500">
+            {occurrences.length} {occurrences.length === 1 ? "ocorrência" : "ocorrências"}
+          </p>
+        )}
       </div>
-      {layout.show.contagem && (
-        <p className="px-1 pb-2 text-[11px] text-gray-400 dark:text-gray-500">
-          {occurrences.length} {occurrences.length === 1 ? "ocorrência" : "ocorrências"}
-        </p>
-      )}
 
-      <div
-        className={`board-col-scroll flex-1 overflow-y-auto pt-1 ${DENSITY_CARD_GAP[layout.density]}`}
-        style={{ maxHeight: "calc(100vh - 360px)" }}
-      >
+      <div className={`flex-1 pt-1 ${DENSITY_CARD_GAP[layout.density]}`}>
         {occurrences.length === 0 && !dragging && (
           <p className="px-1 py-8 text-center text-xs text-gray-300 dark:text-gray-700">Vazio</p>
         )}
