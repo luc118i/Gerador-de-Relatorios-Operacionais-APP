@@ -22,6 +22,9 @@ type Props = {
   occurrences: OccurrenceDTO[];
   active: IndicatorFilter;
   onPick: (f: IndicatorFilter) => void;
+  /** "tiles" = só os indicadores clicáveis; "progress" = só a barra de
+   *  progresso; "full" (padrão) = os dois. */
+  variant?: "tiles" | "progress" | "full";
 };
 
 function Tile({
@@ -69,7 +72,9 @@ function Tile({
 
 /** Indicadores clicáveis do topo (spec §11) — cada um aplica o filtro
  *  correspondente ao quadro. */
-export function BoardIndicators({ occurrences, active, onPick }: Props) {
+export function BoardIndicators({ occurrences, active, onPick, variant = "full" }: Props) {
+  const showTiles = variant !== "progress";
+  const showProgress = variant !== "tiles";
   const by = (s: WorkflowStatus) => occurrences.filter((o) => o.workflowStatus === s).length;
   const highPrio = occurrences.filter((o) => HIGH_PRIORITIES.includes((o.prioridade ?? "MEDIA") as Prioridade)).length;
 
@@ -94,7 +99,8 @@ export function BoardIndicators({ occurrences, active, onPick }: Props) {
   }, [done]);
 
   return (
-    <div className="space-y-2">
+    <div className={showTiles && showProgress ? "space-y-2" : undefined}>
+    {showTiles && (
     <div className="flex flex-wrap gap-2">
       <Tile
         label="Total"
@@ -134,8 +140,10 @@ export function BoardIndicators({ occurrences, active, onPick }: Props) {
         onClick={() => onPick({ kind: "priority", priorities: HIGH_PRIORITIES })}
       />
     </div>
+    )}
 
-      {/* Progresso: tratadas / total no período */}
+      {showProgress && (
+      /* Progresso: tratadas / total no período */
       <div className="flex items-center gap-2">
         <div className="relative h-1 flex-1 rounded-full bg-gray-200 dark:bg-gray-800">
           <div
@@ -165,6 +173,7 @@ export function BoardIndicators({ occurrences, active, onPick }: Props) {
           {done ? "Tudo tratado 🎉" : `${tratadas}/${total} tratadas`}
         </span>
       </div>
+      )}
     </div>
   );
 }

@@ -90,9 +90,8 @@ export function CentralOcorrenciasPage({
     window.scrollTo(0, 0);
   }, []);
 
-  // Sombra sutil no bloco de filtros só quando ele está "grudado" no topo —
-  // um sentinel logo acima dispara o estado quando some sob a faixa de
-  // controles (h-11 = 44px).
+  // Sombra sutil no header só depois que a página começa a rolar — um sentinel
+  // de 1px no topo dispara o estado assim que sai da viewport.
   const stuckSentinelRef = useRef<HTMLDivElement>(null);
   const [filtersStuck, setFiltersStuck] = useState(false);
   useEffect(() => {
@@ -100,7 +99,7 @@ export function CentralOcorrenciasPage({
     if (!el) return;
     const io = new IntersectionObserver(
       ([entry]) => setFiltersStuck(!entry.isIntersecting),
-      { threshold: 0, rootMargin: "-45px 0px 0px 0px" },
+      { threshold: 0 },
     );
     io.observe(el);
     return () => io.disconnect();
@@ -424,9 +423,20 @@ export function CentralOcorrenciasPage({
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      {/* Faixa de controles — baixa, integrada à página */}
-      <div className="sticky top-0 z-20 border-b border-gray-100 bg-gray-50/95 dark:border-gray-900 dark:bg-gray-950/95 backdrop-blur">
-        <div className="mx-auto flex h-11 max-w-[1600px] items-center gap-1 px-4 sm:px-6">
+      {/* Sentinel de topo — liga a sombra do header assim que a página rola. */}
+      <div ref={stuckSentinelRef} aria-hidden className="h-px" />
+
+      {/* Header fixo único: nav + indicadores + filtros. Só o conteúdo rola
+          por baixo. */}
+      <header
+        className={`sticky top-0 z-30 border-b border-gray-100 bg-gray-50/95 backdrop-blur transition-shadow duration-200 dark:border-gray-900 dark:bg-gray-950/95 ${
+          filtersStuck
+            ? "shadow-[0_6px_16px_-10px_rgba(0,0,0,0.25)] dark:shadow-[0_6px_16px_-10px_rgba(0,0,0,0.6)]"
+            : "shadow-none"
+        }`}
+      >
+        <div className="mx-auto max-w-[1600px] px-4 sm:px-6">
+          <div className="flex h-11 items-center gap-1">
           <button
             onClick={onVoltar}
             title="Voltar para o início"
@@ -502,8 +512,30 @@ export function CentralOcorrenciasPage({
               Nova ocorrência
             </button>
           </div>
+          </div>
+
+          {/* Indicadores (tiles) + filtros — parte fixa, junto da nav. */}
+          <div className="pb-3 pt-1">
+            <BoardIndicators
+              variant="tiles"
+              occurrences={visible}
+              active={indicator}
+              onPick={setIndicator}
+            />
+            <div className="mt-3">
+              <BoardFiltersBar
+                value={filters}
+                onChange={setFilters}
+                onReset={() => {
+                  setFilters(emptyBoardFilters(filters.from, filters.to));
+                  setIndicator({ kind: "all" });
+                }}
+                resultCount={filtered.length}
+              />
+            </div>
+          </div>
         </div>
-      </div>
+      </header>
 
       <div className="relative mx-auto max-w-[1600px] px-4 sm:px-6">
         {/* Plano de fundo do cabeçalho — bem discreto, com véu que garante a
@@ -559,34 +591,19 @@ export function CentralOcorrenciasPage({
           <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
             Central de acompanhamento e tratamento de ocorrências
           </p>
-        </div>
-
-        {/* Indicadores + filtros — permanecem fixos abaixo da faixa de
-            controles enquanto a lista de ocorrências rola. O fundo opaco e a
-            borda evitam que os cards apareçam por trás; a sombra só aparece
-            quando o bloco está grudado. */}
-        <div ref={stuckSentinelRef} aria-hidden className="h-px" />
-        <div
-          className={`sticky top-11 z-10 -mx-4 border-b border-gray-100 bg-gray-50/95 px-4 pb-3 pt-2 backdrop-blur transition-shadow duration-200 sm:-mx-6 sm:px-6 dark:border-gray-900 dark:bg-gray-950/95 ${
-            filtersStuck
-              ? "shadow-[0_6px_16px_-10px_rgba(0,0,0,0.25)] dark:shadow-[0_6px_16px_-10px_rgba(0,0,0,0.6)]"
-              : "shadow-none"
-          }`}
-        >
-          <BoardIndicators occurrences={visible} active={indicator} onPick={setIndicator} />
-          <div className="mt-3">
-            <BoardFiltersBar
-              value={filters}
-              onChange={setFilters}
-              onReset={() => {
-                setFilters(emptyBoardFilters(filters.from, filters.to));
-                setIndicator({ kind: "all" });
-              }}
-              resultCount={filtered.length}
+          {/* Progresso é leitura de status (não controle) — rola junto do
+              título em vez de ocupar o header fixo. */}
+          <div className="mt-3 max-w-md">
+            <BoardIndicators
+              variant="progress"
+              occurrences={visible}
+              active={indicator}
+              onPick={setIndicator}
             />
           </div>
         </div>
-        <div className="pb-4 pt-4">
+
+        <div className="pb-4 pt-2">
 
         {isError ? (
           <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-12 text-center">
